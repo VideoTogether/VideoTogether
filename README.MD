@@ -7,7 +7,7 @@
 全平台支持，以 JavaScript 插件形式运行，需要浏览器支持安装 JavaScript 插件
 
 ## 赞助
-![image](https://user-images.githubusercontent.com/23057110/175769977-e935a75f-d363-48f4-adc2-5254352aa086.png)
+<img src="https://user-images.githubusercontent.com/23057110/175769977-e935a75f-d363-48f4-adc2-5254352aa086.png" width="400">
 
 
 ## 测试截图
