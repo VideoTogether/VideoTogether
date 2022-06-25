@@ -59,7 +59,7 @@ class VideoTogetherFlyPannel {
         //text-align:center;指定元素文本的水平对齐方式为居中对齐
         //line-height:60px;设置行高，通过设置为等于该元素的内容高度的值，配合text-align:center;可以使div的文字居中
         //cursor:pointer;定义了鼠标指针放在一个元素边界范围内时所用的光标形状为一只手
-        this.videoTogetherFlyPannel.style = "z-index:9999;position:fixed;bottom:15px;right:15px;width:200px;height:200px;background:grey;color:white;text-align:center;line-height:60px;cursor:pointer;";
+        this.videoTogetherFlyPannel.style = "z-index:9999;position:fixed;bottom:15px;right:15px;width:200px;height:200px;background:grey;color:black;text-align:center;line-height:60px;cursor:pointer;";
         //通过匿名函数，设置点击该悬浮按钮后执行的函数
     }
 
@@ -90,7 +90,7 @@ class VideoTogetherExtension {
         Master: 2,
         Member: 3,
     }
-    video_together_host = "http://127.0.0.1:5000/";
+    video_together_host = "https://vt.panghair.com:5000/";
 
     timer = 0
     roomName = ""
