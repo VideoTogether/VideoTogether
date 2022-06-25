@@ -1,11 +1,13 @@
 // ==UserScript==
-// @name         New Userscript
-// @namespace    http://tampermonkey.net/
+// @name         Video Together 一起看视频
+// @namespace    http://vt.panghair.com
 // @version      0.1
-// @description  try to take over the world!
-// @author       You
-// @match       *://*/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=tampermonkey.net
+// @description  Watch video together 一起看视频
+// @author       maggch@outlook.com
+// @match        *://*/*
+// @icon         https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-32x32.png
+// @downloadURL  https://raw.githubusercontent.com/maggch97/VideoTogether/main/source/js/vt.js
+// @updateURL    https://raw.githubusercontent.com/maggch97/VideoTogether/main/source/js/vt.js
 // @grant        none
 // ==/UserScript==
 

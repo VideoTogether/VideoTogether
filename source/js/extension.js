@@ -6,6 +6,8 @@
 // @author       maggch@outlook.com
 // @match        *://*/*
 // @icon         https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-32x32.png
+// @downloadURL  https://raw.githubusercontent.com/maggch97/VideoTogether/main/source/js/extension.js
+// @updateURL    https://raw.githubusercontent.com/maggch97/VideoTogether/main/source/js/extension.js
 // @grant        none
 // ==/UserScript==
 
