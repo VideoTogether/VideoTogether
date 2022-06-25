@@ -69,3 +69,22 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 在保证每台设备上都有同一份视频文件时，打开网页 https://maggch97.github.io/VideoTogether/tools/local.html 并选择本地视频
 
 按照上面的创建以及加入房间的步骤同步视频播放进度
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+测试截图
+![image](https://user-images.githubusercontent.com/23057110/175769146-79de5922-8a50-48c8-861e-f92cb08734c6.png)
+
