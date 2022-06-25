@@ -1,3 +1,4 @@
+import time
 from subprocess import call
 from flask import Flask, jsonify, request
 import json
@@ -10,10 +11,12 @@ CORS(app)
 class Room:
     name: str
     password: str
-    lastUpdateTime: float
+    lastUpdateClientTime: float
+    lastUpdateServerTime: float
     playbackRate: float
-    current: float
+    currentTime: float
     paused: bool
+    url: str
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
@@ -34,27 +37,32 @@ def generateErrorResponse(errorMessage, callback):
 @app.route('/room/get', methods=["get"])
 def getRoom():
     name = request.args["name"]
-    callback = request.args["callback"]
-    if callback == None or callback == "":
-        return jsonify(database[name])
-    else:
-        return generateScriptResponse(database[name], callback)
+    return jsonify(database[name].__dict__)
 
+@app.route('/timestamp', methods=["get"])
+def getTimestamp():
+    return jsonify({"timestamp": time.time()})
 
 @app.route('/room/update', methods=["get"])
 def updateRoom():
     room = Room()
     room.name = request.args["name"]
     room.password = request.args["password"]
-    room.playbackRate = request.args["playbackRate"]
-    room.current = request.args["current"]
-    room.paused = request.args["paused"]
-    callback = request.args["callback"]
+
     if room.name in database:
+        print(database[room.name].__dict__)
         if database[room.name].password != room.password:
             return generateErrorResponse("密码错误", callback)
+
+    room.playbackRate = request.args["playbackRate"]
+    room.currentTime = float(request.args["currentTime"])
+    room.paused = request.args["paused"] != "false"
+    room.url = request.args["url"]
+    room.lastUpdateClientTime = request.args["lastUpdateClientTime"]
+    # room.lastUpdateServerTime = timestamp
+
     database[room.name] = room
-    return generateScriptResponse(database[room.name], callback)
+    return jsonify(room.__dict__)
 
 
 if __name__ == '__main__':
