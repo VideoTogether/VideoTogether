@@ -19,29 +19,33 @@ class VideoTogetherFlyPannel {
         this.videoTogetherFlyPannel.id = "videoTogetherFlyPannel";
 
         this.createRoomButton = document.createElement('button');
-        this.createRoomButton.innerHTML = "建房"
+        this.createRoomButton.innerHTML = "建房";
 
         this.joinRoomButton = document.createElement('button');
-        this.joinRoomButton.innerHTML = "加入"
+        this.joinRoomButton.innerHTML = "加入";
 
-        this.inputRoomName = document.createElement('input');
-        this.inputRoomName.placeholder = "输入房间名"
-
-        this.inputRoomPassword = document.createElement("input");
-        this.inputRoomPassword.placeholder = "输入密码"
-
-        this.statusText = document.createElement('p');
-        this.statusText.id = "videoTogetherStatusText"
+        this.helpButton = document.createElement("button");
+        this.helpButton.innerHTML = "需要帮助";
 
         this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
         this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
+        this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
 
-        this.videoTogetherFlyPannel.appendChild(this.statusText)
-        this.videoTogetherFlyPannel.appendChild(this.inputRoomName)
-        this.videoTogetherFlyPannel.appendChild(this.inputRoomPassword)
-        this.videoTogetherFlyPannel.appendChild(this.createRoomButton)
-        this.videoTogetherFlyPannel.appendChild(this.joinRoomButton)
+        this.inputRoomName = document.createElement('input');
+        this.inputRoomName.placeholder = "输入房间名";
 
+        this.inputRoomPassword = document.createElement("input");
+        this.inputRoomPassword.placeholder = "输入密码";
+
+        this.statusText = document.createElement('p');
+        this.statusText.id = "videoTogetherStatusText";
+
+        this.videoTogetherFlyPannel.appendChild(this.statusText);
+        this.videoTogetherFlyPannel.appendChild(this.inputRoomName);
+        this.videoTogetherFlyPannel.appendChild(this.inputRoomPassword);
+        this.videoTogetherFlyPannel.appendChild(this.createRoomButton);
+        this.videoTogetherFlyPannel.appendChild(this.joinRoomButton);
+        this.videoTogetherFlyPannel.appendChild(this.helpButton);
 
         //搜寻body元素
         let beasetag = document.querySelector("body");
@@ -76,8 +80,12 @@ class VideoTogetherFlyPannel {
         window.videoTogetherExtension.JoinRoom(roomName)
     }
 
+    HelpButtonOnClick() {
+        window.open('https://github.com/maggch97/VideoTogether/blob/main/README.MD', '_blank');
+    }
+
     UpdateStatusText(text, color) {
-        this.statusText.innerHTML = message;
+        this.statusText.innerHTML = text;
         this.statusText.style = "color:" + color;
     }
 }
@@ -114,7 +122,7 @@ class VideoTogetherExtension {
         let startTime = this.getLocalTimestamp()
         let response = await fetch(this.video_together_host + "/timestamp");
         let endTime = this.getLocalTimestamp();
-        let data = await response.json();
+        let data = this.CheckResponse(response);
         if (typeof (data["timestamp"]) == "number") {
             this.serverTimestamp = data["timestamp"];
             this.localTimestamp = (startTime + endTime) / 2;
@@ -193,6 +201,7 @@ class VideoTogetherExtension {
             video.playbackRate,
             video.currentTime,
             video.paused);
+        window.videoTogetherFlyPannel.UpdateStatusText("同步成功 " + this.GetDisplayTimeText(), "green");
     }
 
     linkWithoutState(link) {
@@ -217,9 +226,15 @@ class VideoTogetherExtension {
         return data["currentTime"] + this.getLocalTimestamp() - data["lastUpdateClientTime"];
     }
 
+    GetDisplayTimeText() {
+        let date = new Date();
+        return date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+    }
+
     async SyncMemberVideo() {
         let video = this.GetVideoDom();
         let data = await this.GetRoom(this.roomName);
+        window.videoTogetherFlyPannel.UpdateStatusText("同步成功 " + this.GetDisplayTimeText(), "green");
         if (data["url"] != this.url) {
             window.location = this.linkWithMemberState(data["url"]);
         }
