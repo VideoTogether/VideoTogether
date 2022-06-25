@@ -26,12 +26,8 @@ class Room:
 database = dict()
 
 
-def generateScriptResponse(data, callback):
-    return callback+'(JSON.parse(\''+json.dumps(data.__dict__)+'\'));'
-
-
-def generateErrorResponse(errorMessage, callback):
-    return callback+'(JSON.parse(\''+json.dumps({"errorMessage": errorMessage})+'\'));'
+def generateErrorResponse(errorMessage):
+    return jsonify({"errorMessage": errorMessage})
 
 
 @app.route('/room/get', methods=["get"])
@@ -39,9 +35,11 @@ def getRoom():
     name = request.args["name"]
     return jsonify(database[name].__dict__)
 
+
 @app.route('/timestamp', methods=["get"])
 def getTimestamp():
     return jsonify({"timestamp": time.time()})
+
 
 @app.route('/room/update', methods=["get"])
 def updateRoom():
@@ -52,14 +50,14 @@ def updateRoom():
     if room.name in database:
         print(database[room.name].__dict__)
         if database[room.name].password != room.password:
-            return generateErrorResponse("密码错误", callback)
+            return generateErrorResponse("密码错误")
 
     room.playbackRate = request.args["playbackRate"]
     room.currentTime = float(request.args["currentTime"])
     room.paused = request.args["paused"] != "false"
     room.url = request.args["url"]
     room.lastUpdateClientTime = request.args["lastUpdateClientTime"]
-    # room.lastUpdateServerTime = timestamp
+    room.lastUpdateServerTime = time.time()
 
     database[room.name] = room
     return jsonify(room.__dict__)
@@ -67,4 +65,4 @@ def updateRoom():
 
 if __name__ == '__main__':
     app.debug = True
-    app.run()
+    app.run(host='0.0.0.0', ssl_context=('certificate.crt','private.key'))
