@@ -35,3 +35,8 @@ Chrome 浏览器用户请自行寻找安装 TamperMonkey 插件的方法
 
 Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpaadaobahmlepeloendndfphd 安装 TamperMonkey 插件
 
+点击链接安装插件 https://raw.githubusercontent.com/maggch97/VideoTogether/main/source/js/tampermonkey/vt.user.js
+
+### 使用
+
+
