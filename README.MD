@@ -6,6 +6,11 @@
 
 全平台支持，以 JavaScript 插件形式运行，需要浏览器支持安装 JavaScript 插件
 
+
+## 测试截图
+<img src="https://user-images.githubusercontent.com/23057110/175769146-79de5922-8a50-48c8-861e-f92cb08734c6.png" width="400">
+
+
 ## 使用说明
 
 请加入插件的交流群获取更详细的帮助信息，以及反馈问题
@@ -49,7 +54,7 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 
 注意：页面跳转后房间信息可能会丢失，请使用相同的密码重新创建房间
 
-![image](https://user-images.githubusercontent.com/23057110/175768741-35889383-de33-4c7b-a2a9-5765e2ac0e5f.png)
+<img src="https://user-images.githubusercontent.com/23057110/175768741-35889383-de33-4c7b-a2a9-5765e2ac0e5f.png" width="400">
 
 
 #### 加入房间
@@ -62,7 +67,7 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 
 注意：页面跳转后房间信息可能会丢失，请重新加入房间
 
-![image](https://user-images.githubusercontent.com/23057110/175768951-ea80d4d8-fd6b-4aa5-b066-02c122d84bbd.png)
+<img src="https://user-images.githubusercontent.com/23057110/175768951-ea80d4d8-fd6b-4aa5-b066-02c122d84bbd.png" width="400" >
 
 #### 观看本地视频
 
@@ -70,21 +75,4 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 
 按照上面的创建以及加入房间的步骤同步视频播放进度
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-测试截图
-![image](https://user-images.githubusercontent.com/23057110/175769146-79de5922-8a50-48c8-861e-f92cb08734c6.png)
 
