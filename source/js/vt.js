@@ -77,7 +77,7 @@ class VideoTogetherFlyPannel {
     }
 
     UpdateStatusText(text, color) {
-        this.statusText.innerHTML = message;
+        this.statusText.innerHTML = text;
         this.statusText.style = "color:" + color;
     }
 }
@@ -114,7 +114,7 @@ class VideoTogetherExtension {
         let startTime = this.getLocalTimestamp()
         let response = await fetch(this.video_together_host + "/timestamp");
         let endTime = this.getLocalTimestamp();
-        let data = await response.json();
+        let data = this.CheckResponse(response);
         if (typeof (data["timestamp"]) == "number") {
             this.serverTimestamp = data["timestamp"];
             this.localTimestamp = (startTime + endTime) / 2;
@@ -193,6 +193,7 @@ class VideoTogetherExtension {
             video.playbackRate,
             video.currentTime,
             video.paused);
+        window.videoTogetherFlyPannel.UpdateStatusText("同步成功 " + this.GetDisplayTimeText(), "green");
     }
 
     linkWithoutState(link) {
@@ -217,9 +218,15 @@ class VideoTogetherExtension {
         return data["currentTime"] + this.getLocalTimestamp() - data["lastUpdateClientTime"];
     }
 
+    GetDisplayTimeText() {
+        let date = new Date();
+        return date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+    }
+
     async SyncMemberVideo() {
         let video = this.GetVideoDom();
         let data = await this.GetRoom(this.roomName);
+        window.videoTogetherFlyPannel.UpdateStatusText("同步成功 " + this.GetDisplayTimeText(), "green");
         if (data["url"] != this.url) {
             window.location = this.linkWithMemberState(data["url"]);
         }
