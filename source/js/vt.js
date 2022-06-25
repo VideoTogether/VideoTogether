@@ -19,29 +19,33 @@ class VideoTogetherFlyPannel {
         this.videoTogetherFlyPannel.id = "videoTogetherFlyPannel";
 
         this.createRoomButton = document.createElement('button');
-        this.createRoomButton.innerHTML = "建房"
+        this.createRoomButton.innerHTML = "建房";
 
         this.joinRoomButton = document.createElement('button');
-        this.joinRoomButton.innerHTML = "加入"
+        this.joinRoomButton.innerHTML = "加入";
 
-        this.inputRoomName = document.createElement('input');
-        this.inputRoomName.placeholder = "输入房间名"
-
-        this.inputRoomPassword = document.createElement("input");
-        this.inputRoomPassword.placeholder = "输入密码"
-
-        this.statusText = document.createElement('p');
-        this.statusText.id = "videoTogetherStatusText"
+        this.helpButton = document.createElement("button");
+        this.helpButton.innerHTML = "需要帮助";
 
         this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
         this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
+        this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
 
-        this.videoTogetherFlyPannel.appendChild(this.statusText)
-        this.videoTogetherFlyPannel.appendChild(this.inputRoomName)
-        this.videoTogetherFlyPannel.appendChild(this.inputRoomPassword)
-        this.videoTogetherFlyPannel.appendChild(this.createRoomButton)
-        this.videoTogetherFlyPannel.appendChild(this.joinRoomButton)
+        this.inputRoomName = document.createElement('input');
+        this.inputRoomName.placeholder = "输入房间名";
 
+        this.inputRoomPassword = document.createElement("input");
+        this.inputRoomPassword.placeholder = "输入密码";
+
+        this.statusText = document.createElement('p');
+        this.statusText.id = "videoTogetherStatusText";
+
+        this.videoTogetherFlyPannel.appendChild(this.statusText);
+        this.videoTogetherFlyPannel.appendChild(this.inputRoomName);
+        this.videoTogetherFlyPannel.appendChild(this.inputRoomPassword);
+        this.videoTogetherFlyPannel.appendChild(this.createRoomButton);
+        this.videoTogetherFlyPannel.appendChild(this.joinRoomButton);
+        this.videoTogetherFlyPannel.appendChild(this.helpButton);
 
         //搜寻body元素
         let beasetag = document.querySelector("body");
@@ -74,6 +78,10 @@ class VideoTogetherFlyPannel {
     JoinRoomButtonOnClick() {
         let roomName = this.inputRoomName.value;
         window.videoTogetherExtension.JoinRoom(roomName)
+    }
+
+    HelpButtonOnClick() {
+        window.open('https://github.com/maggch97/VideoTogether/blob/main/README.MD', '_blank');
     }
 
     UpdateStatusText(text, color) {
