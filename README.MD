@@ -1,6 +1,6 @@
 # Video Together 一起看视频
 
-**Currently only Chinese display language is available in this extension. I'm working on the localization now, the English will be available soon, both extension display language and documentation.**
+**Currently only Chinese display language is available in this extension. I'm working on the localization now. English will be available soon, both extension display language and documentation.**
 
 文档正在完善中
 
