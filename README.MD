@@ -21,7 +21,7 @@ QQ群: 170200260 点击链接加入群聊【video together】：https://jq.qq.c
 
 安卓平台推荐使用 via 浏览器，官网 https://viayoo.com/
 
-通过 via 或 Alook 浏览器访问下面的安装链接, 点击安装
+安装 Video Together 插件。通过 via 或 Alook 浏览器访问下面的安装链接, 点击安装按钮
 
 正式版：(!!!不推荐，目前存在较多 BUG，无法使用，正在快速开发中，请使用测试版) https://maggch97.github.io/VideoTogether/installation/via.html
 
@@ -35,7 +35,7 @@ Chrome 浏览器用户请自行寻找安装 TamperMonkey 插件的方法
 
 Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpaadaobahmlepeloendndfphd 安装 TamperMonkey 插件
 
-点击链接安装插件 https://raw.githubusercontent.com/maggch97/VideoTogether/main/source/js/tampermonkey/vt.user.js
+点击链接安装 Video Together 插件 https://raw.githubusercontent.com/maggch97/VideoTogether/main/source/js/tampermonkey/vt.user.js
 
 ### 使用
 
