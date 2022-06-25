@@ -109,8 +109,8 @@ class VideoTogetherExtension {
     localTimestamp = 0;
 
     constructor() {
-        this.RecoveryState();
         this.timer = setInterval(this.ScheduledTask.bind(this), 2 * 1000);
+        this.RecoveryState();
         this.SyncTimeWithServer();
     }
 
@@ -122,7 +122,7 @@ class VideoTogetherExtension {
         let startTime = this.getLocalTimestamp()
         let response = await fetch(this.video_together_host + "/timestamp");
         let endTime = this.getLocalTimestamp();
-        let data = this.CheckResponse(response);
+        let data = await this.CheckResponse(response);
         if (typeof (data["timestamp"]) == "number") {
             this.serverTimestamp = data["timestamp"];
             this.localTimestamp = (startTime + endTime) / 2;
@@ -172,15 +172,22 @@ class VideoTogetherExtension {
     }
 
     async ScheduledTask() {
-        switch (this.role) {
-            case this.RoleEnum.Null:
-                return;
-            case this.RoleEnum.Master:
-                await this.SyncMasterVideo();
-                break;
-            case this.RoleEnum.Member:
-                await this.SyncMemberVideo();
-                break;
+        try {
+            switch (this.role) {
+                case this.RoleEnum.Null:
+                    return;
+                case this.RoleEnum.Master:
+                    await this.SyncMasterVideo();
+                    break;
+                case this.RoleEnum.Member:
+                    await this.SyncMemberVideo();
+                    break;
+            }
+        } catch (error) {
+            console.log(error);
+        }
+        if (this.serverTimestamp == 0) {
+            await this.SyncTimeWithServer();
         }
     }
 
