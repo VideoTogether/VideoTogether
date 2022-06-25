@@ -80,10 +80,6 @@ class VideoTogetherFlyPannel {
     }
 }
 
-function getLocalTimestamp() {
-    return Date.now() / 1000;
-}
-
 class VideoTogetherExtension {
     RoleEnum = {
         Null: 1,
@@ -108,10 +104,14 @@ class VideoTogetherExtension {
         this.SyncTimeWithServer();
     }
 
+    getLocalTimestamp() {
+        return Date.now() / 1000 - this.localTimestamp + this.serverTimestamp;
+    }
+
     async SyncTimeWithServer() {
-        let startTime = getLocalTimestamp()
+        let startTime = this.getLocalTimestamp()
         let response = await fetch(this.video_together_host + "/timestamp");
-        let endTime = getLocalTimestamp();
+        let endTime = this.getLocalTimestamp();
         let data = await response.json();
         if (typeof (data["timestamp"]) == "number") {
             this.serverTimestamp = data["timestamp"];
@@ -206,13 +206,13 @@ class VideoTogetherExtension {
         url.searchParams.set("videoTogetherUrl", link);
         url.searchParams.set("VideoTogetherRoomName", this.roomName);
         url.searchParams.set("videoTogetherRole", this.role);
-        url.searchParams.set("videoTogetherTimestamp", Date.now() / 1000)
+        url.searchParams.set("videoTogetherTimestamp", this.getLocalTimestamp())
         return url;
     }
 
     CalculateRealCurrent(data) {
-        console.log("delta", Date.now() / 1000 - data["lastUpdateClientTime"]);
-        return data["currentTime"] + Date.now() / 1000 - data["lastUpdateClientTime"];
+        console.log("delta", this.getLocalTimestamp() - data["lastUpdateClientTime"]);
+        return data["currentTime"] + this.getLocalTimestamp() - data["lastUpdateClientTime"];
     }
 
     async SyncMemberVideo() {
@@ -268,7 +268,7 @@ class VideoTogetherExtension {
         apiUrl.searchParams.set("currentTime", currentTime);
         apiUrl.searchParams.set("paused", paused);
         apiUrl.searchParams.set("url", url);
-        apiUrl.searchParams.set("lastUpdateClientTime", Date.now() / 1000);
+        apiUrl.searchParams.set("lastUpdateClientTime", this.getLocalTimestamp());
         // url.searchParams.set("lastUpdateClientTime", timestamp)
         let response = await fetch(apiUrl);
         let data = await this.CheckResponse(response);
