@@ -12,7 +12,7 @@
     <hr color="#666666">
     <input type="file" id="file" onchange="onInputFileChange()">
     <br />
-    <video id="video_id" width="520" height="360" controls autoplay loop>你的浏览器不能支持HTML5视频</video>
+    <video id="video_id" width="520" height="360" controls autoplay loop webkit-playsinline>你的浏览器不能支持HTML5视频</video>
     <script>
         function onInputFileChange() {
             var file = document.getElementById('file').files[0];
