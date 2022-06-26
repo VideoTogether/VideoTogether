@@ -2,18 +2,17 @@
 
 **Currently only Chinese display language is available in this extension. I'm working on the localization now. English will be available soon, both extension display language and documentation.**
 
-<a href="#0">Video Together 一起看视频</a>  
-&emsp;<a href="#1">赞助</a>  
-&emsp;<a href="#2">测试截图</a>  
-&emsp;<a href="#3">使用说明</a>  
-&emsp;&emsp;<a href="#4">安装</a>  
-&emsp;&emsp;&emsp;<a href="#5">IOS，安卓</a>  
-&emsp;&emsp;&emsp;<a href="#6">Windows, MacOS</a>  
-&emsp;&emsp;<a href="#7">使用</a>  
-&emsp;&emsp;&emsp;<a href="#8">建房</a>  
-&emsp;&emsp;&emsp;<a href="#9">加入房间</a>  
-&emsp;&emsp;&emsp;<a href="#10">观看本地视频</a>  
-&emsp;<a href="#11">TODO</a>  
+<a href="#1">赞助</a>  
+<a href="#2">测试截图</a>  
+<a href="#3">使用说明</a>  
+&emsp;<a href="#4">安装</a>  
+&emsp;&emsp;<a href="#5">IOS，安卓</a>  
+&emsp;&emsp;<a href="#6">Windows, MacOS</a>  
+&emsp;<a href="#7">使用</a>  
+&emsp;&emsp;<a href="#8">建房</a>  
+&emsp;&emsp;<a href="#9">加入房间</a>  
+&emsp;&emsp;<a href="#10">观看本地视频</a>  
+<a href="#11">TODO</a>  
 
 文档正在完善中
 
