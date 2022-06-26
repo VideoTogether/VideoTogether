@@ -101,3 +101,5 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 - 使用 Websocket 替代 http 请求
 
 - 增加多语言支持
+
+- 找个人来把前端 BUG 修一修
