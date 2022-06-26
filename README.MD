@@ -99,7 +99,9 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 ## <a name="11">TODO</a>
 
 - 使用 Websocket 替代 http 请求
-
+- 统计不同语言使用者
 - 增加多语言支持
-
 - 找个人来把前端 BUG 修一修
+- 服务端清理不活跃房间
+- 服务端增加一些监控和报警
+- 在中国部署服务端
