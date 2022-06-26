@@ -1,4 +1,17 @@
-# Video Together 一起看视频
+<a name="index">**Index**</a>
+<a href="#0">Video Together 一起看视频</a>  
+&emsp;<a href="#1">赞助</a>  
+&emsp;<a href="#2">测试截图</a>  
+&emsp;<a href="#3">使用说明</a>  
+&emsp;&emsp;<a href="#4">安装</a>  
+&emsp;&emsp;&emsp;<a href="#5">IOS，安卓</a>  
+&emsp;&emsp;&emsp;<a href="#6">Windows, MacOS</a>  
+&emsp;&emsp;<a href="#7">使用</a>  
+&emsp;&emsp;&emsp;<a href="#8">建房</a>  
+&emsp;&emsp;&emsp;<a href="#9">加入房间</a>  
+&emsp;&emsp;&emsp;<a href="#10">观看本地视频</a>  
+&emsp;<a href="#11">TODO</a>  
+# <a name="0">Video Together 一起看视频</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 
 **Currently only Chinese display language is available in this extension. I'm working on the localization now. English will be available soon, both extension display language and documentation.**
 
@@ -6,16 +19,16 @@
 
 全平台支持，以 JavaScript 插件形式运行，需要浏览器支持安装 JavaScript 插件
 
-## 赞助
+## <a name="1">赞助</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 <img src="https://user-images.githubusercontent.com/23057110/175770059-c8faad24-dc79-42da-9359-bf462eb7e884.png" width="400">
 
 
 
-## 测试截图
+## <a name="2">测试截图</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 <img src="https://user-images.githubusercontent.com/23057110/175769146-79de5922-8a50-48c8-861e-f92cb08734c6.png" width="400">
 
 
-## 使用说明
+## <a name="3">使用说明</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 
 请加入插件的交流群获取更详细的帮助信息，以及反馈问题
 
@@ -23,9 +36,9 @@ tg: https://t.me/videotogether_group
 
 QQ群: 170200260 点击链接加入群聊【video together】：https://jq.qq.com/?_wv=1027&k=402cAytc
 
-### 安装
+### <a name="4">安装</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 
-#### IOS，安卓
+#### <a name="5">IOS，安卓</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 推荐使用 Alook 浏览器， 官网：https://www.alookweb.com/
 
 安卓平台推荐使用 via 浏览器，官网 https://viayoo.com/
@@ -36,7 +49,7 @@ QQ群: 170200260 点击链接加入群聊【video together】：https://jq.qq.c
 
 测试版：（暂时推荐！安装后脚本无法自动更新，每次使用前请卸载后重新安装以获得最新的版本）https://maggch97.github.io/VideoTogether/installation/via_raw.html
 
-#### Windows, MacOS
+#### <a name="6">Windows, MacOS</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 
 推荐使用微软 Edge 浏览器，在中国大陆可以正常访问插件商店
 
@@ -46,9 +59,9 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 
 点击链接安装 Video Together 插件 https://raw.githubusercontent.com/maggch97/VideoTogether/main/source/js/tampermonkey/vt.user.js
 
-### 使用
+### <a name="7">使用</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 
-#### 建房
+#### <a name="8">建房</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 
 房主可以暂停或播放视频，控制播放进度，更换视频等操作。
 
@@ -61,7 +74,7 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 <img src="https://user-images.githubusercontent.com/23057110/175768741-35889383-de33-4c7b-a2a9-5765e2ac0e5f.png" width="400">
 
 
-#### 加入房间
+#### <a name="9">加入房间</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 
 加入房间后插件会自动同步房主正在播放的视频以及播放状态。
 
@@ -73,10 +86,15 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 
 <img src="https://user-images.githubusercontent.com/23057110/175768951-ea80d4d8-fd6b-4aa5-b066-02c122d84bbd.png" width="400" >
 
-#### 观看本地视频
+#### <a name="10">观看本地视频</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
 
 在保证每台设备上都有同一份视频文件时，打开网页 https://maggch97.github.io/VideoTogether/tools/local.html 并选择本地视频
 
 按照上面的创建以及加入房间的步骤同步视频播放进度
 
 
+## <a name="11">TODO</a><a style="float:right;text-decoration:none;" href="#index">[Top]</a>
+
+- 使用 Websocket 替代 http 请求
+
+- 增加多语言支持
