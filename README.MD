@@ -24,7 +24,10 @@
 
 
 ## <a name="2">测试截图</a>
-<img src="https://user-images.githubusercontent.com/23057110/175769146-79de5922-8a50-48c8-861e-f92cb08734c6.png" width="400">
+<img src="https://user-images.githubusercontent.com/23057110/175769146-79de5922-8a50-48c8-861e-f92cb08734c6.png" width="300">
+<img src="https://user-images.githubusercontent.com/23057110/175799242-2a7b90fe-5631-4806-94ed-a96b26631d4b.jpg" width="300">
+<img src="https://user-images.githubusercontent.com/23057110/175799252-7a2803f1-acff-4ae0-8498-46d7b976ae23.jpg" width="300">
+
 
 
 ## <a name="3">使用说明</a>
