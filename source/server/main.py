@@ -3,6 +3,7 @@ from subprocess import call
 from flask import Flask, jsonify, request
 import json
 from flask_cors import CORS
+from gevent import pywsgi
 
 app = Flask(__name__)
 CORS(app)
@@ -64,5 +65,7 @@ def updateRoom():
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run(host='0.0.0.0', ssl_context=('certificate.crt','private.key'))
+    app.debug = False
+    # app.run(host='0.0.0.0', ssl_context=('certificate.crt','private.key'))
+    server = pywsgi.WSGIServer(('0.0.0.0', 5000), app,  keyfile='private.key', certfile='certificate.crt')
+    server.serve_forever()
