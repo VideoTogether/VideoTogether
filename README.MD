@@ -48,9 +48,9 @@ QQ群: 170200260 点击链接加入群聊【video together】：https://jq.qq.c
 
 安装 Video Together 插件。通过 via 或 Alook 浏览器访问下面的安装链接, 点击安装按钮
 
-正式版：(!!!不推荐，目前存在较多 BUG，无法使用，正在快速开发中，请使用测试版) https://maggch97.github.io/VideoTogether/installation/via.html
+https://maggch97.github.io/VideoTogether/installation/via.html
 
-测试版：（暂时推荐！安装后脚本无法自动更新，每次使用前请卸载后重新安装以获得最新的版本）https://maggch97.github.io/VideoTogether/installation/via_raw.html
+
 
 #### <a name="6">Windows, MacOS</a>
 
