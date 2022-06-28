@@ -24,7 +24,11 @@
 
 
 ## <a name="2">测试截图</a>
-<img src="https://user-images.githubusercontent.com/23057110/175769146-79de5922-8a50-48c8-861e-f92cb08734c6.png" width="400">
+
+电脑，手机，平板，电视（Airplay）
+
+<img src="https://user-images.githubusercontent.com/23057110/175769146-79de5922-8a50-48c8-861e-f92cb08734c6.png" width="300"><img src="https://user-images.githubusercontent.com/23057110/175799242-2a7b90fe-5631-4806-94ed-a96b26631d4b.jpg" width="300"><img src="https://user-images.githubusercontent.com/23057110/175799252-7a2803f1-acff-4ae0-8498-46d7b976ae23.jpg" width="300">
+
 
 
 ## <a name="3">使用说明</a>
@@ -95,5 +99,9 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 ## <a name="11">TODO</a>
 
 - 使用 Websocket 替代 http 请求
-
+- 统计不同语言使用者
 - 增加多语言支持
+- 找个人来把前端 BUG 修一修
+- 服务端清理不活跃房间
+- 服务端增加一些监控和报警
+- 在中国部署服务端
