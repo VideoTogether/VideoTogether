@@ -1,0 +1,149 @@
+<div id="videoTogetherFlyPannel">
+    <div id="videoTogetherHeader">
+        <img style="display: inline;" src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
+        <p style="display: inline;" id="videoTogetherTitle">Video Together</p>
+    </div>
+    <div id="videoTogetherBody">
+        <div style="width: 200px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;">
+            <p style="display: inline;" id="videoTogetherStatusText"></p>
+        </div>
+        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="输入房间名">
+        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="输入密码">
+        <button id="videoTogetherCreateButton">建房</button>
+        <button id="videoTogetherJoinButton">加入</button>
+        <button id="videoTogetherExitButton" style="display: none;">退出</button>
+        <button id="videoTogetherHelpButton">需要帮助</button>
+    </div>
+</div>
+
+<style>
+    #videoTogetherFlyPannel input {
+        line-height: 24px;
+        font-size: 16px;
+        width: 80%;
+        border: 2px inset #d5d5d5;
+        color: #424242;
+        background: #fff;
+        box-shadow: -1px -1px 0 0 #828282;
+        margin-top: 8px;
+        padding-left: 2px;
+    }
+
+    #videoTogetherFlyPannel input:focus {
+        outline: 0 !important;
+    }
+
+    #videoTogetherFlyPannel button {
+        line-height: 24px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        margin-right: 4px;
+        margin-left: 4px;
+        border-width: 2px;
+        border-style: outset;
+        border-color: buttonface;
+        border-right-color: #424242;
+        border-bottom-color: #424242;
+        background: silver;
+        color: black;
+        padding: 0 0 4px;
+        border-radius: 1px;
+    }
+
+    #videoTogetherFlyPannel button:hover {
+        border: 2px inset #fff;
+        background: silver;
+        color: #424242;
+        box-shadow: -1px -1px #000;
+    }
+
+    #videoTogetherFlyPannel button:focus {
+        border: 2px inset #fff !important;
+        background: silver;
+        color: #424242;
+        box-shadow: -1px -1px #000 !important;
+        outline: 0 !important;
+        background: url(https://alexbsoft.github.io/win95.css/assets/background.bmp);
+    }
+
+    #videoTogetherFlyPannel button:active {
+        border: 2px inset #fff !important;
+        color: #424242;
+        box-shadow: -1px -1px #000 !important;
+        outline: 0 !important;
+        background: url(https://alexbsoft.github.io/win95.css/assets/background.bmp);
+    }
+
+    #videoTogetherFlyPannel button {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    #videoTogetherFlyPannel button:focus {
+        outline: 1px dotted;
+    }
+
+    #videoTogetherFlyPannel {
+        border: solid;
+        border-width: 2px;
+        border-bottom-color: #424242;
+        border-right-color: #424242;
+        border-left-color: #fff;
+        border-top-color: #fff;
+        background: silver;
+        color: #212529;
+    }
+
+    #videoTogetherBody {
+        flex: 1 1 auto;
+        padding: 4px;
+        display: block;
+
+    }
+
+    #videoTogetherFlyPannel #videoTogetherHeader p {
+        color: #fff;
+    }
+
+    #videoTogetherFlyPannel #videoTogetherHeader {
+        align-items: center;
+        display: flex;
+        line-height: 20px;
+        background: -webkit-linear-gradient(left, #08216b, #a5cef7);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-top: 2px;
+        padding-left: 4px;
+        padding-bottom: 1px;
+        text-align: left;
+        block-size: 25px
+    }
+
+    #videoTogetherFlyPannel {
+        display: block;
+        z-index: 2147483647;
+        position: fixed;
+        bottom: 15px;
+        right: 15px;
+        width: 250px;
+        height: 200px;
+        text-align: center;
+    }
+
+    #videoTogetherFlyPannel #videoTogetherTitle {
+        margin-left: 4px;
+    }
+
+    #videoTogetherFlyPannel * {
+        box-sizing: content-box;
+        line-height: 24px;
+        font-size: 16px;
+        padding-left: 0px;
+        padding-right: 0px;
+        padding-top: 0px;
+        padding-top: 0px;
+        margin-top: 0px;
+        margin-bottom: 0px;
+    }
+</style>
