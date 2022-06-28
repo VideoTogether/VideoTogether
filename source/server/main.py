@@ -34,6 +34,8 @@ def generateErrorResponse(errorMessage):
 @app.route('/room/get', methods=["get"])
 def getRoom():
     name = request.args["name"]
+    if(name not in database):
+        return generateErrorResponse("房间不存在")
     return jsonify(database[name].__dict__)
 
 
