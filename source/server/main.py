@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request
 import json
 from flask_cors import CORS
 from gevent import pywsgi
+import sys
 
 app = Flask(__name__)
 CORS(app)
@@ -63,6 +64,8 @@ def updateRoom():
     room.lastUpdateServerTime = time.time()
 
     database[room.name] = room
+    sys.stdout.flush()
+    sys.stderr.flush()
     return jsonify(room.__dict__)
 
 
