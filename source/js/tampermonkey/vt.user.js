@@ -259,7 +259,7 @@ class VideoTogetherExtension {
         if (data["url"] != this.url) {
             window.location = this.linkWithMemberState(data["url"]);
         }
-        if(data["paused"] == true){
+        if(data["paused"] == false){
             if (Math.abs(video.currentTime - this.CalculateRealCurrent(data)) > 1) {
                 video.currentTime = this.CalculateRealCurrent(data);
             }
