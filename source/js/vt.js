@@ -17,12 +17,26 @@ class VideoTogetherFlyPannel {
     constructor() {
         this.videoTogetherFlyPannel = document.createElement("div");
         this.videoTogetherFlyPannel.id = "videoTogetherFlyPannel";
+        this.videoTogetherFlyPannel.classList.add("card");
+
+        this.videoTogetherFlyPannelHeader = document.createElement("div");
+        this.videoTogetherFlyPannelHeader.classList.add("card-header");
+        this.videoTogetherFlyPannelHeader.innerHTML="<p>Video Together</p>"
+        this.videoTogetherFlyPannel.appendChild(this.videoTogetherFlyPannelHeader);
+
+        this.videoTogetherFlyPannelBody = document.createElement("div");
+        this.videoTogetherFlyPannelBody.classList.add("card-body");
+        this.videoTogetherFlyPannel.appendChild(this.videoTogetherFlyPannelBody);
 
         this.createRoomButton = document.createElement('button');
         this.createRoomButton.innerHTML = "建房";
+        this.createRoomButton.classList.add("btn");
 
         this.joinRoomButton = document.createElement('button');
         this.joinRoomButton.innerHTML = "加入";
+
+        this.exitButton = document.createElement("button");
+
 
         this.helpButton = document.createElement("button");
         this.helpButton.innerHTML = "需要帮助";
@@ -40,12 +54,12 @@ class VideoTogetherFlyPannel {
         this.statusText = document.createElement('p');
         this.statusText.id = "videoTogetherStatusText";
 
-        this.videoTogetherFlyPannel.appendChild(this.statusText);
-        this.videoTogetherFlyPannel.appendChild(this.inputRoomName);
-        this.videoTogetherFlyPannel.appendChild(this.inputRoomPassword);
-        this.videoTogetherFlyPannel.appendChild(this.createRoomButton);
-        this.videoTogetherFlyPannel.appendChild(this.joinRoomButton);
-        this.videoTogetherFlyPannel.appendChild(this.helpButton);
+        this.videoTogetherFlyPannelBody.appendChild(this.statusText);
+        this.videoTogetherFlyPannelBody.appendChild(this.inputRoomName);
+        this.videoTogetherFlyPannelBody.appendChild(this.inputRoomPassword);
+        this.videoTogetherFlyPannelBody.appendChild(this.createRoomButton);
+        this.videoTogetherFlyPannelBody.appendChild(this.joinRoomButton);
+        this.videoTogetherFlyPannelBody.appendChild(this.helpButton);
 
         //搜寻body元素
         let beasetag = document.querySelector("body");
@@ -342,7 +356,7 @@ var dragBox = function (drag, wrap) {
 
     document.addEventListener("mousemove", function (e) {
         if (dragable === true) {
-            var nowX = e.clientX,
+            let nowX = e.clientX,
                 nowY = e.clientY,
                 disX = nowX - initX,
                 disY = nowY - initY;
@@ -361,4 +375,155 @@ var dragBox = function (drag, wrap) {
 
 window.videoTogetherFlyPannel = new VideoTogetherFlyPannel();
 window.videoTogetherExtension = new VideoTogetherExtension();
-// dragBox(document.querySelector("#videoTogetherFlyPannel"), document.querySelector("#videoTogetherFlyPannel"));
+// dragBox(window.videoTogetherFlyPannel.videoTogetherFlyPannelHeader, window.videoTogetherFlyPannel.videoTogetherFlyPannel);
+
+
+
+let win95Style = `
+/*
+
+
+/*
+input
+*/
+
+
+
+#videoTogetherFlyPannel input{
+    font-size: 16px;
+    width: 80%;
+    border: 2px inset #d5d5d5;
+    color: #424242;
+    background: #fff;
+    box-shadow: -1px -1px 0 0 #828282;
+    margin-top: 8px;
+    padding-left:2px;
+}
+
+/*
+
+    Button styles
+
+*/
+#videoTogetherFlyPannel button{
+    line-height: 1em;
+    height: 30px;
+    margin-top:4px;
+    margin-bottom:4px;
+    margin-right:4px;
+    margin-left:4px;
+    border-width: 2px;
+    border-style: outset;
+    border-color: buttonface;
+    border-right-color: #424242;
+    border-bottom-color: #424242;
+    background: silver;
+    color: black;
+    padding: 0 0 4px;
+    border-radius: 1px;
+}
+#videoTogetherFlyPannel button:hover {
+    border: 2px inset #fff;
+    background: silver;
+    color: #424242;
+    box-shadow: -1px -1px #000;
+}
+#videoTogetherFlyPannel button:focus {
+    border: 2px inset #fff !important;
+    background: silver;
+    color: #424242;
+    box-shadow: -1px -1px #000 !important;
+    outline: 0 !important;
+    background: url(background.bmp);
+}
+#videoTogetherFlyPannel button:active {
+    border: 2px inset #fff !important;
+    color: #424242;
+    box-shadow: -1px -1px #000 !important;
+    outline: 0 !important;
+    background: url(background.bmp);
+}
+
+#videoTogetherFlyPannel button{
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+#videoTogetherFlyPannel button:focus{
+    outline: 1px dotted;
+}
+
+/*
+box
+*/
+
+
+/*
+
+CARDS
+
+*/
+.card{
+    border: solid;
+    border-width: 2px;
+    border-bottom-color: #424242;
+    border-right-color: #424242;
+    border-left-color: #fff;
+    border-top-color: #fff;
+    background: silver;
+    color:#212529;
+}
+.card.square{
+    border-radius: 0px;
+}
+.card.square .card-header{
+    border-radius: 0px;
+}
+.card.w95 .card-header{
+    background: #08216b;
+    /* OR #000082 is better?*/
+}
+
+#videoTogetherFlyPannel .card-header{
+    line-height: 20px;
+    background: -webkit-linear-gradient(left,#08216b,#a5cef7);
+    color: #fff;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-top: 2px;
+    padding-left: 4px;
+    padding-bottom: 1px;
+    text-align: left;
+    block-size: 25px
+}
+
+#videoTogetherFlyPannel {
+    display: block;
+}
+
+#videoTogetherFlyPannel *{
+    box-sizing content-box;
+    line-height: 16px;
+    font-size: 16px;
+    padding-left: 0px;
+    padding-right: 0px;
+    padding-top: 0px;
+    padding-top: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+.card-header.icon{
+    padding-left: 4px;
+}
+.header-inactive{
+    background: gray !important;
+}
+
+
+`
+let win95StyleElement = document.createElement("style");
+win95StyleElement.innerHTML = win95Style;
+document.querySelector("body").appendChild(win95StyleElement);
