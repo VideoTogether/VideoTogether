@@ -9,8 +9,17 @@
 // @grant        none
 // ==/UserScript==
 
-vtHtml = `
-<div id="videoTogetherFlyPannel">
+class VideoTogetherFlyPannel {
+    static createElement(tag, id, classes) {
+        let element = document.createElement(tag);
+        element.id = id;
+        element.classList = classes;
+        return element;
+    }
+
+    constructor() {
+        let wrapper = document.createElement("div");
+        wrapper.innerHTML = `<div id="videoTogetherFlyPannel">
     <div id="videoTogetherHeader">
         <img style="display: inline;" src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
         <p style="display: inline;" id="videoTogetherTitle">Video Together</p>
@@ -158,20 +167,7 @@ vtHtml = `
         margin-top: 0px;
         margin-bottom: 0px;
     }
-</style>
-`
-
-class VideoTogetherFlyPannel {
-    static createElement(tag, id, classes) {
-        let element = document.createElement(tag);
-        element.id = id;
-        element.classList = classes;
-        return element;
-    }
-
-    constructor() {
-        let wrapper = document.createElement("div");
-        wrapper.innerHTML = vtHtml;
+</style>`;
         document.querySelector("body").appendChild(wrapper);
         this.createRoomButton = document.querySelector('#videoTogetherCreateButton');
         this.joinRoomButton = document.querySelector("#videoTogetherJoinButton");
@@ -232,7 +228,11 @@ class VideoTogetherExtension {
         Master: 2,
         Member: 3,
     }
+
+    // video_together_host = "http://127.0.0.1:5000"
     video_together_host = "https://vt.panghair.com:5000/";
+
+    video_tag_names = ["video", "bwp-video"]
 
     timer = 0
     roomName = ""
@@ -240,14 +240,51 @@ class VideoTogetherExtension {
     // 0: null, 1: 
     role = this.RoleEnum.Null
     url = ""
+    duration = undefined
 
     serverTimestamp = 0;
     localTimestamp = 0;
 
     constructor() {
+        this.CreateVideoDomObserver();
         this.timer = setInterval(this.ScheduledTask.bind(this), 2 * 1000);
         this.RecoveryState();
         this.SyncTimeWithServer();
+    }
+
+    addListenerMulti(el, s, fn) {
+        s.split(' ').forEach(e => el.addEventListener(e, fn, false));
+    }
+
+    AddVideoListener(videoDom) {
+        let _this = this;
+        this.addListenerMulti(videoDom, "play pause", e => {
+            console.log("vide event: ", e.type);
+            // maybe we need to check if the event is activated by user interaction
+            _this.activatedVideoDom = e.target;
+        })
+    }
+
+    CreateVideoDomObserver() {
+        let _this = this;
+        let observer = new WebKitMutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                for (var i = 0; i < mutation.addedNodes.length; i++) {
+                    if (mutation.addedNodes[i].tag == "video" || mutation.addedNodes[i].tag == "bwp-video") {
+                        try {
+                            _this.AddVideoListener(this)(mutation.addedNodes[i]);
+                        } catch { }
+                    }
+                }
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true })
+        this.video_tag_names.forEach(vTag => {
+            let videos = document.getElementsByTagName(vTag);
+            for (let i = 0; i < videos.length; i++) {
+                this.AddVideoListener(videos[i]);
+            }
+        })
     }
 
     getLocalTimestamp() {
@@ -286,6 +323,8 @@ class VideoTogetherExtension {
                 }
             }
         }
+        // TODO we need to remove localStorage logic.
+        // localStorage is invisiable for users, and it can't shared by different sites.
         function RecoveryStateFromLocalStorage() {
 
         }
@@ -334,7 +373,7 @@ class VideoTogetherExtension {
                     break;
             }
         } catch (error) {
-            window.videoTogetherFlyPannel.UpdateStatusText("同步失败 " + this.GetDisplayTimeText(), "green");
+            window.videoTogetherFlyPannel.UpdateStatusText("同步失败 " + this.GetDisplayTimeText(), "red");
         }
         if (this.serverTimestamp == 0) {
             await this.SyncTimeWithServer();
@@ -342,17 +381,33 @@ class VideoTogetherExtension {
     }
 
     GetVideoDom() {
-        // TODO some fix is needed
-        // 1. listen to host's mouse event, get the active video dom
-        // 2. check the member's video duration with the host's duration, choose the closest
-        let videos = document.getElementsByTagName("video");
-        if (videos.length == 0) {
-            videos = document.getElementsByTagName("bwp-video");
+        if (this.role == this.RoleEnum.Master && document.contains(this.activatedVideoDom)) {
+            // do we need use this rule for member role? when multi closest videos?
+            return this.activatedVideoDom;
         }
-        return videos[0];
+        
+        let closest = 1e10;
+        let closestVideo = undefined;
+        let _this = this;
+        this.video_tag_names.forEach(vTag => {
+            let videos = document.getElementsByTagName(vTag);
+            for (let i = 0; i < videos.length; i++) {
+                if(_this.duration == undefined){
+                    closestVideo = videos[i];
+                    return;
+                }
+                if (Math.abs(videos[i].duration - _this.duration) < closest) {
+                    closest = Math.abs(videos[i].duration - _this.duration);
+                    closestVideo = videos[i];
+                }
+            }
+        })
+        return closestVideo;
     }
 
-
+    // TODO The poll task works really good currently.
+    // But we can sync when video event is traggered to enhance the performance
+    // and reduce server workload
     async SyncMasterVideo() {
         let video = this.GetVideoDom();
         this.UpdateRoom(this.roomName,
@@ -360,7 +415,8 @@ class VideoTogetherExtension {
             this.linkWithoutState(window.location),
             video.playbackRate,
             video.currentTime,
-            video.paused);
+            video.paused,
+            video.duration);
         window.videoTogetherFlyPannel.UpdateStatusText("同步成功 " + this.GetDisplayTimeText(), "green");
     }
 
@@ -391,7 +447,6 @@ class VideoTogetherExtension {
     }
 
     CalculateRealCurrent(data) {
-        console.log("delta", this.getLocalTimestamp() - data["lastUpdateClientTime"]);
         return data["currentTime"] + this.getLocalTimestamp() - data["lastUpdateClientTime"];
     }
 
@@ -401,8 +456,9 @@ class VideoTogetherExtension {
     }
 
     async SyncMemberVideo() {
-        let video = this.GetVideoDom();
         let data = await this.GetRoom(this.roomName);
+        this.duration = data["duration"];
+        let video = this.GetVideoDom();
         if (data["url"] != this.url) {
             window.location = this.linkWithMemberState(data["url"]);
         }
@@ -413,10 +469,11 @@ class VideoTogetherExtension {
         }
         if (video.paused != data["paused"]) {
             if (data["paused"]) {
-                video.pause();
                 console.log("pause");
+                video.pause();
             } else {
                 try {
+                    console.log("play");
                     await video.play();
                 } catch (e) {
                     window.videoTogetherFlyPannel.UpdateStatusText("自动播放失败，请手动点击播放", "red");
@@ -446,14 +503,14 @@ class VideoTogetherExtension {
 
     async CreateRoom(name, password) {
         let url = this.linkWithoutState(window.location);
-        let data = await this.UpdateRoom(name, password, url, 1, 0, true);
+        let data = await this.UpdateRoom(name, password, url, 1, 0, true, 0);
         this.role = this.RoleEnum.Master;
         this.roomName = name;
         this.password = password;
         window.videoTogetherFlyPannel.InRoom();
     }
 
-    async UpdateRoom(name, password, url, playbackRate, currentTime, paused) {
+    async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration) {
         let apiUrl = new URL(this.video_together_host + "/room/update");
         apiUrl.searchParams.set("name", name);
         apiUrl.searchParams.set("password", password);
@@ -462,6 +519,7 @@ class VideoTogetherExtension {
         apiUrl.searchParams.set("paused", paused);
         apiUrl.searchParams.set("url", url);
         apiUrl.searchParams.set("lastUpdateClientTime", this.getLocalTimestamp());
+        apiUrl.searchParams.set("duration", duration);
         // url.searchParams.set("lastUpdateClientTime", timestamp)
         let response = await fetch(apiUrl);
         let data = await this.CheckResponse(response);

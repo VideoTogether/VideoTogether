@@ -19,6 +19,7 @@ class Room:
     currentTime: float
     paused: bool
     url: str
+    duration: float
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
@@ -61,6 +62,9 @@ def updateRoom():
     room.paused = request.args["paused"] != "false"
     room.url = request.args["url"]
     room.lastUpdateClientTime = request.args["lastUpdateClientTime"]
+    if "duration" not in request.args:
+        return generateErrorResponse("需要升级，点击帮助按钮获取更新")
+    room.duration = float(request.args["duration"])
     room.lastUpdateServerTime = time.time()
 
     database[room.name] = room
@@ -70,7 +74,11 @@ def updateRoom():
 
 
 if __name__ == '__main__':
-    app.debug = False
-    # app.run(host='0.0.0.0', ssl_context=('certificate.crt','private.key'))
-    server = pywsgi.WSGIServer(('0.0.0.0', 5000), app,  keyfile='private.key', certfile='certificate.crt')
-    server.serve_forever()
+    if(sys.argv[1] == "debug"):
+        app.debug = False
+        app.run(host='0.0.0.0')
+
+    if(sys.argv[1] == "prod"):
+        server = pywsgi.WSGIServer(
+            ('0.0.0.0', 5000), app,  keyfile='private.key', certfile='certificate.crt')
+        server.serve_forever()
