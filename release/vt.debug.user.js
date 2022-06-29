@@ -229,7 +229,7 @@ class VideoTogetherExtension {
         Member: 3,
     }
 
-    video_together_host = 'https://vt.panghair.com:5000/';
+    video_together_host = 'http://127.0.0.1:5000/';
 
     video_tag_names = ["video", "bwp-video"]
 

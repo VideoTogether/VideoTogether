@@ -19,7 +19,7 @@ class VideoTogetherFlyPannel {
 
     constructor() {
         let wrapper = document.createElement("div");
-        wrapper.innerHTML = `{{{ {"user": "./html/pannel.html"} }}}`;
+        wrapper.innerHTML = `{{{ {"user": "./html/pannel.html","order":100} }}}`;
         document.querySelector("body").appendChild(wrapper);
         this.createRoomButton = document.querySelector('#videoTogetherCreateButton');
         this.joinRoomButton = document.querySelector("#videoTogetherJoinButton");
@@ -81,8 +81,7 @@ class VideoTogetherExtension {
         Member: 3,
     }
 
-    // video_together_host = "http://127.0.0.1:5000"
-    video_together_host = "https://vt.panghair.com:5000/";
+    video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
 
     video_tag_names = ["video", "bwp-video"]
 

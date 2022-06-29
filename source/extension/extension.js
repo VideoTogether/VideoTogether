@@ -11,7 +11,7 @@
 
 (function () {
     let wrapper = document.createElement("div");
-    wrapper.innerHTML = `{{{ {"user": "./html/loading.html"} }}}`
+    wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`
     document.getElementsByTagName('body')[0].appendChild(wrapper);
     var script = document.createElement('script');
     script.type = 'text/javascript';
