@@ -42,15 +42,15 @@ QQ群: 170200260 点击链接加入群聊【video together】：https://jq.qq.c
 ### <a name="4">安装</a>
 
 #### <a name="5">IOS，安卓</a>
-推荐使用 Alook 浏览器， 官网：https://www.alookweb.com/
+推荐使用 Alook 浏览器，需要关闭 Alook 的视频浮窗播放功能， 官网：https://www.alookweb.com/
 
 安卓平台推荐使用 via 浏览器，官网 https://viayoo.com/
 
 安装 Video Together 插件。通过 via 或 Alook 浏览器访问下面的安装链接, 点击安装按钮
 
-正式版：(!!!不推荐，目前存在较多 BUG，无法使用，正在快速开发中，请使用测试版) https://maggch97.github.io/VideoTogether/installation/via.html
+https://maggch97.github.io/VideoTogether/installation/via.html
 
-测试版：（暂时推荐！安装后脚本无法自动更新，每次使用前请卸载后重新安装以获得最新的版本）https://maggch97.github.io/VideoTogether/installation/via_raw.html
+
 
 #### <a name="6">Windows, MacOS</a>
 
@@ -60,7 +60,7 @@ Chrome 浏览器用户请自行寻找安装 TamperMonkey 插件的方法
 
 Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpaadaobahmlepeloendndfphd 安装 TamperMonkey 插件
 
-点击链接安装 Video Together 插件 https://raw.githubusercontent.com/maggch97/VideoTogether/main/source/js/tampermonkey/vt.user.js
+点击链接安装 Video Together 插件 https://cdn.jsdelivr.net/gh/maggch97/VideoTogether@latest/release/extension.user.js
 
 ### <a name="7">使用</a>
 
@@ -101,7 +101,6 @@ Edge 浏览器访问 https://microsoftedge.microsoft.com/addons/detail/iikmkjmpa
 - 使用 Websocket 替代 http 请求
 - 统计不同语言使用者
 - 增加多语言支持
-- 找个人来把前端 BUG 修一修
 - 服务端清理不活跃房间
 - 服务端增加一些监控和报警
 - 在中国部署服务端
