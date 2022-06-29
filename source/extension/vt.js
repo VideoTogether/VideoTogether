@@ -188,7 +188,7 @@ class VideoTogetherExtension {
                     break;
             }
         } catch (error) {
-            console.log(error);
+            window.videoTogetherFlyPannel.UpdateStatusText("同步失败 " + this.GetDisplayTimeText(), "green");
         }
         if (this.serverTimestamp == 0) {
             await this.SyncTimeWithServer();
@@ -245,7 +245,6 @@ class VideoTogetherExtension {
     }
 
     CalculateRealCurrent(data) {
-        console.log("delta", this.getLocalTimestamp() - data["lastUpdateClientTime"]);
         return data["currentTime"] + this.getLocalTimestamp() - data["lastUpdateClientTime"];
     }
 
@@ -267,10 +266,11 @@ class VideoTogetherExtension {
         }
         if (video.paused != data["paused"]) {
             if (data["paused"]) {
-                video.pause();
                 console.log("pause");
+                video.pause();
             } else {
                 try {
+                    console.log("play");
                     await video.play();
                 } catch (e) {
                     window.videoTogetherFlyPannel.UpdateStatusText("自动播放失败，请手动点击播放", "red");

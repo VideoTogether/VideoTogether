@@ -334,7 +334,7 @@ class VideoTogetherExtension {
                     break;
             }
         } catch (error) {
-            console.log(error);
+            window.videoTogetherFlyPannel.UpdateStatusText("同步失败 " + this.GetDisplayTimeText(), "green");
         }
         if (this.serverTimestamp == 0) {
             await this.SyncTimeWithServer();
