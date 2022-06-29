@@ -342,6 +342,9 @@ class VideoTogetherExtension {
     }
 
     GetVideoDom() {
+        // TODO some fix is needed
+        // 1. listen to host's mouse event, get the active video dom
+        // 2. check the member's video duration with the host's duration, choose the closest
         let videos = document.getElementsByTagName("video");
         if (videos.length == 0) {
             videos = document.getElementsByTagName("bwp-video");
@@ -371,11 +374,20 @@ class VideoTogetherExtension {
 
     linkWithMemberState(link) {
         let url = new URL(link);
+        let tmpSearch = url.search;
+        url.search = "";
+        if (link.toLowerCase().includes("youtube")) {
+            url.searchParams.set("app", "desktop");
+        }
         url.searchParams.set("videoTogetherUrl", link);
         url.searchParams.set("VideoTogetherRoomName", this.roomName);
         url.searchParams.set("videoTogetherRole", this.role);
         url.searchParams.set("videoTogetherTimestamp", Date.now() / 1000)
-        return url;
+        let urlStr = url.toString();
+        if (tmpSearch.length > 1) {
+            urlStr = urlStr + "&" + tmpSearch.slice(1);
+        }
+        return new URL(urlStr);
     }
 
     CalculateRealCurrent(data) {
