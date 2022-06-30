@@ -44,9 +44,8 @@ QQ群: 170200260 点击链接加入群聊【video together】：https://jq.qq.c
 #### <a name="5">IOS，安卓</a>
 推荐使用 Alook 浏览器，需要关闭 Alook 的视频浮窗播放功能， 官网：https://www.alookweb.com/
 
-安卓平台推荐使用 via 浏览器，官网 https://viayoo.com/
 
-安装 Video Together 插件。通过 via 或 Alook 浏览器访问下面的安装链接, 点击安装按钮
+安装 Video Together 插件。通过 Alook 浏览器访问下面的安装链接, 点击安装按钮
 
 https://maggch97.github.io/VideoTogether/installation/via.html
 
