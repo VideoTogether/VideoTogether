@@ -2,6 +2,8 @@
 
 **Currently only Chinese display language is available in this extension. I'm working on the localization now. English will be available soon, both extension display language and documentation.**
 
+## 欢迎访问插件主页，一键试用 https://videotogether.github.io
+
 <a href="#1">赞助</a>  
 <a href="#2">测试截图</a>  
 <a href="#3">使用说明</a>  
