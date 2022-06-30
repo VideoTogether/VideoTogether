@@ -543,7 +543,7 @@ class VideoTogetherExtension {
 
             let target = document.querySelector("#videoTogetherFlyPannel")
 
-            target.moving = true;
+            target.videoTogetherMoving = true;
 
             if (e.clientX) {
                 target.oldX = e.clientX;
@@ -561,7 +561,7 @@ class VideoTogetherExtension {
 
             function dr(event) {
 
-                if (!target.moving) {
+                if (!target.videoTogetherMoving) {
                     return;
                 }
                 event.preventDefault();
@@ -579,7 +579,7 @@ class VideoTogetherExtension {
             }
 
             function endDrag() {
-                target.moving = false;
+                target.videoTogetherMoving = false;
             }
             target.onmouseup = endDrag;
             target.ontouchend = endDrag;
