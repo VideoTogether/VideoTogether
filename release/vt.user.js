@@ -560,8 +560,6 @@ class VideoTogetherExtension {
             document.ontouchmove = dr;
 
             function dr(event) {
-                event.preventDefault();
-
                 if (!target.moving) {
                     return;
                 }
