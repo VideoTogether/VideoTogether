@@ -560,9 +560,12 @@ class VideoTogetherExtension {
             document.ontouchmove = dr;
 
             function dr(event) {
+
                 if (!target.moving) {
                     return;
                 }
+                event.preventDefault();
+                event.stopPropagation();
                 if (event.clientX) {
                     target.distX = event.clientX - target.oldX;
                     target.distY = event.clientY - target.oldY;
