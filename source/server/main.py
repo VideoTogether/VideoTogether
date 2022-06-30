@@ -63,8 +63,10 @@ def updateRoom():
     room.url = request.args["url"]
     room.lastUpdateClientTime = request.args["lastUpdateClientTime"]
     if "duration" not in request.args:
-        return generateErrorResponse("需要升级，点击帮助按钮获取更新")
-    room.duration = float(request.args["duration"])
+        room.duration = 1e9
+        # return generateErrorResponse("需要升级，点击帮助按钮获取更新")
+    else:
+        room.duration = float(request.args["duration"])
     room.lastUpdateServerTime = time.time()
 
     database[room.name] = room
