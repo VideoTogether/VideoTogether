@@ -5,6 +5,7 @@ import json
 from flask_cors import CORS
 from gevent import pywsgi
 import sys
+import hashlib
 
 app = Flask(__name__)
 CORS(app)
@@ -21,15 +22,17 @@ class Room:
     url: str
     duration: float
 
-    def toJSON(self):
-        return json.dumps(self, default=lambda o: o.__dict__,
-                          sort_keys=True, indent=4)
+    def toJsonResponse(self):
+        tmpDict = self.__dict__.copy()
+        tmpDict.pop("password")
+        return jsonify(tmpDict)
 
 
 database = dict()
 
 
 def generateErrorResponse(errorMessage):
+    print({"errorMessage": errorMessage})
     return jsonify({"errorMessage": errorMessage})
 
 
@@ -38,7 +41,7 @@ def getRoom():
     name = request.args["name"]
     if(name not in database):
         return generateErrorResponse("房间不存在")
-    return jsonify(database[name].__dict__)
+    return database[name].toJsonResponse()
 
 
 @app.route('/timestamp', methods=["get"])
@@ -50,10 +53,10 @@ def getTimestamp():
 def updateRoom():
     room = Room()
     room.name = request.args["name"]
-    room.password = request.args["password"]
+    room.password = hashlib.sha256(
+        request.args["password"].encode('utf-8')).hexdigest()
 
     if room.name in database:
-        print(database[room.name].__dict__)
         if database[room.name].password != room.password:
             return generateErrorResponse("密码错误")
 
@@ -72,7 +75,7 @@ def updateRoom():
     database[room.name] = room
     sys.stdout.flush()
     sys.stderr.flush()
-    return jsonify(room.__dict__)
+    return room.toJsonResponse()
 
 
 if __name__ == '__main__':

@@ -19,10 +19,13 @@ class VideoTogetherFlyPannel {
     </div>
     <div id="videoTogetherBody">
         <div style="width: 200px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;">
+            <p style="display: inline;" id="videoTogetherRoleText"></p>
+        </div>
+        <div style="width: 200px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;">
             <p style="display: inline;" id="videoTogetherStatusText"></p>
         </div>
-        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="输入房间名">
-        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="输入密码">
+        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="房间名">
+        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="密码,只有建房需要">
         <button id="videoTogetherCreateButton">建房</button>
         <button id="videoTogetherJoinButton">加入</button>
         <button id="videoTogetherExitButton" style="display: none;">退出</button>
@@ -168,8 +171,6 @@ class VideoTogetherFlyPannel {
         this.exitButton = document.querySelector("#videoTogetherExitButton");
         this.helpButton = document.querySelector("#videoTogetherHelpButton");
 
-        this.exitButton.style = "display: None"
-
         this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
         this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
         this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
@@ -178,21 +179,27 @@ class VideoTogetherFlyPannel {
         this.inputRoomPassword = document.querySelector("#videoTogetherRoomPasswordInput");
 
         this.statusText = document.querySelector("#videoTogetherStatusText");
+        this.InLobby();
         try {
             document.querySelector("#videoTogetherLoading").remove()
         } catch { }
     }
 
     InRoom() {
+        this.inputRoomName.disabled = true;
         this.createRoomButton.style = "display: None";
         this.joinRoomButton.style = "display: None";
         this.exitButton.style = "";
+        this.inputRoomPassword.style.display = "None";
     }
 
     InLobby() {
+        this.inputRoomName.disabled = false;
+        this.inputRoomPassword.style.display = "inline-block";
         this.exitButton.style = "display: None"
         this.createRoomButton.style = "";
         this.joinRoomButton.style = "";
+        this.exitButton.style = "display: None"
     }
 
     CreateRoomButtonOnClick() {
@@ -246,6 +253,20 @@ class VideoTogetherExtension {
         this.EnableDraggable();
     }
 
+    setRole(role) {
+        this.role = role
+        switch (role) {
+            case this.RoleEnum.Master:
+                document.querySelector("#videoTogetherRoleText").innerHTML = "房主";
+                break;
+            case this.RoleEnum.Member:
+                document.querySelector("#videoTogetherRoleText").innerHTML = "成员";
+                break;
+            default:
+                document.querySelector("#videoTogetherRoleText").innerHTML = "";
+                break;
+        }
+    }
     addListenerMulti(el, s, fn) {
         s.split(' ').forEach(e => el.addEventListener(e, fn, false));
     }
@@ -310,7 +331,7 @@ class VideoTogetherExtension {
 
             if (vtUrl != null && vtRoomName != null) {
                 if (vtRole == this.RoleEnum.Member) {
-                    this.role = parseInt(vtRole);
+                    this.setRole(parseInt(vtRole));
                     this.url = vtUrl;
                     this.roomName = vtRoomName;
                     window.videoTogetherFlyPannel.inputRoomName.value = vtRoomName;
@@ -343,7 +364,7 @@ class VideoTogetherExtension {
     async JoinRoom(name) {
         let data = this.GetRoom(name);
         this.roomName = name;
-        this.role = this.RoleEnum.Member;
+        this.setRole(this.RoleEnum.Member);
         window.videoTogetherFlyPannel.InRoom();
     }
 
@@ -351,7 +372,7 @@ class VideoTogetherExtension {
         window.videoTogetherFlyPannel.inputRoomName.value = "";
         window.videoTogetherFlyPannel.inputRoomPassword.value = "";
         this.roomName = "";
-        this.role = this.RoleEnum.Null;
+        this.setRole(this.RoleEnum.Null);
         window.videoTogetherFlyPannel.InLobby();
     }
 
@@ -405,6 +426,10 @@ class VideoTogetherExtension {
     // and reduce server workload
     async SyncMasterVideo() {
         let video = this.GetVideoDom();
+        if (video == undefined) {
+            window.videoTogetherFlyPannel.UpdateStatusText("当前页面没有视频", "red");
+            return;
+        }
         this.UpdateRoom(this.roomName,
             this.password,
             this.linkWithoutState(window.location),
@@ -499,7 +524,7 @@ class VideoTogetherExtension {
     async CreateRoom(name, password) {
         let url = this.linkWithoutState(window.location);
         let data = await this.UpdateRoom(name, password, url, 1, 0, true, 0);
-        this.role = this.RoleEnum.Master;
+        this.setRole(this.RoleEnum.Master);
         this.roomName = name;
         this.password = password;
         window.videoTogetherFlyPannel.InRoom();
@@ -570,6 +595,14 @@ class VideoTogetherExtension {
 
                 target.style.left = Math.min(document.documentElement.clientWidth - target.clientWidth, Math.max(0, target.oldLeft + target.distX)) + "px";
                 target.style.top = Math.min(document.documentElement.clientHeight - target.clientHeight, Math.max(0, target.oldTop + target.distY)) + "px";
+
+                window.addEventListener('resize', function (event) {
+                    let target = document.querySelector("#videoTogetherFlyPannel")
+                    target.oldLeft = window.getComputedStyle(target).getPropertyValue('left').split('px')[0] * 1;
+                    target.oldTop = window.getComputedStyle(target).getPropertyValue('top').split('px')[0] * 1;
+                    target.style.left = Math.min(document.documentElement.clientWidth - target.clientWidth, Math.max(0, target.oldLeft)) + "px";
+                    target.style.top = Math.min(document.documentElement.clientHeight - target.clientHeight, Math.max(0, target.oldTop)) + "px";
+                });
             }
 
             function endDrag() {
@@ -582,6 +615,8 @@ class VideoTogetherExtension {
         document.ontouchstart = filter;
     }
 }
+
+// TODO merge Pannel and Extension class
 if (window.videoTogetherFlyPannel == undefined) {
     window.videoTogetherFlyPannel = null;
     window.videoTogetherFlyPannel = new VideoTogetherFlyPannel();
@@ -590,3 +625,6 @@ if (window.videoTogetherExtension == undefined) {
     window.videoTogetherExtension = null;
     window.videoTogetherExtension = new VideoTogetherExtension();
 }
+try {
+    document.querySelector("#videoTogetherLoading").remove()
+} catch { }

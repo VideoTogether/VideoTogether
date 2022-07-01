@@ -5,10 +5,13 @@
     </div>
     <div id="videoTogetherBody">
         <div style="width: 200px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;">
+            <p style="display: inline;" id="videoTogetherRoleText"></p>
+        </div>
+        <div style="width: 200px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;">
             <p style="display: inline;" id="videoTogetherStatusText"></p>
         </div>
-        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="输入房间名">
-        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="输入密码">
+        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="房间名">
+        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="密码,只有建房需要">
         <button id="videoTogetherCreateButton">建房</button>
         <button id="videoTogetherJoinButton">加入</button>
         <button id="videoTogetherExitButton" style="display: none;">退出</button>
