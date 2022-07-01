@@ -15,7 +15,7 @@
     document.getElementsByTagName('body')[0].appendChild(wrapper);
     var script = document.createElement('script');
     script.type = 'text/javascript';
-    script.src = 'https://cdn.jsdelivr.net/gh/maggch97/VideoTogether@latest/release/vt.user.js';
+    script.src = 'https://cdn.jsdelivr.net/gh/maggch97/VideoTogether@latest/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
     document.getElementsByTagName('body')[0].appendChild(script);
     function filter(e) {
         let target = e.target;

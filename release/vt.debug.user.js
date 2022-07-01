@@ -10,13 +10,6 @@
 // ==/UserScript==
 
 class VideoTogetherFlyPannel {
-    static createElement(tag, id, classes) {
-        let element = document.createElement(tag);
-        element.id = id;
-        element.classList = classes;
-        return element;
-    }
-
     constructor() {
         let wrapper = document.createElement("div");
         wrapper.innerHTML = `<div id="videoTogetherFlyPannel">
@@ -127,6 +120,7 @@ class VideoTogetherFlyPannel {
     }
 
     #videoTogetherFlyPannel #videoTogetherHeader {
+        touch-action: none;
         align-items: center;
         display: flex;
         line-height: 20px;
@@ -588,8 +582,6 @@ class VideoTogetherExtension {
         document.ontouchstart = filter;
     }
 }
-
-
 
 window.videoTogetherFlyPannel = new VideoTogetherFlyPannel();
 window.videoTogetherExtension = new VideoTogetherExtension();
