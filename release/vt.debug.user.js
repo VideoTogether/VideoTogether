@@ -582,6 +582,11 @@ class VideoTogetherExtension {
         document.ontouchstart = filter;
     }
 }
-
-window.videoTogetherFlyPannel = new VideoTogetherFlyPannel();
-window.videoTogetherExtension = new VideoTogetherExtension();
+if (window.videoTogetherFlyPannel == undefined) {
+    window.videoTogetherFlyPannel = null;
+    window.videoTogetherFlyPannel = new VideoTogetherFlyPannel();
+}
+if (window.videoTogetherExtension == undefined) {
+    window.videoTogetherExtension = null;
+    window.videoTogetherExtension = new VideoTogetherExtension();
+}
