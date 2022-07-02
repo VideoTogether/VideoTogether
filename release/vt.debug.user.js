@@ -214,7 +214,7 @@ class VideoTogetherFlyPannel {
     }
 
     HelpButtonOnClick() {
-        window.open('https://github.com/maggch97/VideoTogether/blob/main/README.MD', '_blank');
+        window.open('https://videotogether.github.io/usage.html', '_blank');
     }
 
     UpdateStatusText(text, color) {
@@ -477,14 +477,24 @@ class VideoTogetherExtension {
 
     async SyncMemberVideo() {
         let data = await this.GetRoom(this.roomName);
-        this.duration = data["duration"];
-        let video = this.GetVideoDom();
         if (data["url"] != this.url) {
             window.location = this.linkWithMemberState(data["url"]);
         }
+        
+        this.duration = data["duration"];
+        let video = this.GetVideoDom();
+        if (video == undefined) {
+            window.videoTogetherFlyPannel.UpdateStatusText("当前页面没有视频", "red");
+            return;
+        }
+
         if (data["paused"] == false) {
             if (Math.abs(video.currentTime - this.CalculateRealCurrent(data)) > 1) {
                 video.currentTime = this.CalculateRealCurrent(data);
+            }
+        } else {
+            if (video.currentTime != data["currentTime"]) {
+                video.currentTime = data["currentTime"];
             }
         }
         if (video.paused != data["paused"]) {
