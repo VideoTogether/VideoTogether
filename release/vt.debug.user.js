@@ -507,7 +507,7 @@ class VideoTogetherExtension {
                     await video.play();
                 } catch (e) {
                     window.videoTogetherFlyPannel.UpdateStatusText("自动播放失败，请手动点击播放", "red");
-                    throw new Error(e);
+                    return;
                 }
             }
         }
