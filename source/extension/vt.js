@@ -72,28 +72,24 @@ class VideoTogetherFlyPannel {
 }
 
 class VideoTogetherExtension {
-    RoleEnum = {
-        Null: 1,
-        Master: 2,
-        Member: 3,
-    }
-
-    video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
-
-    video_tag_names = ["video", "bwp-video"]
-
-    timer = 0
-    roomName = ""
-    roomPassword = ""
-    // 0: null, 1: 
-    role = this.RoleEnum.Null
-    url = ""
-    duration = undefined
-
-    serverTimestamp = 0;
-    localTimestamp = 0;
 
     constructor() {
+        this.RoleEnum = {
+            Null: 1,
+            Master: 2,
+            Member: 3,
+        }
+        this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
+        this.video_tag_names = ["video", "bwp-video"]
+        this.timer = 0
+        this.roomName = ""
+        this.roomPassword = ""
+        this.role = this.RoleEnum.Null
+        this.url = ""
+        this.duration = undefined
+        this.serverTimestamp = 0;
+        this.localTimestamp = 0;
+
         this.CreateVideoDomObserver();
         this.timer = setInterval(this.ScheduledTask.bind(this), 2 * 1000);
         this.RecoveryState();
