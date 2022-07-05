@@ -169,13 +169,13 @@ class VideoTogetherExtension {
                 type: type,
                 data: data
             }, "*");
-            // console.log("send ", type, iframs[i].contentWindow, data)
+            // console.info("send ", type, iframs[i].contentWindow, data)
         }
     }
 
     processReceivedMessage(type, data) {
         let _this = this;
-        // console.log("get ", type, window.location, data);
+        // console.info("get ", type, window.location, data);
         switch (type) {
             case MessageType.ActivatedVideo:
                 if (this.activatedVideo == undefined || this.activatedVideo.activatedTime < data.activatedTime) {
@@ -226,7 +226,7 @@ class VideoTogetherExtension {
                 window.location = data.url;
                 break;
             default:
-                // console.log("unhandled message:", type, data)
+                // console.info("unhandled message:", type, data)
                 break;
         }
     }
@@ -243,7 +243,7 @@ class VideoTogetherExtension {
     }
 
     VideoClicked(e) {
-        console.log("vide event: ", e.type);
+        console.info("vide event: ", e.type);
         // maybe we need to check if the event is activated by user interaction
         this.setActivatedVideoDom(e.target);
     }
@@ -264,7 +264,7 @@ class VideoTogetherExtension {
                 for (var i = 0; i < mutation.addedNodes.length; i++) {
 
                     if (mutation.addedNodes[i].tagName == "VIDEO" || mutation.addedNodes[i].tagName == "BWP-VIDEO") {
-                        console.log(mutation.addedNodes[i]);
+                        console.info(mutation.addedNodes[i]);
                         try {
                             _this.AddVideoListener(mutation.addedNodes[i]);
                         } catch { }
@@ -297,7 +297,7 @@ class VideoTogetherExtension {
     }
 
     RecoveryState() {
-        console.log("recovery: ", window.location)
+        console.info("recovery: ", window.location)
         function RecoveryStateFromUrl(url) {
             let vtRole = url.searchParams.get("videoTogetherRole");
             let vtUrl = url.searchParams.get("videoTogetherUrl");
@@ -498,11 +498,11 @@ class VideoTogetherExtension {
         }
         if (videoDom.paused != room["paused"]) {
             if (room["paused"]) {
-                console.log("pause");
+                console.info("pause");
                 videoDom.pause();
             } else {
                 try {
-                    console.log("play");
+                    console.info("play");
                     await videoDom.play();
                 } catch (e) {
                     this.sendMessageToTop(MessageType.UpdateStatusText, { text: "自动播放失败，手动点击播放", color: "red" })
