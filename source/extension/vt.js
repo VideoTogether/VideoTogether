@@ -386,7 +386,12 @@ class VideoTogetherExtension {
                 case this.RoleEnum.Null:
                     return;
                 case this.RoleEnum.Master:
-                    this.sendMessageToTop(MessageType.SyncMasterVideo, { video: this.GetVideoDom(), password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
+                    let video = this.GetVideoDom();
+                    if (video == undefined) {
+                        window.videoTogetherFlyPannel.UpdateStatusText("当前页面没有视频", "red");
+                    } else {
+                        this.sendMessageToTop(MessageType.SyncMasterVideo, { video: video, password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
+                    }
                     break;
                 case this.RoleEnum.Member:
                     let room = await this.GetRoom(this.roomName);
