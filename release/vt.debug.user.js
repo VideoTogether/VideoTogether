@@ -11,8 +11,10 @@
 
 class VideoTogetherFlyPannel {
     constructor() {
-        let wrapper = document.createElement("div");
-        wrapper.innerHTML = `<div id="videoTogetherFlyPannel">
+        this.isMain = (window.self == window.top);
+        if (this.isMain) {
+            let wrapper = document.createElement("div");
+            wrapper.innerHTML = `<div id="videoTogetherFlyPannel">
     <div id="videoTogetherHeader">
         <img style="display: inline;" src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
         <p style="display: inline;" id="videoTogetherTitle">Video Together</p>
@@ -165,21 +167,23 @@ class VideoTogetherFlyPannel {
         margin-bottom: 0px;
     }
 </style>`;
-        document.querySelector("body").appendChild(wrapper);
-        this.createRoomButton = document.querySelector('#videoTogetherCreateButton');
-        this.joinRoomButton = document.querySelector("#videoTogetherJoinButton");
-        this.exitButton = document.querySelector("#videoTogetherExitButton");
-        this.helpButton = document.querySelector("#videoTogetherHelpButton");
+            document.querySelector("body").appendChild(wrapper);
+            this.createRoomButton = document.querySelector('#videoTogetherCreateButton');
+            this.joinRoomButton = document.querySelector("#videoTogetherJoinButton");
+            this.exitButton = document.querySelector("#videoTogetherExitButton");
+            this.helpButton = document.querySelector("#videoTogetherHelpButton");
 
-        this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
-        this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
-        this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
-        this.exitButton.onclick = () => { window.videoTogetherExtension.exitRoom(); }
-        this.inputRoomName = document.querySelector('#videoTogetherRoomNameInput');
-        this.inputRoomPassword = document.querySelector("#videoTogetherRoomPasswordInput");
+            this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
+            this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
+            this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
+            this.exitButton.onclick = () => { window.videoTogetherExtension.exitRoom(); }
+            this.inputRoomName = document.querySelector('#videoTogetherRoomNameInput');
+            this.inputRoomPassword = document.querySelector("#videoTogetherRoomPasswordInput");
 
-        this.statusText = document.querySelector("#videoTogetherStatusText");
-        this.InLobby();
+            this.statusText = document.querySelector("#videoTogetherStatusText");
+            this.InLobby();
+        }
+
         try {
             document.querySelector("#videoTogetherLoading").remove()
         } catch { }
@@ -223,6 +227,27 @@ class VideoTogetherFlyPannel {
     }
 }
 
+class VideoModel {
+    constructor(id, duration, activatedTime, refreshTime) {
+        this.id = id;
+        this.duration = duration;
+        this.activatedTime = activatedTime;
+        this.refreshTime = refreshTime;
+    }
+}
+
+let MessageType = {
+    ActivatedVideo: 1,
+    ReportVideo: 2,
+    SyncMemberVideo: 3,
+    SyncMasterVideo: 4,
+    UpdateStatusText: 5,
+    JumpToNewPage: 6,
+    GetRoomData: 7
+}
+
+let VIDEO_EXPIRED_SECOND = 10
+
 class VideoTogetherExtension {
 
     constructor() {
@@ -241,12 +266,21 @@ class VideoTogetherExtension {
         this.duration = undefined
         this.serverTimestamp = 0;
         this.localTimestamp = 0;
+        this.activatedVideo = undefined;
 
+        this.isMain = (window.self == window.top);
         this.CreateVideoDomObserver();
         this.timer = setInterval(this.ScheduledTask.bind(this), 2 * 1000);
-        this.RecoveryState();
+        this.videoMap = new Map();
+        window.addEventListener('message', message => {
+            this.processReceivedMessage(message.data.type, message.data.data);
+        });
         this.SyncTimeWithServer();
-        this.EnableDraggable();
+
+        if (this.isMain) {
+            this.RecoveryState();
+            this.EnableDraggable();
+        }
     }
 
     setRole(role) {
@@ -263,17 +297,115 @@ class VideoTogetherExtension {
                 break;
         }
     }
+
+    generateUUID() {
+        if (crypto.randomUUID != undefined) {
+            return crypto.randomUUID();
+        }
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+
+    sendMessageToTop(type, data) {
+        window.top.postMessage({
+            type: type,
+            data: data
+        }, "*")
+    }
+
+    sendMessageToSon(type, data) {
+        let iframs = document.getElementsByTagName("iframe");
+        for (let i = 0; i < iframs.length; i++) {
+            iframs[i].contentWindow.postMessage({
+                type: type,
+                data: data
+            }, "*");
+            // console.log("send ", type, iframs[i].contentWindow, data)
+        }
+    }
+
+    processReceivedMessage(type, data) {
+        let _this = this;
+        // console.log("get ", type, window.location, data);
+        switch (type) {
+            case MessageType.ActivatedVideo:
+                if (this.activatedVideo == undefined || this.activatedVideo.activatedTime < data.activatedTime) {
+                    this.activatedVideo = data;
+                }
+                break;
+            case MessageType.ReportVideo:
+                this.videoMap.set(data.id, data);
+                break;
+            case MessageType.SyncMasterVideo:
+                this.video_tag_names.forEach(tag => {
+                    let videos = document.getElementsByTagName(tag);
+                    for (let i = 0; i < videos.length; i++) {
+                        if (videos[i].VideoTogetherVideoId == data.video.id) {
+                            try {
+                                this.SyncMasterVideo(data, videos[i]);
+                                _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功" + _this.GetDisplayTimeText(), color: "green" });
+                            } catch (e) {
+                                _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步异常" + e, color: "green" });
+                            }
+                        }
+                    }
+                })
+                this.sendMessageToSon(type, data);
+                break;
+            case MessageType.SyncMemberVideo:
+                this.video_tag_names.forEach(tag => {
+                    let videos = document.getElementsByTagName(tag);
+                    for (let i = 0; i < videos.length; i++) {
+                        if (videos[i].VideoTogetherVideoId == data.video.id) {
+                            try {
+                                this.SyncMemberVideo(data, videos[i]);
+                            } catch (e) {
+                                _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步异常" + e, color: "green" });
+                            }
+                        }
+                    }
+                })
+                this.sendMessageToSon(type, data);
+                break;
+            case MessageType.GetRoomData:
+                this.duration = data["duration"];
+                break;
+            case MessageType.UpdateStatusText:
+                window.videoTogetherFlyPannel.UpdateStatusText(data.text, data.color);
+                break;
+            case MessageType.JumpToNewPage:
+                window.location = data.url;
+                break;
+            default:
+                // console.log("unhandled message:", type, data)
+                break;
+        }
+    }
+
+    setActivatedVideoDom(videoDom) {
+        if (videoDom.VideoTogetherVideoId == undefined) {
+            videoDom.VideoTogetherVideoId = this.generateUUID();
+        }
+        this.sendMessageToTop(MessageType.ActivatedVideo, new VideoModel(videoDom.VideoTogetherVideoId, videoDom.duration, Date.now() / 1000, Date.now() / 1000));
+    }
+
     addListenerMulti(el, s, fn) {
         s.split(' ').forEach(e => el.addEventListener(e, fn, false));
     }
 
+    VideoClicked(e) {
+        console.log("vide event: ", e.type);
+        // maybe we need to check if the event is activated by user interaction
+        this.setActivatedVideoDom(e.target);
+    }
+
     AddVideoListener(videoDom) {
+        if (this.VideoClickedListener == undefined) {
+            this.VideoClickedListener = this.VideoClicked.bind(this)
+        }
         let _this = this;
-        this.addListenerMulti(videoDom, "play pause", e => {
-            console.log("vide event: ", e.type);
-            // maybe we need to check if the event is activated by user interaction
-            _this.activatedVideoDom = e.target;
-        })
+        this.addListenerMulti(videoDom, "play pause", this.VideoClickedListener);
     }
 
     // todo 腾讯视频
@@ -282,9 +414,11 @@ class VideoTogetherExtension {
         let observer = new WebKitMutationObserver(function (mutations) {
             mutations.forEach(function (mutation) {
                 for (var i = 0; i < mutation.addedNodes.length; i++) {
-                    if (mutation.addedNodes[i].tag == "video" || mutation.addedNodes[i].tag == "bwp-video") {
+
+                    if (mutation.addedNodes[i].tagName == "VIDEO" || mutation.addedNodes[i].tagName == "BWP-VIDEO") {
+                        console.log(mutation.addedNodes[i]);
                         try {
-                            _this.AddVideoListener(this)(mutation.addedNodes[i]);
+                            _this.AddVideoListener(mutation.addedNodes[i]);
                         } catch { }
                     }
                 }
@@ -365,6 +499,7 @@ class VideoTogetherExtension {
     }
 
     exitRoom() {
+        this.duration = undefined;
         window.videoTogetherFlyPannel.inputRoomName.value = "";
         window.videoTogetherFlyPannel.inputRoomPassword.value = "";
         this.roomName = "";
@@ -373,66 +508,88 @@ class VideoTogetherExtension {
     }
 
     async ScheduledTask() {
+        let _this = this;
+        try {
+            this.video_tag_names.forEach(tag => {
+                let videos = document.getElementsByTagName(tag);
+                for (let i = 0; i < videos.length; i++) {
+                    if (videos[i].VideoTogetherVideoId == undefined) {
+                        videos[i].VideoTogetherVideoId = _this.generateUUID();
+                    }
+                    this.sendMessageToTop(MessageType.ReportVideo, new VideoModel(videos[i].VideoTogetherVideoId, videos[i].duration, 0, Date.now() / 1000));
+                }
+            })
+            this.videoMap.forEach((video, id, map) => {
+                if (video.refreshTime + VIDEO_EXPIRED_SECOND < Date.now() / 1000) {
+                    map.delete(id);
+                }
+            })
+        } catch { };
+
+        try {
+            if (this.serverTimestamp == 0) {
+                await this.SyncTimeWithServer();
+            }
+        } catch { };
+
+
         try {
             switch (this.role) {
                 case this.RoleEnum.Null:
                     return;
                 case this.RoleEnum.Master:
-                    await this.SyncMasterVideo();
+                    this.sendMessageToTop(MessageType.SyncMasterVideo, { video: this.GetVideoDom(), password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
                     break;
                 case this.RoleEnum.Member:
-                    await this.SyncMemberVideo();
+                    let room = await this.GetRoom(this.roomName);
+                    this.duration = room["duration"];
+                    if (room["url"] != this.url) {
+                        this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
+                    }
+                    this.sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName })
                     break;
             }
         } catch (error) {
             window.videoTogetherFlyPannel.UpdateStatusText("同步失败 " + this.GetDisplayTimeText(), "red");
         }
-        if (this.serverTimestamp == 0) {
-            await this.SyncTimeWithServer();
-        }
     }
 
     GetVideoDom() {
-        if (this.role == this.RoleEnum.Master && document.contains(this.activatedVideoDom)) {
+        if (this.role == this.RoleEnum.Master &&
+            this.activatedVideo != undefined &&
+            this.videoMap.get(this.activatedVideo.id) != undefined &&
+            this.videoMap.get(this.activatedVideo.id).refreshTime + VIDEO_EXPIRED_SECOND >= Date.now() / 1000) {
             // do we need use this rule for member role? when multi closest videos?
-            return this.activatedVideoDom;
+            return this.activatedVideo;
         }
 
         let closest = 1e10;
         let closestVideo = undefined;
         let _this = this;
-        this.video_tag_names.forEach(vTag => {
-            let videos = document.getElementsByTagName(vTag);
-            for (let i = 0; i < videos.length; i++) {
-                if (_this.duration == undefined) {
-                    closestVideo = videos[i];
-                    return;
-                }
-                if (Math.abs(videos[i].duration - _this.duration) < closest) {
-                    closest = Math.abs(videos[i].duration - _this.duration);
-                    closestVideo = videos[i];
-                }
+        this.videoMap.forEach((video, id) => {
+            if (_this.duration == undefined) {
+                closestVideo = video;
+                return;
             }
-        })
+            if (Math.abs(video.duration - _this.duration) < closest) {
+                closest = Math.abs(video.duration - _this.duration);
+                closestVideo = video;
+            }
+        });
         return closestVideo;
     }
 
     // TODO The poll task works really good currently.
     // But we can sync when video event is traggered to enhance the performance
     // and reduce server workload
-    async SyncMasterVideo() {
-        let video = this.GetVideoDom();
-        if (video == undefined) {
-            window.videoTogetherFlyPannel.UpdateStatusText("当前页面没有视频", "red");
-            return;
-        }
-        this.UpdateRoom(this.roomName,
-            this.password,
-            this.linkWithoutState(window.location),
-            video.playbackRate,
-            video.currentTime,
-            video.paused,
-            video.duration);
+    async SyncMasterVideo(data, videoDom) {
+        this.UpdateRoom(data.roomName,
+            data.password,
+            data.link,
+            videoDom.playbackRate,
+            videoDom.currentTime,
+            videoDom.paused,
+            videoDom.duration);
         window.videoTogetherFlyPannel.UpdateStatusText("同步成功 " + this.GetDisplayTimeText(), "green");
     }
 
@@ -441,7 +598,7 @@ class VideoTogetherExtension {
         url.searchParams.delete("videoTogetherUrl");
         url.searchParams.delete("VideoTogetherRoomName");
         url.searchParams.delete("videoTogetherRole");
-        return url;
+        return url.toString();
     }
 
     linkWithMemberState(link) {
@@ -471,46 +628,44 @@ class VideoTogetherExtension {
         return date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
     }
 
-    async SyncMemberVideo() {
-        let data = await this.GetRoom(this.roomName);
-        if (data["url"] != this.url) {
-            window.location = this.linkWithMemberState(data["url"]);
-        }
-        
-        this.duration = data["duration"];
-        let video = this.GetVideoDom();
-        if (video == undefined) {
-            window.videoTogetherFlyPannel.UpdateStatusText("当前页面没有视频", "red");
-            return;
+    async SyncMemberVideo(data, videoDom) {
+        let room = await this.GetRoom(data.roomName);
+        this.sendMessageToTop(MessageType.GetRoomData, room);
+
+        // useless
+        this.duration = room["duration"];
+        // useless
+        if (videoDom == undefined) {
+            throw new Error("没有视频");
         }
 
-        if (data["paused"] == false) {
-            if (Math.abs(video.currentTime - this.CalculateRealCurrent(data)) > 1) {
-                video.currentTime = this.CalculateRealCurrent(data);
+        if (room["paused"] == false) {
+            if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
+                videoDom.currentTime = this.CalculateRealCurrent(room);
             }
         } else {
-            if (video.currentTime != data["currentTime"]) {
-                video.currentTime = data["currentTime"];
+            if (videoDom.currentTime != room["currentTime"]) {
+                videoDom.currentTime = room["currentTime"];
             }
         }
-        if (video.paused != data["paused"]) {
-            if (data["paused"]) {
+        if (videoDom.paused != room["paused"]) {
+            if (room["paused"]) {
                 console.log("pause");
-                video.pause();
+                videoDom.pause();
             } else {
                 try {
                     console.log("play");
-                    await video.play();
+                    await videoDom.play();
                 } catch (e) {
-                    window.videoTogetherFlyPannel.UpdateStatusText("自动播放失败，请手动点击播放", "red");
+                    this.sendMessageToTop(MessageType.UpdateStatusText, { text: "自动播放失败，手动点击播放", color: "red" })
                     return;
                 }
             }
         }
-        if (video.playbackRate != data["playbackRate"]) {
-            video.playbackRate = data["playbackRate"];
+        if (videoDom.playbackRate != room["playbackRate"]) {
+            videoDom.playbackRate = room["playbackRate"];
         }
-        window.videoTogetherFlyPannel.UpdateStatusText("同步成功 " + this.GetDisplayTimeText(), "green");
+        this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" })
     }
 
     async CheckResponse(response) {
