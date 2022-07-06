@@ -30,7 +30,9 @@ QQ群: 170200260
 
 使用说明：https://videotogether.github.io/usage.html
 
+### 数据收集
 
+建房后插件会上传当前页面的 URL 以及视频的播放状态。除此之外不会有任何的信息被上传。
 
 
 
