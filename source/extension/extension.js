@@ -10,6 +10,10 @@
 // ==/UserScript==
 
 (function () {
+    if (window.VideoTogetherLoading) {
+        return;
+    }
+    window.VideoTogetherLoading = true;
     let wrapper = document.createElement("div");
     wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`
     document.getElementsByTagName('body')[0].appendChild(wrapper);

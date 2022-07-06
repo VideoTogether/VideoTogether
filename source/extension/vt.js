@@ -25,7 +25,7 @@
                 this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
                 this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
                 this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
-                this.exitButton.onclick = () => { window.videoTogetherExtension.exitRoom(); }
+                this.exitButton.onclick = (() => { window.videoTogetherExtension.exitRoom(); });
                 this.inputRoomName = document.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = document.querySelector("#videoTogetherRoomPasswordInput");
 
@@ -632,11 +632,11 @@
     }
 
     // TODO merge Pannel and Extension class
-    if (window.videoTogetherFlyPannel == undefined) {
+    if (window.videoTogetherFlyPannel === undefined) {
         window.videoTogetherFlyPannel = null;
         window.videoTogetherFlyPannel = new VideoTogetherFlyPannel();
     }
-    if (window.videoTogetherExtension == undefined) {
+    if (window.videoTogetherExtension === undefined) {
         window.videoTogetherExtension = null;
         window.videoTogetherExtension = new VideoTogetherExtension();
     }

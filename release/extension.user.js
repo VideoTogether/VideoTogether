@@ -10,6 +10,10 @@
 // ==/UserScript==
 
 (function () {
+    if (window.VideoTogetherLoading) {
+        return;
+    }
+    window.VideoTogetherLoading = true;
     let wrapper = document.createElement("div");
     wrapper.innerHTML = `<div id="videoTogetherLoading">
     <div style="width: 100%">
