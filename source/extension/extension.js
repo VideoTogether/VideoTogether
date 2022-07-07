@@ -24,7 +24,7 @@
     function filter(e) {
         let target = e.target;
 
-        if (!target.id == "videoTogetherLoading") {
+        if (target.id != "videoTogetherLoading") {
             return;
         }
 
