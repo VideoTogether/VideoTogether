@@ -2,6 +2,7 @@
     <div id="videoTogetherHeader">
         <img style="display: inline;" src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
         <p style="display: inline;" id="videoTogetherTitle">Video Together</p>
+        <button onclick='document.getElementById("videoTogetherFlyPannel").style.display="none"' style="margin-right: 20px;margin-left: auto;">-</button>
     </div>
     <div id="videoTogetherBody">
         <div style="width: 200px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;">
@@ -19,7 +20,19 @@
     </div>
 </div>
 
+<div id="VideoTogetherSamllIcon">
+    <button onclick='document.getElementById("videoTogetherFlyPannel").style.display="block"'>[]</button>
+</div>
+
 <style>
+    #VideoTogetherSamllIcon {
+        display: block;
+        z-index: 2147483647;
+        position: fixed;
+        bottom: 15px;
+        right: 15px;
+        text-align: center;
+    }
     #videoTogetherFlyPannel input {
         line-height: 24px;
         font-size: 16px;
