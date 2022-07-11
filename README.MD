@@ -37,6 +37,19 @@ QQ群: 170200260
 
 `python source/server/main.py debug` 运行一个本地服务器
 
+#### 在 Replit 中部署服务端：
+
+1. 注册 `Replit` 账号: https://replit.com/
+2. 新建一个 `python` 仓库 
+3. 在 `shell` 中运行以下代码
+4. 等待 `Loading Nix environment...` 完成
+5. 点绿色 `RUN` 运行
+6. 将根目录生成的 `vt.user.js` 复制到油猴
+
+```
+git clone https://github.com/valetzx/VideoTogether && mv -b VideoTogether/* ./ && mv -b VideoTogether/.[^.]* ./ && rm -rf *~ && rm -rf VideoTogether
+```
+
 ## TODO
 
 - 使用 Websocket 替代 http 请求
