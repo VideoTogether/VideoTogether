@@ -42,13 +42,16 @@ QQ群: 170200260
 1. 注册 `Replit` 账号: https://replit.com/
 2. 新建一个 `python` 仓库 
 3. 在 `shell` 中运行以下代码
-4. 等待 `Loading Nix environment...` 完成
-5. 点绿色 `RUN` 运行
-6. 将根目录生成的 `vt.user.js` 复制到油猴
 
 ```
 git clone https://github.com/valetzx/VideoTogether && mv -b VideoTogether/* ./ && mv -b VideoTogether/.[^.]* ./ && rm -rf *~ && rm -rf VideoTogether
 ```
+
+4. 等待 `Loading Nix environment...` 完成
+5. 点绿色 `RUN` 运行
+6. 将根目录生成的 `vt.user.js` 复制到油猴
+7. 公开脚本示例：https://alist.learnonly.xyz/d/!Together/vt.user.js
+
 
 ## TODO
 
