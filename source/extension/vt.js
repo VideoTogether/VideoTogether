@@ -571,11 +571,13 @@
 
         EnableDraggable() {
             function filter(e) {
-                if (!document.querySelector("#videoTogetherHeader").contains(e.target)) {
+                let target = undefined;
+                if (document.querySelector("#videoTogetherHeader").contains(e.target)) {
+                    target = document.querySelector("#videoTogetherFlyPannel");
+                } else {
                     return;
                 }
 
-                let target = document.querySelector("#videoTogetherFlyPannel")
 
                 target.videoTogetherMoving = true;
 
@@ -612,7 +614,6 @@
                     target.style.top = Math.min(document.documentElement.clientHeight - target.clientHeight, Math.max(0, target.oldTop + target.distY)) + "px";
 
                     window.addEventListener('resize', function (event) {
-                        let target = document.querySelector("#videoTogetherFlyPannel")
                         target.oldLeft = window.getComputedStyle(target).getPropertyValue('left').split('px')[0] * 1;
                         target.oldTop = window.getComputedStyle(target).getPropertyValue('top').split('px')[0] * 1;
                         target.style.left = Math.min(document.documentElement.clientWidth - target.clientWidth, Math.max(0, target.oldLeft)) + "px";
