@@ -1,9 +1,9 @@
 # The command that runs the program. Commented out because it is not run when the interpreter command is set
-run = ["bash", "main.sh"]
+run = ["bash", "replit.sh"]
 # The primary language of the repl. There can be others, though!
 language = "bash"
 # The main file, which will be shown by default in the editor.
-entrypoint = "main.sh"
+entrypoint = "replit.sh"
 # A list of globs that specify which files and directories should
 # be hidden in the workspace.
 # Specifies which nix channel to use when building the environment.
@@ -48,7 +48,7 @@ support = true
   # How to start the debugger.
   [debugger.interactive]
   transport = "localhost:0"
-  startCommand = ["bash", "main.sh"]
+  startCommand = ["bash", "replit.sh"]
 
     # How to communicate with the debugger.
     [debugger.interactive.integratedAdapter]
