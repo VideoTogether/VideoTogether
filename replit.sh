@@ -1,6 +1,8 @@
-host=$REPL_ID.id.repl.co
+host=https:\/\/$REPL_ID.id.repl.co
+common=https:\/\/vt.panghair.com:5000\/
 
-echo $host > ./source/extension/config/release_host
+
+sed -i "s#$common#$host#g" ./source/extension/config/release_host
 python ./script/build_extension.py
 cp ./release/vt.user.js .
 python ./source/server/main.py debug
