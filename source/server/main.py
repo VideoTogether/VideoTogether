@@ -1,7 +1,5 @@
 import time
-from subprocess import call
 from flask import Flask, jsonify, request
-import json
 from flask_cors import CORS
 from gevent import pywsgi
 import sys
@@ -77,6 +75,9 @@ def updateRoom():
     sys.stderr.flush()
     return room.toJsonResponse()
 
+@app.route('/statistics', methods=["get"])
+def getStatistics():
+    return jsonify({"roomCount": len(database)})
 
 if __name__ == '__main__':
     if(sys.argv[1] == "debug"):
