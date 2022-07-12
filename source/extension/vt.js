@@ -87,11 +87,12 @@
     }
 
     class VideoModel {
-        constructor(id, duration, activatedTime, refreshTime) {
+        constructor(id, duration, activatedTime, refreshTime, priority = 0) {
             this.id = id;
             this.duration = duration;
             this.activatedTime = activatedTime;
             this.refreshTime = refreshTime;
+            this.priority = priority;
         }
     }
 
@@ -420,7 +421,12 @@
                     if (video.VideoTogetherVideoId == undefined) {
                         video.VideoTogetherVideoId = _this.generateUUID();
                     }
-                    this.sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000));
+                    if (video instanceof VideoWrapper) {
+                        // ad hoc
+                        this.sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
+                    } else {
+                        this.sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000));
+                    }
                 })
                 this.videoMap.forEach((video, id, map) => {
                     if (video.refreshTime + VIDEO_EXPIRED_SECOND < Date.now() / 1000) {
@@ -452,9 +458,9 @@
                         let room = await this.GetRoom(this.roomName);
                         this.duration = room["duration"];
                         if (room["url"] != this.url) {
-                            if( this.SaveStateToSessionStorageWhenSameOrigin(room["url"])){
+                            if (this.SaveStateToSessionStorageWhenSameOrigin(room["url"])) {
                                 this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
-                            }else{
+                            } else {
                                 this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
                             }
                         }
@@ -467,6 +473,15 @@
         }
 
         GetVideoDom() {
+            let highPriorityVideo = undefined;
+            this.videoMap.forEach(video => {
+                if (video.priority > 0) {
+                    highPriorityVideo = video;
+                }
+            })
+            if (highPriorityVideo != undefined) {
+                return highPriorityVideo;
+            }
             if (this.role == this.RoleEnum.Master &&
                 this.activatedVideo != undefined &&
                 this.videoMap.get(this.activatedVideo.id) != undefined &&
@@ -479,14 +494,16 @@
             let closestVideo = undefined;
             let _this = this;
             this.videoMap.forEach((video, id) => {
-                if (_this.duration == undefined) {
-                    closestVideo = video;
-                    return;
-                }
-                if (Math.abs(video.duration - _this.duration) < closest) {
-                    closest = Math.abs(video.duration - _this.duration);
-                    closestVideo = video;
-                }
+                try {
+                    if (_this.duration == undefined) {
+                        closestVideo = video;
+                        return;
+                    }
+                    if (Math.abs(video.duration - _this.duration) < closest) {
+                        closest = Math.abs(video.duration - _this.duration);
+                        closestVideo = video;
+                    }
+                } catch (e) { console.error(e); }
             });
             return closestVideo;
         }
