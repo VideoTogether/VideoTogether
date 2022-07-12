@@ -2,7 +2,7 @@
 
 **Currently only Chinese display language is available in this extension. I'm working on the localization now. English will be available soon, both extension display language and documentation.**
 
-## 欢迎访问插件主页，一键试用 https://videotogether.github.io
+## 欢迎访问插件主页，查看安装使用说明 https://videotogether.github.io
 
 文档正在完善中
 请加入插件的交流群获取更详细的帮助信息，以及反馈问题
@@ -15,9 +15,9 @@ QQ群: 170200260
 
 ## 安装使用
 
-安装说明： https://videotogether.github.io/installation.html
+安装说明： https://videotogether.github.io/guide/install.html
 
-使用说明：https://videotogether.github.io/usage.html
+使用说明：https://videotogether.github.io/guide/introduction.html
 
 ## 开发
 
@@ -37,21 +37,9 @@ QQ群: 170200260
 
 `python source/server/main.py debug` 运行一个本地服务器
 
-#### 在 Replit 中部署服务端：
+#### 私有化部署
 
-1. 注册 `Replit` 账号: https://replit.com/
-2. 新建一个 `python` 仓库 
-3. 在 `shell` 中运行以下代码
-
-```
-git clone https://github.com/valetzx/VideoTogether && mv -b VideoTogether/* ./ && mv -b VideoTogether/.[^.]* ./ && rm -rf *~ && rm -rf VideoTogether
-```
-
-4. 等待 `Loading Nix environment...` 完成
-5. 点绿色 `RUN` 运行
-6. 将根目录生成的 `vt.user.js` 复制到油猴
-7. 公开脚本示例：https://alist.learnonly.xyz/d/!Together/vt.user.js
-
+私有部署文档：https://videotogether.github.io/guide/deploy.html
 
 ## TODO
 

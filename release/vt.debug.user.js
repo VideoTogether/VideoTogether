@@ -245,7 +245,7 @@
         }
 
         HelpButtonOnClick() {
-            window.open('https://videotogether.github.io/usage.html', '_blank');
+            window.open('https://videotogether.github.io/guide/qa.html', '_blank');
         }
 
         UpdateStatusText(text, color) {
