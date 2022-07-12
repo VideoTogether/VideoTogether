@@ -19,9 +19,7 @@
     <div id="videoTogetherHeader">
         <img style="display: inline;" src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
         <p style="display: inline;" id="videoTogetherTitle">Video Together</p>
-        <button
-            onclick='document.getElementById("videoTogetherFlyPannel").style.display="none";document.getElementById("VideoTogetherSamllIcon").style.display="block"'
-            style="margin-right: 0px;margin-left: auto; min-width: 16px">-</button>
+        <button id="videoTogetherMinimize" style="margin-right: 0px;margin-left: auto; min-width: 16px">-</button>
     </div>
     <div id="videoTogetherBody">
         <div style="width: 200px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;display: inline-block;">
@@ -40,8 +38,7 @@
 </div>
 
 <div style="width: 24px; height: 24px;" id="VideoTogetherSamllIcon">
-    <img draggable="false" width="24px" height="24px"
-        onclick='document.getElementById("videoTogetherFlyPannel").style.display="block";document.getElementById("VideoTogetherSamllIcon").style.display="none"'
+    <img draggable="false" width="24px" height="24px" id="videoTogetherMaximize"
         src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAACrFBMVEXg9b7e87jd87jd9Lnd9Lre9Lng9b/j98jm98vs99fy9ubu89/e1sfJqKnFnqLGoaXf9Lvd87Xe87fd8rfV67Ti9sbk98nm9sze48TX3rjU1rTKr6jFnaLe9Lfe87Xe9LjV7LPN4q3g78PJuqfQ1a7OzarIsabEnaHi9sXd8rvd8rbd87axx4u70Jrl+cvm+szQxq25lZTR1a7KvaXFo6LFnaHEnKHd6r3Y57TZ7bLb8bTZ7rKMomClun/k+MrOx6yue4PIvqfP06vLv6fFoqLEnKDT27DS3a3W6K7Y7bDT6auNq2eYn3KqlYShYXTOwLDAzZ7MyanKtqbEoaHDm6DDm5/R2K3Q2KzT4q3W6a7P3amUhWp7SEuMc2rSyri3zJe0xpPV17TKuqbGrqLEnqDQ2K3O06rP0arR2qzJx6GZX160j4rP1LOiuH2GnVzS3rXb47zQ063OzanHr6PDnaDMxajIsaXLwKfEt5y6mI/GyqSClVZzi0bDzp+8nY/d6L/X4rbQ1qzMyKjEqKHFpqLFpaLGqaO2p5KCjlZ5jky8z5izjoOaXmLc5r3Z57jU4K7S3K3NyqnBm56Mg2KTmWnM0KmwhH2IOUunfXnh8cXe8b7Z7LPV4rDBmZ3Cmp+6mZWkk32/qZihbG97P0OdinXQ3rTk+Mjf9L/d8rja6ri9lpqnh4qhgoWyk5Kmd3qmfHW3oou2vZGKpmaUrXDg9MPf9L3e876yj5Ori42Mc3aDbG6MYmyifXfHyaPU3rHH0aKDlVhkejW70Zbf9bze87be87ng9cCLcnWQd3qEbG9/ZmmBXmSflYS4u5ra5Lnd6r7U5ba2ypPB153c87re9b2Ba22EbW+AamyDb3CNgXmxsZng7sTj9sjk98rk+Mng9cHe9Lze9Lrd87n////PlyWlAAAAAWJLR0TjsQauigAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAd0SU1FB+YGGQYXBzHy0g0AAAEbSURBVBjTARAB7/4AAAECAwQFBgcICQoLDA0ODwAQEREREhMUFRYXGBkaGxwOAAYdHhEfICEWFiIjJCUmDicAKCkqKx8sLS4vMDEyMzQ1NgA3ODk6Ozw9Pj9AQUJDRDVFAEZHSElKS0xNTk9QUVJTVFUAVldYWVpbXF1eX2BhYmNkVABlZmdoaWprbG1ub3BxcnN0AEJ1dnd4eXp7fH1+f4CBgoMAc4QnhYaHiImKi4yNjo+QkQBFVFU2kpOUlZaXmJmam5ucAFRVnZ6foKGio6SlpqeoE6kAVaqrrK2ur7CxsrO0tQEDtgC3uLm6u7y9vr/AwcLDxMXGAMfIycrLzM3Oz9DR0tMdAdQA1da619jZ2tvc3d7f4OEB4iRLaea64H7qAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIyLTA2LTI1VDA2OjIzOjAyKzAwOjAwlVQlhgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMi0wNi0yNVQwNjoyMzowMiswMDowMOQJnToAAAAgdEVYdHNvZnR3YXJlAGh0dHBzOi8vaW1hZ2VtYWdpY2sub3JnvM8dnQAAABh0RVh0VGh1bWI6OkRvY3VtZW50OjpQYWdlcwAxp/+7LwAAABh0RVh0VGh1bWI6OkltYWdlOjpIZWlnaHQAMTkyQF1xVQAAABd0RVh0VGh1bWI6OkltYWdlOjpXaWR0aAAxOTLTrCEIAAAAGXRFWHRUaHVtYjo6TWltZXR5cGUAaW1hZ2UvcG5nP7JWTgAAABd0RVh0VGh1bWI6Ok1UaW1lADE2NTYxMzgxODJHYkS0AAAAD3RFWHRUaHVtYjo6U2l6ZQAwQkKUoj7sAAAAVnRFWHRUaHVtYjo6VVJJAGZpbGU6Ly8vbW50bG9nL2Zhdmljb25zLzIwMjItMDYtMjUvNGU5YzJlYjRjNmRhMjIwZDgzYjcyOTYxZmI1ZTJiY2UuaWNvLnBuZ7tNVVEAAAAASUVORK5CYII=">
     </img>
 </div>
@@ -188,6 +185,16 @@
     }
 </style>`;
                 document.querySelector("body").appendChild(wrapper);
+
+                document.getElementById("videoTogetherMinimize").onclick = () => {
+                    document.getElementById("videoTogetherFlyPannel").style.display = "none";
+                    document.getElementById("VideoTogetherSamllIcon").style.display = "block"
+                }
+                document.getElementById("videoTogetherMaximize").onclick = () => {
+                    document.getElementById("videoTogetherFlyPannel").style.display = "block";
+                    document.getElementById("VideoTogetherSamllIcon").style.display = "none"
+                }
+
                 this.createRoomButton = document.querySelector('#videoTogetherCreateButton');
                 this.joinRoomButton = document.querySelector("#videoTogetherJoinButton");
                 this.exitButton = document.querySelector("#videoTogetherExitButton");
@@ -268,6 +275,31 @@
 
     let VIDEO_EXPIRED_SECOND = 10
 
+    class VideoWrapper {
+        set currentTime(v) {
+            this.currentTimeSetter(v);
+        }
+        get currentTime() {
+            return this.currentTimeGetter();
+        }
+        set playbackRate(v) {
+            this.playbackRateSetter(v);
+        }
+        get playbackRate() {
+            return this.playbackRateGetter();
+        }
+        constructor(play, pause, paused, currentTimeGetter, currentTimeSetter, duration, playbackRateGetter, playbackRateSetter) {
+            this.play = play;
+            this.pause = pause;
+            this.paused = paused;
+            this.currentTimeGetter = currentTimeGetter;
+            this.currentTimeSetter = currentTimeSetter;
+            this.duration = duration;
+            this.playbackRateGetter = playbackRateGetter;
+            this.playbackRateSetter = playbackRateSetter;
+        }
+    }
+
     class VideoTogetherExtension {
 
         constructor() {
@@ -298,8 +330,10 @@
             this.SyncTimeWithServer();
 
             if (this.isMain) {
-                this.RecoveryState();
-                this.EnableDraggable();
+                try {
+                    this.RecoveryState();
+                    this.EnableDraggable();
+                } catch (e) { console.error(e) }
             }
         }
 
@@ -345,6 +379,36 @@
             }
         }
 
+        ForEachVideo(func) {
+            try {
+                // 腾讯视频
+                if (window.__PLAYER__ != undefined) {
+                    if (window.__PLAYER__.videoTogetherVideoWrapper == undefined) {
+                        window.__PLAYER__.videoTogetherVideoWrapper = new VideoWrapper();
+                    }
+                    let videoWrapper = window.__PLAYER__.videoTogetherVideoWrapper;
+                    videoWrapper.play = () => { window.__PLAYER__.corePlayer.play() };
+                    videoWrapper.pause = () => { window.__PLAYER__.corePlayer.pause() };
+                    videoWrapper.paused = window.__PLAYER__.paused;
+                    videoWrapper.currentTimeGetter = () => window.__PLAYER__.currentVideoInfo.playtime;
+                    videoWrapper.currentTimeSetter = (v) => { if (!videoWrapper.videoTogetherPaused) { window.__PLAYER__.seek(v) } };
+                    videoWrapper.duration = window.__PLAYER__.currentVideoInfo.duration;
+                    videoWrapper.playbackRateGetter = () => window.__PLAYER__.playbackRate;
+                    videoWrapper.playbackRateSetter = (v) => window.__PLAYER__.playbackRate = v;
+                    func(videoWrapper);
+                }
+            } catch (e) { console.error(e) };
+
+            this.video_tag_names.forEach(tag => {
+                let videos = document.getElementsByTagName(tag);
+                for (let i = 0; i < videos.length; i++) {
+                    try {
+                        func(videos[i]);
+                    } catch (e) { console.error(e) };
+                }
+            });
+        }
+
         processReceivedMessage(type, data) {
             let _this = this;
             // console.info("get ", type, window.location, data);
@@ -358,31 +422,25 @@
                     this.videoMap.set(data.id, data);
                     break;
                 case MessageType.SyncMasterVideo:
-                    this.video_tag_names.forEach(tag => {
-                        let videos = document.getElementsByTagName(tag);
-                        for (let i = 0; i < videos.length; i++) {
-                            if (videos[i].VideoTogetherVideoId == data.video.id) {
-                                try {
-                                    this.SyncMasterVideo(data, videos[i]);
-                                    _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功" + _this.GetDisplayTimeText(), color: "green" });
-                                } catch (e) {
-                                    _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步异常" + e, color: "green" });
-                                }
+                    this.ForEachVideo(video => {
+                        if (video.VideoTogetherVideoId == data.video.id) {
+                            try {
+                                this.SyncMasterVideo(data, video);
+                                _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功" + _this.GetDisplayTimeText(), color: "green" });
+                            } catch (e) {
+                                _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步异常" + e, color: "green" });
                             }
                         }
                     })
                     this.sendMessageToSon(type, data);
                     break;
                 case MessageType.SyncMemberVideo:
-                    this.video_tag_names.forEach(tag => {
-                        let videos = document.getElementsByTagName(tag);
-                        for (let i = 0; i < videos.length; i++) {
-                            if (videos[i].VideoTogetherVideoId == data.video.id) {
-                                try {
-                                    this.SyncMemberVideo(data, videos[i]);
-                                } catch (e) {
-                                    _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步异常" + e, color: "green" });
-                                }
+                    this.ForEachVideo(video => {
+                        if (video.VideoTogetherVideoId == data.video.id) {
+                            try {
+                                this.SyncMemberVideo(data, video);
+                            } catch (e) {
+                                _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步异常" + e, color: "green" });
                             }
                         }
                     })
@@ -470,12 +528,12 @@
 
         RecoveryState() {
             console.info("recovery: ", window.location)
-            function RecoveryStateFromUrl(url) {
-                let vtRole = url.searchParams.get("videoTogetherRole");
-                let vtUrl = url.searchParams.get("videoTogetherUrl");
-                let vtRoomName = url.searchParams.get("VideoTogetherRoomName");
-                let timestamp = parseFloat(url.searchParams.get("videoTogetherTimestamp"));
-                if (timestamp + 60 < Date.now() / 1000) {
+            function RecoveryStateFrom(getFunc) {
+                let vtRole = getFunc("videoTogetherRole");
+                let vtUrl = getFunc("videoTogetherUrl");
+                let vtRoomName = getFunc("VideoTogetherRoomName");
+                let timestamp = parseFloat(getFunc("videoTogetherTimestamp"));
+                if (timestamp + 10 < Date.now() / 1000) {
                     return;
                 }
 
@@ -489,25 +547,21 @@
                     }
                 }
             }
-            // TODO we need to remove localStorage logic.
-            // localStorage is invisiable for users, and it can't shared by different sites.
-            function RecoveryStateFromLocalStorage() {
 
-            }
             let url = new URL(window.location);
 
-            let localTimestamp = window.localStorage.getItem("videoTogetherTimestamp");
+            let localTimestamp = window.sessionStorage.getItem("videoTogetherTimestamp");
             let urlTimestamp = url.searchParams.get("videoTogetherTimestamp");
             if (localTimestamp == null && urlTimestamp == null) {
                 return;
             } else if (localTimestamp == null) {
-                RecoveryStateFromUrl.bind(this)(url);
+                RecoveryStateFrom.bind(this)(key => url.searchParams.get(key));
             } else if (urlTimestamp == null) {
-
+                RecoveryStateFrom.bind(this)(key => window.sessionStorage.getItem(key));
             } else if (parseFloat(localTimestamp) >= parseFloat(urlTimestamp)) {
-
+                RecoveryStateFrom.bind(this)(key => window.sessionStorage.getItem(key));
             } else {
-                RecoveryStateFromUrl.bind(this)(url);
+                RecoveryStateFrom.bind(this)(key => url.searchParams.get(key));
             }
         }
 
@@ -530,14 +584,11 @@
         async ScheduledTask() {
             let _this = this;
             try {
-                this.video_tag_names.forEach(tag => {
-                    let videos = document.getElementsByTagName(tag);
-                    for (let i = 0; i < videos.length; i++) {
-                        if (videos[i].VideoTogetherVideoId == undefined) {
-                            videos[i].VideoTogetherVideoId = _this.generateUUID();
-                        }
-                        this.sendMessageToTop(MessageType.ReportVideo, new VideoModel(videos[i].VideoTogetherVideoId, videos[i].duration, 0, Date.now() / 1000));
+                this.ForEachVideo(video => {
+                    if (video.VideoTogetherVideoId == undefined) {
+                        video.VideoTogetherVideoId = _this.generateUUID();
                     }
+                    this.sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000));
                 })
                 this.videoMap.forEach((video, id, map) => {
                     if (video.refreshTime + VIDEO_EXPIRED_SECOND < Date.now() / 1000) {
@@ -569,7 +620,11 @@
                         let room = await this.GetRoom(this.roomName);
                         this.duration = room["duration"];
                         if (room["url"] != this.url) {
-                            this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
+                            if( this.SaveStateToSessionStorageWhenSameOrigin(room["url"])){
+                                this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                            }else{
+                                this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
+                            }
                         }
                         this.sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName })
                         break;
@@ -626,6 +681,22 @@
             return url.toString();
         }
 
+        SaveStateToSessionStorageWhenSameOrigin(link) {
+            try {
+                let url = new URL(link);
+                let currentUrl = new URL(window.location);
+                if (url.origin == currentUrl.origin) {
+                    window.sessionStorage.setItem("videoTogetherUrl", link);
+                    window.sessionStorage.setItem("VideoTogetherRoomName", this.roomName);
+                    window.sessionStorage.setItem("videoTogetherRole", this.role);
+                    window.sessionStorage.setItem("videoTogetherTimestamp", Date.now() / 1000);
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (e) { console.error(e); }
+        }
+
         linkWithMemberState(link) {
             let url = new URL(link);
             let tmpSearch = url.search;
@@ -636,7 +707,7 @@
             url.searchParams.set("videoTogetherUrl", link);
             url.searchParams.set("VideoTogetherRoomName", this.roomName);
             url.searchParams.set("videoTogetherRole", this.role);
-            url.searchParams.set("videoTogetherTimestamp", Date.now() / 1000)
+            url.searchParams.set("videoTogetherTimestamp", Date.now() / 1000);
             let urlStr = url.toString();
             if (tmpSearch.length > 1) {
                 urlStr = urlStr + "&" + tmpSearch.slice(1);
@@ -665,11 +736,13 @@
             }
 
             if (room["paused"] == false) {
+                videoDom.videoTogetherPaused = false;
                 if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
                     videoDom.currentTime = this.CalculateRealCurrent(room);
                 }
             } else {
-                if (videoDom.currentTime != room["currentTime"]) {
+                videoDom.videoTogetherPaused = true;
+                if (Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
                     videoDom.currentTime = room["currentTime"];
                 }
             }
