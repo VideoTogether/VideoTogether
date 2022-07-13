@@ -1,8 +1,8 @@
 <div id="videoTogetherFlyPannel">
-  <div id="videoTogetherHeader" class="modal-content">
-    <button id="videoTogetherMinimize" type="button" aria-label="Close" class="modal-close">
-      <span class="modal-close-x">
-        <span role="img" aria-label="close" class="anticon anticon-close modal-close-icon">
+  <div id="videoTogetherHeader" class="vt-modal-content">
+    <button id="videoTogetherMinimize" type="button" aria-label="Close" class="vt-modal-close">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="close" class="vt-anticon vt-anticon-close vt-modal-close-icon">
           <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true"
             role="img" class="iconify iconify--ic" width="20" height="20" preserveAspectRatio="xMidYMid meet"
             viewBox="0 0 24 24">
@@ -11,12 +11,12 @@
         </span>
       </span>
     </button>
-    <div class="modal-header">
+    <div class="vt-modal-header">
       <img style="width: 16px; height: 16px;"
         src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
-      <div class="modal-title">Video Together</div>
+      <div class="vt-modal-title">Video Together</div>
     </div>
-    <div class="modal-body">
+    <div class="vt-modal-body">
       <span style="display: inline;" id="videoTogetherRoleText"></span>
       <span style="display: inline;" id="videoTogetherStatusText"></span>
       <div style="margin-bottom: 10px;">
@@ -28,17 +28,17 @@
         <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="密码,只有建房需要">
       </div>
     </div>
-    <div class="modal-footer">
-      <button id="videoTogetherCreateButton" class="btn btn-primary" type="button">
+    <div class="vt-modal-footer">
+      <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
         <span>建 房</span>
       </button>
-      <button id="videoTogetherJoinButton" class="btn btn-secondary" type="button">
+      <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
         <span>加 入</span>
       </button>
-      <button id="videoTogetherExitButton" class="btn btn-dangerous" type="button" style="display: none;">
+      <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
         <span>退 出</span>
       </button>
-      <button id="videoTogetherHelpButton" class="btn" type="button">
+      <button id="videoTogetherHelpButton" class="vt-btn" type="button">
         <span>帮 助</span>
       </button>
     </div>
@@ -50,7 +50,7 @@
   </img>
 </div>
 <style>
-  .modal-content {
+  .vt-modal-content {
     background-color: #ffffff;
     border: solid 1px #e9e9e9;
     display: block;
@@ -63,7 +63,7 @@
     box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
   }
 
-  .modal-close {
+  .vt-modal-close {
     position: absolute;
     top: 0;
     right: 0;
@@ -80,7 +80,7 @@
     transition: color .3s;
   }
 
-  .modal-close-x {
+  .vt-modal-close-x {
     width: 46px;
     height: 46px;
     font-size: 16px;
@@ -94,11 +94,11 @@
     justify-content: center;
   }
 
-  .modal-close-x:hover {
+  .vt-modal-close-x:hover {
     color: #1890ff;
   }
 
-  .modal-header {
+  .vt-modal-header {
     display: flex;
     padding: 12px;
     color: #000000d9;
@@ -108,7 +108,7 @@
     align-items: center;
   }
 
-  .modal-title {
+  .vt-modal-title {
     margin: 0;
     margin-left: 10px;
     color: #000000d9;
@@ -118,7 +118,7 @@
     word-wrap: break-word;
   }
 
-  .modal-body {
+  .vt-modal-body {
     padding: 10px 0;
     display: flex;
     flex-direction: column;
@@ -127,7 +127,7 @@
     font-size: 16px;
   }
 
-  .modal-footer {
+  .vt-modal-footer {
     padding: 10px 16px;
     text-align: right;
     background: transparent;
@@ -138,7 +138,7 @@
     align-items: center;
   }
 
-  .btn {
+  .vt-btn {
     line-height: 1.5715;
     position: relative;
     display: inline-block;
@@ -166,45 +166,45 @@
     box-shadow: 0 2px #0000000b;
   }
 
-  .btn:hover {
+  .vt-btn:hover {
     border-color: #e3e5e7 !important;
     background-color: #e3e5e7 !important;
   }
 
-  .btn-primary {
+  .vt-btn-primary {
     color: #fff;
     border-color: #1890ff;
     background: #1890ff !important;
   }
 
-  .btn-primary:hover {
+  .vt-btn-primary:hover {
     border-color: #6ebff4 !important;
     background-color: #6ebff4 !important;
   }
 
-  .btn-secondary {
+  .vt-btn-secondary {
     color: #fff;
     border-color: #23d591;
     background: #23d591 !important;
   }
 
-  .btn-secondary:hover {
+  .vt-btn-secondary:hover {
     border-color: #8af0bf !important;
     background-color: #8af0bf !important;
   }
 
-  .btn-dangerous {
+  .vt-btn-dangerous {
     color: #fff;
     border-color: #ff4d4f !important;
     background-color: #ff4d4f !important;
   }
 
-  .btn-dangerous:hover {
+  .vt-btn-dangerous:hover {
     border-color: #f77173 !important;
     background-color: #f77173 !important;
   }
 
-  .modal-content-item {
+  .vt-modal-content-item {
     cursor: pointer;
     box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.16);
     padding: 0 12px;
@@ -215,7 +215,7 @@
     align-items: center;
   }
 
-  .modal-content-item:hover {
+  .vt-modal-content-item:hover {
     background-color: #efefef;
   }
 
