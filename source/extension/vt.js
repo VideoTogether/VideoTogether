@@ -11,6 +11,7 @@
 
 (function () {
     class VideoTogetherFlyPannel {
+        sessionKey = "VideoTogetherFlySaveSessionKey"
         constructor() {
             this.isMain = (window.self == window.top);
             if (this.isMain) {
@@ -31,11 +32,41 @@
 
                 this.statusText = document.querySelector("#videoTogetherStatusText");
                 this.InLobby();
+                this.Init()
             }
 
             try {
                 document.querySelector("#videoTogetherLoading").remove()
             } catch { }
+        }
+
+        Init() {
+            const data = this.GetSavedRoomInfo()
+            if (data) {
+                if (data.roomName) {
+                    this.inputRoomName = data.roomName;
+                }
+                if (data.password) {
+                    this.inputRoomPassword = data.roomName;
+                }
+            }
+        }
+
+        GetSavedRoomInfo() {
+            try {
+                const data = JSON.parse(sessionStorage.getItem(this.sessionKey) || '');
+                if (data.roomName || data.password) {
+                    return data;
+                }
+                return null;
+            } catch {
+                return null;
+            }
+        }
+
+        SaveRoomInfo(roomName, password) {
+            const data = JSON.stringify({ roomName, password });
+            sessionStorage.setItem(this.sessionKey, data);
         }
 
         InRoom() {
@@ -58,6 +89,7 @@
         CreateRoomButtonOnClick() {
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
+            this.SaveRoomInfo(roomName, password);
             window.videoTogetherExtension.CreateRoom(roomName, password)
         }
 
