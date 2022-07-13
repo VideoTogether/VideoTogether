@@ -38,6 +38,8 @@
                 this.exitButton.onclick = (() => { window.videoTogetherExtension.exitRoom(); });
                 this.inputRoomName = document.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = document.querySelector("#videoTogetherRoomPasswordInput");
+                this.inputRoomNameLabel = document.querySelector('#videoTogetherRoomNameLabel');
+                this.inputRoomPasswordLabel = document.querySelector("#videoTogetherRoomPasswordLabel");
 
                 this.statusText = document.querySelector("#videoTogetherStatusText");
                 this.InLobby();
@@ -53,11 +55,13 @@
             this.createRoomButton.style = "display: None";
             this.joinRoomButton.style = "display: None";
             this.exitButton.style = "";
+            this.inputRoomPasswordLabel.style.display = "None";
             this.inputRoomPassword.style.display = "None";
         }
 
         InLobby() {
             this.inputRoomName.disabled = false;
+            this.inputRoomPasswordLabel.style.display = "inline-block";
             this.inputRoomPassword.style.display = "inline-block";
             this.exitButton.style = "display: None"
             this.createRoomButton.style = "";
