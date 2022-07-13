@@ -50,6 +50,7 @@
   </img>
 </div>
 <style>
+	
   .vt-modal-content {
     background-color: #424242;
     border: solid 1px #2b2b2b;
@@ -63,7 +64,42 @@
 	border-radius: 4px;
     box-shadow: 0 3px 6px -4px #2b2b2b, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
   }
-
+	
+  #videoTogetherRoomPasswordInput {
+	 background-color: #2b2b2b;
+	 border: solid 1px #424242;
+	 box-sizing: border-box;
+	 transition: 0.5s;
+	 border-radius: 4px;
+	 outline: none;
+	 color: #fff;
+  }
+  #videoTogetherRoomPasswordInput:focus {
+	 border: 1px solid #63ADE5;
+  }
+  #videoTogetherRoomPasswordInput:hover {
+	 border: 1px solid #63ADE5;
+  }
+  #videoTogetherRoomNameInput {
+	 background-color: #2b2b2b;
+	 border: solid 1px #424242;
+	 box-sizing: border-box;
+	 border-radius: 4px;
+	 outline: none;
+	 transition: 0.5s;
+	 color: #fff;
+  }
+  #videoTogetherRoomNameInput:focus {
+	 border: 1px solid #63ADE5;
+  }
+  #videoTogetherRoomNameInput:hover {
+	 border: 1px solid #63ADE5;
+  }
+	
+ #videoTogetherHelpButton:hover {
+    border-color: #63ADE5;
+    background-color: #63ADE5;
+  }
   .vt-modal-close {
     position: absolute;
     top: 0;
@@ -87,6 +123,7 @@
     font-size: 16px;
     font-style: normal;
     line-height: 0px;
+	transition: 0.5s;
     text-align: center;
     text-transform: none;
     text-rendering: auto;
@@ -142,7 +179,6 @@
   }
 
   .vt-btn {
-    line-height: 1px;
     position: relative;
     display: inline-block;
     font-weight: 400;
@@ -152,7 +188,7 @@
     border: 1px solid transparent;
     box-shadow: 0 2px #fff;
     cursor: pointer;
-    transition: all .3s cubic-bezier(.645, .045, .355, 1);
+    transition: all .5s cubic-bezier(.645, .045, .355, 1);
     -webkit-user-select: none;
     -moz-user-select: none;
     user-select: none;
@@ -164,14 +200,14 @@
     color: #000000d9;
     border-color: #4cc2ff;
     background: #fff;
-    outline: 0;
+    outline: 1;
     text-shadow: 0 -1px 0 rgb(0 0 0 / 12%);
     box-shadow: 0 2px #0000000b;
   }
 
   .vt-btn:hover {
-    border-color: #fff !important;
-    background-color: #fff !important;
+    border-color: #4cc2ff !important;
+    background-color: #4cc2ff !important;
   }
 
   .vt-btn-primary {
