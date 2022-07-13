@@ -32,7 +32,7 @@
 
                 this.statusText = document.querySelector("#videoTogetherStatusText");
                 this.InLobby();
-                this.Init()
+                this.Init();
             }
 
             try {
@@ -55,7 +55,7 @@
         GetSavedRoomInfo() {
             try {
                 const data = JSON.parse(sessionStorage.getItem(this.sessionKey) || '');
-                if (data.roomName || data.password) {
+                if (data && (data.roomName || data.password)) {
                     return data;
                 }
                 return null;
