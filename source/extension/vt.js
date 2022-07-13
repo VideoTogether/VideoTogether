@@ -95,6 +95,7 @@
 
         JoinRoomButtonOnClick() {
             let roomName = this.inputRoomName.value;
+            this.SaveRoomInfo(roomName);
             window.videoTogetherExtension.JoinRoom(roomName)
         }
 
