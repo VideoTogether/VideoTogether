@@ -44,10 +44,10 @@
             const data = this.GetSavedRoomInfo()
             if (data) {
                 if (data.roomName) {
-                    this.inputRoomName = data.roomName;
+                    this.inputRoomName.value = data.roomName;
                 }
                 if (data.password) {
-                    this.inputRoomPassword = data.roomName;
+                    this.inputRoomPassword.value = data.roomName;
                 }
             }
         }
