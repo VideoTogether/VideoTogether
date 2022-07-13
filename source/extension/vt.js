@@ -11,8 +11,9 @@
 
 (function () {
     class VideoTogetherFlyPannel {
-        sessionKey = "VideoTogetherFlySaveSessionKey"
         constructor() {
+            this.sessionKey = "VideoTogetherFlySaveSessionKey";
+
             this.isMain = (window.self == window.top);
             if (this.isMain) {
                 let wrapper = document.createElement("div");

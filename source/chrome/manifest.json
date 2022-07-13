@@ -10,7 +10,8 @@
             ],
             "js": [
                 "extension.user.js"
-            ]
+            ],
+            "all_frames": true
         }
     ],
     "permissions": [
