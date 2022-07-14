@@ -120,7 +120,7 @@
 
         UpdateStatusText(text, color) {
             this.statusText.innerHTML = text;
-            this.statusText.style = "color:" + color;
+            this.statusText.style.color = color;
         }
     }
 
