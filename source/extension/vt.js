@@ -49,7 +49,25 @@
                 this.inputRoomPassword = document.querySelector("#videoTogetherRoomPasswordInput");
                 this.inputRoomNameLabel = document.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = document.querySelector("#videoTogetherRoomPasswordLabel");
-
+                this.videoTogetherVideoVolumeDown = document.querySelector("#videoTogetherVideoVolumeDown");
+                this.videoTogetherVideoVolumeUp = document.querySelector("#videoTogetherVideoVolumeUp");
+                this.videoTogetherVideoVolumeDown.onclick = () => {
+                    this.volume -= 0.1;
+                    this.volume = Math.max(0, this.volume);
+                    window.top.postMessage({
+                        type: MessageType.ChangeVideoVolume,
+                        data: { volume: this.volume }
+                    }, "*")
+                }
+                this.videoTogetherVideoVolumeUp.onclick = () => {
+                    this.volume += 0.1;
+                    this.volume = Math.min(1, this.volume);
+                    window.top.postMessage({
+                        type: MessageType.ChangeVideoVolume,
+                        data: { volume: this.volume }
+                    }, "*")
+                }
+                this.volume = 1;
                 this.statusText = document.querySelector("#videoTogetherStatusText");
                 this.InLobby();
                 this.Init();
@@ -87,6 +105,8 @@
             // voiceRoomIframe.style.display = "None";
             document.querySelector("body").appendChild(voiceRoomIframe);
             this.voiceButton.style = "display: None";
+            this.videoTogetherVideoVolumeDown.style = "";
+            this.videoTogetherVideoVolumeUp.style = "";
         }
 
         GetSavedRoomInfo() {
@@ -114,6 +134,8 @@
             this.voiceButton.style = "";
             this.inputRoomPasswordLabel.style.display = "None";
             this.inputRoomPassword.style.display = "None";
+            this.videoTogetherVideoVolumeDown.style = "display: None";
+            this.videoTogetherVideoVolumeUp.style = "display: None";
         }
 
         InLobby() {
@@ -124,6 +146,8 @@
             this.joinRoomButton.style = "";
             this.exitButton.style = "display: None";
             this.voiceButton.style = "display: None";
+            this.videoTogetherVideoVolumeDown.style = "display: None";
+            this.videoTogetherVideoVolumeUp.style = "display: None";
         }
 
         CreateRoomButtonOnClick() {
@@ -166,7 +190,9 @@
         SyncMasterVideo: 4,
         UpdateStatusText: 5,
         JumpToNewPage: 6,
-        GetRoomData: 7
+        GetRoomData: 7,
+        ChangeVoiceVolume: 8,
+        ChangeVideoVolume: 9,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -359,6 +385,11 @@
                 case MessageType.JumpToNewPage:
                     window.location = data.url;
                     break;
+                case MessageType.ChangeVideoVolume:
+                    this.ForEachVideo(video => {
+                        video.volume = data.volume;
+                    });
+                    this.sendMessageToSon(type, data);
                 default:
                     // console.info("unhandled message:", type, data)
                     break;
