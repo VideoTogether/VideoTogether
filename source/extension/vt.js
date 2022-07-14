@@ -32,12 +32,19 @@
                 this.createRoomButton = document.querySelector('#videoTogetherCreateButton');
                 this.joinRoomButton = document.querySelector("#videoTogetherJoinButton");
                 this.exitButton = document.querySelector("#videoTogetherExitButton");
+                this.voiceButton = document.querySelector("#videoTogetherVoiceButton");
+                this.voiceButton.onclick = this.JoinVoiceRoom.bind(this);
                 this.helpButton = document.querySelector("#videoTogetherHelpButton");
 
                 this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
                 this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
                 this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
-                this.exitButton.onclick = (() => { window.videoTogetherExtension.exitRoom(); });
+                this.exitButton.onclick = (() => {
+                    try {
+                        document.querySelector("#videoTogetherVoiceIframe").remove();
+                    } catch (e) { console.error(e); }
+                    window.videoTogetherExtension.exitRoom();
+                });
                 this.inputRoomName = document.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = document.querySelector("#videoTogetherRoomPasswordInput");
                 this.inputRoomNameLabel = document.querySelector('#videoTogetherRoomNameLabel');
@@ -65,6 +72,23 @@
             }
         }
 
+        JoinVoiceRoom() {
+            try {
+                document.querySelector("#videoTogetherVoiceIframe").remove();
+            } catch (e) { console.error(e); }
+            let roomName = "VideoTogether_" + this.inputRoomName.value;
+            alert("目前语音通话仍然只是实验性功能，有任何问题都欢迎点击帮助按钮反馈。为了隐私考虑，推荐使用超过7位的房间名");
+            let voiceRoomIframe = document.createElement("iframe");
+            let url = new URL("https://videotogether.github.io/videotogether.fm/");
+            url.searchParams.set("room", roomName);
+            voiceRoomIframe.src = url;
+            voiceRoomIframe.id = "videoTogetherVoiceIframe"
+            voiceRoomIframe.allow = "camera;microphone"
+            // voiceRoomIframe.style.display = "None";
+            document.querySelector("body").appendChild(voiceRoomIframe);
+            this.voiceButton.style = "display: None";
+        }
+
         GetSavedRoomInfo() {
             try {
                 const data = JSON.parse(sessionStorage.getItem(this.sessionKey) || '');
@@ -87,6 +111,7 @@
             this.createRoomButton.style = "display: None";
             this.joinRoomButton.style = "display: None";
             this.exitButton.style = "";
+            this.voiceButton.style = "";
             this.inputRoomPasswordLabel.style.display = "None";
             this.inputRoomPassword.style.display = "None";
         }
@@ -95,10 +120,10 @@
             this.inputRoomName.disabled = false;
             this.inputRoomPasswordLabel.style.display = "inline-block";
             this.inputRoomPassword.style.display = "inline-block";
-            this.exitButton.style = "display: None"
             this.createRoomButton.style = "";
             this.joinRoomButton.style = "";
-            this.exitButton.style = "display: None"
+            this.exitButton.style = "display: None";
+            this.voiceButton.style = "display: None";
         }
 
         CreateRoomButtonOnClick() {
