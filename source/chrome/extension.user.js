@@ -9,7 +9,7 @@
 // @grant        none
 // ==/UserScript==
 
-(function () {
+(async function () {
     if (window.VideoTogetherLoading) {
         return;
     }
@@ -18,7 +18,7 @@
     wrapper.innerHTML = `<div id="videoTogetherLoading">
     <div style="width: 100%">
         <img style="display: inline;" src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
-        <a target="_blank" href="https://videotogether.github.io/usage.html" style="display: inline;color: black;">Video Together 加载中...</p>
+        <a target="_blank" href="https://videotogether.github.io/guide/qa.html" style="display: inline;color: black;">Video Together 加载中...</p>
     </div>
 </div>
 
@@ -47,10 +47,13 @@
     }
 </style>`
     document.getElementsByTagName('body')[0].appendChild(wrapper);
-    fetch('https://cdn.jsdelivr.net/gh/maggch97/VideoTogether@latest/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600))
-        .then(r => r.text())
-        .then(text => eval(text))
-        .catch(e => console.log(e));
+    let script = document.createElement('script');
+    script.type = 'text/javascript';
+
+    let r = await fetch('http://127.0.0.1:8000/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600));
+    let vt = await r.text();
+    script.textContent = vt;
+    document.getElementsByTagName('body')[0].appendChild(script);
     function filter(e) {
         let target = e.target;
 
@@ -98,11 +101,4 @@
     }
     document.onmousedown = filter;
     document.ontouchstart = filter;
-    // chrome.storage.local.set({ "phasersTo": "awesome" }, function () {
-    //     console.log("123");
-    // });
-    console.log( eval(`chrome.storage.local.get(/* String or Array */["phasersTo"], function(items){
-        console.log(items);
-        //  items = [ { "phasersTo": "awesome" } ]
-    });`))
 })();
