@@ -16,25 +16,18 @@
     window.VideoTogetherLoading = true;
     let wrapper = document.createElement("div");
     wrapper.innerHTML = `<div id="videoTogetherLoading">
-    <div style="width: 100%">
+    <div id="videoTogetherLoadingwrap">
         <img style="display: inline;" src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
-        <a target="_blank" href="https://videotogether.github.io/guide/qa.html" style="display: inline;color: black;">Video Together 加载中...</p>
+        <a target="_blank" href="https://videotogether.github.io/guide/qa.html">Video Together 加载中...</a>
     </div>
 </div>
 
 <style>
     #videoTogetherLoading {
         touch-action: none;
-        line-height: 16px;
-        height: 80px;
-        font-size: 16px;
-        border: solid;
-        border-width: 2px;
-        border-bottom-color: #424242;
-        border-right-color: #424242;
-        border-left-color: #fff;
-        border-top-color: #fff;
-        background: silver;
+        height: 50px;
+        border: 1px solid #c9c8c8;
+        background: #ffffff;
         color: #212529;
         display: flex;
         align-items: center;
@@ -44,8 +37,28 @@
         right: 15px;
         width: 250px;
         text-align: center;
+        box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
+        border-radius: 5px;
     }
-</style>`
+    #videoTogetherLoadingwrap {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #videoTogetherLoadingwrap img {
+        margin-right: 12px;
+    }
+    #videoTogetherLoadingwrap a {
+        color: #212529;
+        text-decoration: none;
+    }
+    #videoTogetherLoadingwrap a:hover {
+        color: #1890ff;
+        text-decoration: underline;
+    }
+</style>
+`
     document.getElementsByTagName('body')[0].appendChild(wrapper);
     var script = document.createElement('script');
     script.type = 'text/javascript';
