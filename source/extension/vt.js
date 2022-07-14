@@ -280,6 +280,14 @@
             });
         }
 
+        UpdateStatusText(text, color) {
+            if (window.self != window.top) {
+                this.sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
+            } else {
+                window.videoTogetherFlyPannel.UpdateStatusText(text + "", color);
+            }
+        }
+
         processReceivedMessage(type, data) {
             let _this = this;
             // console.info("get ", type, window.location, data);
@@ -297,9 +305,9 @@
                         if (video.VideoTogetherVideoId == data.video.id) {
                             try {
                                 this.SyncMasterVideo(data, video);
-                                _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功" + _this.GetDisplayTimeText(), color: "green" });
+                                _this.UpdateStatusText("同步成功" + _this.GetDisplayTimeText(), "green");
                             } catch (e) {
-                                _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步异常" + e, color: "green" });
+                                this.UpdateStatusText("同步异常" + e, "green");
                             }
                         }
                     })
@@ -311,7 +319,7 @@
                             try {
                                 this.SyncMemberVideo(data, video);
                             } catch (e) {
-                                _this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步异常" + e, color: "green" });
+                                _this.UpdateStatusText(e, "green");
                             }
                         }
                     })
@@ -484,15 +492,16 @@
                 switch (this.role) {
                     case this.RoleEnum.Null:
                         return;
-                    case this.RoleEnum.Master:
+                    case this.RoleEnum.Master: {
                         let video = this.GetVideoDom();
                         if (video == undefined) {
-                            window.videoTogetherFlyPannel.UpdateStatusText("当前页面没有视频", "red");
+                            throw new Error("页面没有视频");
                         } else {
                             this.sendMessageToTop(MessageType.SyncMasterVideo, { video: video, password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
                         }
                         break;
-                    case this.RoleEnum.Member:
+                    }
+                    case this.RoleEnum.Member: {
                         let room = await this.GetRoom(this.roomName);
                         this.duration = room["duration"];
                         if (room["url"] != this.url) {
@@ -502,11 +511,17 @@
                                 this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
                             }
                         }
-                        this.sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName })
+                        let video = this.GetVideoDom();
+                        if (video == undefined) {
+                            throw new Error("页面没有视频");
+                        } else {
+                            this.sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName })
+                        }
                         break;
+                    }
                 }
-            } catch (error) {
-                window.videoTogetherFlyPannel.UpdateStatusText("同步失败 " + this.GetDisplayTimeText(), "red");
+            } catch (e) {
+                this.UpdateStatusText(e, "red");
             }
         }
 
@@ -642,8 +657,7 @@
                         console.info("play");
                         await videoDom.play();
                     } catch (e) {
-                        this.sendMessageToTop(MessageType.UpdateStatusText, { text: "自动播放失败，手动点击播放", color: "red" })
-                        return;
+                        throw new Error("请手动点击播放");
                     }
                 }
             }
@@ -655,12 +669,10 @@
 
         async CheckResponse(response) {
             if (response.status != 200) {
-                window.videoTogetherFlyPannel.UpdateStatusText("未知错误，错误码：" + response.status, "red");
-                throw new Error(response.status);
+                throw new Error("http code: " + response.status);
             } else {
                 let data = await response.json();
                 if ("errorMessage" in data) {
-                    window.videoTogetherFlyPannel.UpdateStatusText(data["errorMessage"], "red");
                     throw new Error(data["errorMessage"]);
                 }
                 return data;
@@ -668,12 +680,14 @@
         }
 
         async CreateRoom(name, password) {
-            let url = this.linkWithoutState(window.location);
-            let data = await this.UpdateRoom(name, password, url, 1, 0, true, 0);
-            this.setRole(this.RoleEnum.Master);
-            this.roomName = name;
-            this.password = password;
-            window.videoTogetherFlyPannel.InRoom();
+            try {
+                let url = this.linkWithoutState(window.location);
+                let data = await this.UpdateRoom(name, password, url, 1, 0, true, 0);
+                this.setRole(this.RoleEnum.Master);
+                this.roomName = name;
+                this.password = password;
+                window.videoTogetherFlyPannel.InRoom();
+            } catch (e) { this.UpdateStatusText(e, "red") }
         }
 
         async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration) {
