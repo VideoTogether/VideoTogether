@@ -10,7 +10,7 @@ import json
 app = Flask(__name__)
 CORS(app)
 REDIS_DB_URL = {
-    'host': '127.0.0.1',
+    'host': '127.0.0.5',
     'port': 6379,
     'password': '',
     'db': 0
@@ -140,8 +140,8 @@ def getStatistics():
     return jsonify({"roomCount": r.hlen(namespace)})
 
 
-# dbSwitchToRedis = False
-dbSwitchToRedis = True
+# db切换redis开关，默认false使用内存，true切换redis
+dbSwitchToRedis = False
 
 if __name__ == '__main__':
     if sys.argv[1] == "debug":
