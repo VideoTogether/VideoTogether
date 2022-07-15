@@ -13,6 +13,7 @@
     class VideoTogetherFlyPannel {
         constructor() {
             this.sessionKey = "VideoTogetherFlySaveSessionKey";
+            this.isInRoom = false;
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
@@ -71,6 +72,25 @@
                 this.statusText = document.querySelector("#videoTogetherStatusText");
                 this.InLobby();
                 this.Init();
+                this.observer = new MutationObserver(() => {
+                    // 节点变化触发视频检测功能
+                    if (!this.isInRoom && window.videoTogetherExtension && window.videoTogetherExtension.GetVideoDom) {
+                        if (!window.videoTogetherExtension.GetVideoDom()) {
+                            this.createRoomButton.style.display= 'none';
+                            this.inputRoomPassword.style.display = 'none';
+                            this.inputRoomPasswordLabel.style.display = 'none';
+                        } else {
+                            this.createRoomButton.style.display= '';
+                            this.inputRoomPassword.style.display = '';
+                            this.inputRoomPasswordLabel.style.display = '';
+                        }
+                    }
+                });
+                this.observer.observe(document.body, {
+                    subtree: true,
+                    attributes: true,
+                    childList: true,
+                })
             }
 
             try {
@@ -136,6 +156,7 @@
             this.inputRoomPassword.style.display = "None";
             this.videoTogetherVideoVolumeDown.style = "display: None";
             this.videoTogetherVideoVolumeUp.style = "display: None";
+            this.isInRoom = true;
         }
 
         InLobby() {
@@ -148,6 +169,7 @@
             this.voiceButton.style = "display: None";
             this.videoTogetherVideoVolumeDown.style = "display: None";
             this.videoTogetherVideoVolumeUp.style = "display: None";
+            this.isInRoom = false;
         }
 
         CreateRoomButtonOnClick() {
