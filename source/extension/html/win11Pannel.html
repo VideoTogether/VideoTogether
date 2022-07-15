@@ -12,7 +12,7 @@
       </span>
     </button>
     <div class="vt-modal-header">
-      <img style="width: 16px; height: 16px;"
+      <img class="vt-logo-circle" style="width: 16px; height: 16px;"
         src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
       <div class="vt-modal-title">Video Together</div>
     </div>
@@ -50,7 +50,11 @@
   </img>
 </div>
 <style>
-	
+
+  .vt-logo-circle {
+    border-radius: 2px;
+  }
+
   .vt-modal-content {
     background-color: #424242;
     border: solid 1px #2b2b2b;
@@ -61,39 +65,41 @@
     right: 15px;
     width: 260px;
     text-align: center;
-	border-radius: 4px;
+    border-radius: 4px;
     box-shadow: 0 3px 6px -4px #2b2b2b, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
   }
 	
   #videoTogetherRoomPasswordInput {
-	 background-color: #2b2b2b;
-	 border: solid 1px #424242;
-	 box-sizing: border-box;
-	 transition: 0.5s;
-	 border-radius: 4px;
-	 outline: none;
-	 color: #fff;
+    background-color: #2b2b2b;
+    border: solid 1px #424242;
+    box-sizing: border-box;
+    transition: 0.5s;
+    border-radius: 4px;
+    width: 76%;
+    outline: none;
+    color: #fff;
   }
   #videoTogetherRoomPasswordInput:focus {
-	 border: 1px solid #63ADE5;
+    border: 1px solid #63ADE5;
   }
   #videoTogetherRoomPasswordInput:hover {
-	 border: 1px solid #63ADE5;
+    border: 1px solid #63ADE5;
   }
   #videoTogetherRoomNameInput {
-	 background-color: #2b2b2b;
-	 border: solid 1px #424242;
-	 box-sizing: border-box;
-	 border-radius: 4px;
-	 outline: none;
-	 transition: 0.5s;
-	 color: #fff;
+    background-color: #2b2b2b;
+    border: solid 1px #424242;
+    box-sizing: border-box;
+    border-radius: 4px;
+    width: 76%;
+    outline: none;
+    transition: 0.5s;
+    color: #fff;
   }
   #videoTogetherRoomNameInput:focus {
-	 border: 1px solid #63ADE5;
+    border: 1px solid #63ADE5;
   }
   #videoTogetherRoomNameInput:hover {
-	 border: 1px solid #63ADE5;
+    border: 1px solid #63ADE5;
   }
 	
  #videoTogetherHelpButton:hover {
@@ -123,7 +129,7 @@
     font-size: 16px;
     font-style: normal;
     line-height: 0px;
-	transition: 0.5s;
+    transition: 0.5s;
     text-align: center;
     text-transform: none;
     text-rendering: auto;
@@ -159,7 +165,7 @@
 
   .vt-modal-body {
     padding: 10px 0;
-	color:#fff;
+    color:#fff;
     display: flex;
     flex-direction: column;
     align-items: center;
