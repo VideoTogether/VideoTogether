@@ -4,13 +4,17 @@ from flask_cors import CORS
 from gevent import pywsgi
 import sys
 import hashlib
-import redis
 import json
+
+# db切换redis开关，默认false使用内存，true切换redis
+dbSwitchToRedis = False
+if dbSwitchToRedis:
+    import redis
 
 app = Flask(__name__)
 CORS(app)
 REDIS_DB_URL = {
-    'host': '127.0.0.5',
+    'host': '127.0.0.1',
     'port': 6379,
     'password': '',
     'db': 0
@@ -139,9 +143,6 @@ def getStatistics():
     r = redisConnect(pool)
     return jsonify({"roomCount": r.hlen(namespace)})
 
-
-# db切换redis开关，默认false使用内存，true切换redis
-dbSwitchToRedis = False
 
 if __name__ == '__main__':
     if sys.argv[1] == "debug":
