@@ -4,9 +4,30 @@ from flask_cors import CORS
 from gevent import pywsgi
 import sys
 import hashlib
+import redis
+import json
 
 app = Flask(__name__)
 CORS(app)
+REDIS_DB_URL = {
+    'host': '127.0.0.1',
+    'port': 6379,
+    'password': '',
+    'db': 0
+}
+
+
+def getPool():
+    return redis.ConnectionPool(host=REDIS_DB_URL.get('host'),
+                                port=REDIS_DB_URL.get('port'),
+                                password=REDIS_DB_URL.get('password'),
+                                db=REDIS_DB_URL.get('db'),
+                                decode_responses=True
+                                )
+
+
+def redisConnect(redisPool):
+    return redis.Redis(connection_pool=redisPool)
 
 
 class Room:
@@ -26,7 +47,22 @@ class Room:
         return jsonify(tmpDict)
 
 
+def RoomDecoder(obj):
+    room = Room()
+    room.name = obj['name']
+    room.password = obj['password']
+    room.lastUpdateClientTime = obj['lastUpdateClientTime']
+    room.lastUpdateServerTime = obj['lastUpdateServerTime']
+    room.playbackRate = obj['playbackRate']
+    room.currentTime = obj['currentTime']
+    room.paused = obj['paused']
+    room.url = obj['url']
+    room.duration = obj['duration']
+    return room
+
+
 database = dict()
+pool = None
 
 
 def generateErrorResponse(errorMessage):
@@ -34,12 +70,21 @@ def generateErrorResponse(errorMessage):
     return jsonify({"errorMessage": errorMessage})
 
 
+namespace = "vt_namespace"
+
+
 @app.route('/room/get', methods=["get"])
 def getRoom():
     name = request.args["name"]
-    if(name not in database):
-        return generateErrorResponse("房间不存在")
-    return database[name].toJsonResponse()
+    if not dbSwitchToRedis:
+        if name not in database:
+            return generateErrorResponse("房间不存在")
+        return database[name].toJsonResponse()
+    r = redisConnect(pool)
+    if r.hexists(namespace, name):
+        cacheRoom = json.loads(r.hget(namespace, name), object_hook=RoomDecoder)
+        return cacheRoom.toJsonResponse()
+    return generateErrorResponse("房间不存在")
 
 
 @app.route('/timestamp', methods=["get"])
@@ -54,9 +99,16 @@ def updateRoom():
     room.password = hashlib.sha256(
         request.args["password"].encode('utf-8')).hexdigest()
 
-    if room.name in database:
-        if database[room.name].password != room.password:
-            return generateErrorResponse("密码错误")
+    if dbSwitchToRedis:
+        r = redisConnect(pool)
+        if r.hexists(namespace, room.name):
+            cacheRoom = json.loads(r.hget(namespace, room.name), object_hook=RoomDecoder)
+            if cacheRoom.password != room.password:
+                return generateErrorResponse("密码错误")
+    else:
+        if room.name in database:
+            if database[room.name].password != room.password:
+                return generateErrorResponse("密码错误")
 
     room.playbackRate = request.args["playbackRate"]
     room.currentTime = float(request.args["currentTime"])
@@ -70,21 +122,33 @@ def updateRoom():
         room.duration = float(request.args["duration"])
     room.lastUpdateServerTime = time.time()
 
-    database[room.name] = room
+    if not dbSwitchToRedis:
+        database[room.name] = room
+    else:
+        r = redisConnect(pool)
+        r.hset(namespace, room.name, json.dumps(room.__dict__))
     sys.stdout.flush()
     sys.stderr.flush()
     return room.toJsonResponse()
 
+
 @app.route('/statistics', methods=["get"])
 def getStatistics():
-    return jsonify({"roomCount": len(database)})
+    if not dbSwitchToRedis:
+        return jsonify({"roomCount": len(database)})
+    r = redisConnect(pool)
+    return jsonify({"roomCount": r.hlen(namespace)})
+
+
+# dbSwitchToRedis = False
+dbSwitchToRedis = True
 
 if __name__ == '__main__':
-    if(sys.argv[1] == "debug"):
+    if sys.argv[1] == "debug":
         app.debug = False
         app.run(host='0.0.0.0')
 
-    if(sys.argv[1] == "prod"):
+    if sys.argv[1] == "prod":
         server = pywsgi.WSGIServer(
-            ('0.0.0.0', 5000), app,  keyfile='private.key', certfile='certificate.crt')
+            ('0.0.0.0', 5000), app, keyfile='private.key', certfile='certificate.crt')
         server.serve_forever()
