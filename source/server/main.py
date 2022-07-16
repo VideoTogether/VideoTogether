@@ -6,7 +6,7 @@ import sys
 import hashlib
 import json
 
-# db切换redis开关，默认false使用内存，true切换redis
+# db切换redis开关，默认False使用内存，True切换redis
 dbSwitchToRedis = False
 if dbSwitchToRedis:
     import redis
