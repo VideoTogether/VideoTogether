@@ -14,7 +14,16 @@
             "all_frames": true
         }
     ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
     "permissions": [
-        "storage"
+        "webRequest",
+        "webRequestBlocking",
+        "storage",
+        "https://*/*",
+        "http://*/*"
     ]
 }
