@@ -6,6 +6,5 @@ sed -i "s#$common#$host#g" ./source/extension/config/release_host
 #cp ./source/extension/html/win11Pannel.html ./source/extension/html/pannel.html
 python ./script/build_extension.py
 cp ./release/vt.user.js .
-cp vt.user.js ./source/server
 redis-server ./redis.conf &
 python ./source/server/main.py debug
