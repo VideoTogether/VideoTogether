@@ -2,7 +2,7 @@
 
 **Currently only Chinese display language is available in this extension. I'm working on the localization now. English will be available soon, both extension display language and documentation.**
 
-## 欢迎访问插件主页，查看安装使用说明 https://videotogether.github.io
+## 欢迎访问插件主页，查看安装使用说明 http://2gether.video/
 
 文档正在完善中
 请加入插件的交流群获取更详细的帮助信息，以及反馈问题
@@ -15,9 +15,9 @@ QQ群: 170200260
 
 ## 安装使用
 
-安装说明： https://videotogether.github.io/guide/install.html
+安装说明： http://2gether.video/guide/install.html
 
-使用说明：https://videotogether.github.io/guide/introduction.html
+使用说明：http://2gether.video/guide/introduction.html
 
 ## 开发
 
@@ -39,7 +39,7 @@ QQ群: 170200260
 
 #### 私有化部署
 
-私有部署文档：https://videotogether.github.io/guide/deploy.html
+私有部署文档：http://2gether.video/guide/deploy.html
 
 ## TODO
 
