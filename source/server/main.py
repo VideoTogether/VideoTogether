@@ -1,5 +1,5 @@
 import time
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 from gevent import pywsgi
 import sys
@@ -7,7 +7,7 @@ import hashlib
 import json
 
 # db切换redis开关，默认False使用内存，True切换redis
-dbSwitchToRedis = False
+dbSwitchToRedis = True
 if dbSwitchToRedis:
     import redis
 
@@ -20,7 +20,6 @@ REDIS_DB_URL = {
     'db': 0
 }
 
-
 def getPool():
     return redis.ConnectionPool(host=REDIS_DB_URL.get('host'),
                                 port=REDIS_DB_URL.get('port'),
@@ -32,7 +31,6 @@ def getPool():
 
 def redisConnect(redisPool):
     return redis.Redis(connection_pool=redisPool)
-
 
 class Room:
     name: str
@@ -50,7 +48,6 @@ class Room:
         tmpDict.pop("password")
         return jsonify(tmpDict)
 
-
 def RoomDecoder(obj):
     room = Room()
     room.name = obj['name']
@@ -64,18 +61,14 @@ def RoomDecoder(obj):
     room.duration = obj['duration']
     return room
 
-
 database = dict()
 pool = None
-
 
 def generateErrorResponse(errorMessage):
     print({"errorMessage": errorMessage})
     return jsonify({"errorMessage": errorMessage})
 
-
 namespace = "vt_namespace"
-
 
 @app.route('/room/get', methods=["get"])
 def getRoom():
@@ -90,11 +83,9 @@ def getRoom():
         return cacheRoom.toJsonResponse()
     return generateErrorResponse("房间不存在")
 
-
 @app.route('/timestamp', methods=["get"])
 def getTimestamp():
     return jsonify({"timestamp": time.time()})
-
 
 @app.route('/room/update', methods=["get"])
 def updateRoom():
@@ -135,7 +126,6 @@ def updateRoom():
     sys.stderr.flush()
     return room.toJsonResponse()
 
-
 @app.route('/statistics', methods=["get"])
 def getStatistics():
     if not dbSwitchToRedis:
@@ -143,6 +133,9 @@ def getStatistics():
     r = redisConnect(pool)
     return jsonify({"roomCount": r.hlen(namespace)})
 
+@app.route('/vt.user.js', methods=["get"])
+def getVtUserJs():
+    return send_file("vt.user.js")
 
 if __name__ == '__main__':
     if sys.argv[1] == "debug":
