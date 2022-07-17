@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
-// @namespace    http://vt.panghair.com
+// @namespace    https://2gether.video/
 // @version      0.1
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
-// @icon         https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-32x32.png
+// @icon         https://2gether.video/icon/favicon-32x32.png
 // @grant        none
 // ==/UserScript==
 
@@ -117,7 +117,7 @@
             let roomName = "VideoTogether_" + this.inputRoomName.value;
             alert("目前语音通话仍然只是实验性功能，有任何问题都欢迎点击帮助按钮反馈。为了隐私考虑，推荐使用超过7位的房间名");
             let voiceRoomIframe = document.createElement("iframe");
-            let url = new URL("https://videotogether.github.io/videotogether.fm/");
+            let url = new URL("https://voice.2gether.video");
             url.searchParams.set("room", roomName);
             voiceRoomIframe.src = url;
             voiceRoomIframe.id = "videoTogetherVoiceIframe"
@@ -186,7 +186,7 @@
         }
 
         HelpButtonOnClick() {
-            window.open('https://videotogether.github.io/guide/qa.html', '_blank');
+            window.open('https://2gether.video/guide/qa.html', '_blank');
         }
 
         UpdateStatusText(text, color) {

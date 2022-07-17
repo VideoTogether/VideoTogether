@@ -5,7 +5,7 @@
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
-// @icon         https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-32x32.png
+// @icon         https://2gether.video/icon/favicon-32x32.png
 // @grant        none
 // ==/UserScript==
 
@@ -17,8 +17,8 @@
     let wrapper = document.createElement("div");
     wrapper.innerHTML = `<div id="videoTogetherLoading">
     <div id="videoTogetherLoadingwrap">
-        <img style="display: inline;" src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
-        <a target="_blank" href="https://videotogether.github.io/guide/qa.html">Video Together 加载中...</a>
+        <img style="display: inline;" src="https://www.2gether.video/icon/favicon-16x16.png">
+        <a target="_blank" href="http://2gether.video/guide/qa.html">Video Together 加载中...</a>
     </div>
 </div>
 
@@ -62,7 +62,7 @@
     document.getElementsByTagName('body')[0].appendChild(wrapper);
     var script = document.createElement('script');
     script.type = 'text/javascript';
-    script.src = 'https://cdn.jsdelivr.net/gh/maggch97/VideoTogether@latest/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
+    script.src = 'https://www.2gether.video/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
     document.getElementsByTagName('body')[0].appendChild(script);
     function filter(e) {
         let target = e.target;

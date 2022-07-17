@@ -5,7 +5,7 @@
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
-// @icon         https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-32x32.png
+// @icon         https://2gether.video/icon/favicon-32x32.png
 // @grant        none
 // @require      http://127.0.0.1:8000/release/vt.debug.user.js
 // ==/UserScript==

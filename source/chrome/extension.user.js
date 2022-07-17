@@ -5,7 +5,7 @@
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
-// @icon         https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-32x32.png
+// @icon         https://2gether.video/icon/favicon-32x32.png
 // @grant        none
 // ==/UserScript==
 
@@ -17,8 +17,8 @@
     let wrapper = document.createElement("div");
     wrapper.innerHTML = `<div id="videoTogetherLoading">
     <div style="width: 100%">
-        <img style="display: inline;" src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
-        <a target="_blank" href="https://videotogether.github.io/guide/qa.html" style="display: inline;color: black;">Video Together 加载中...</p>
+        <img style="display: inline;" src="https://www.2gether.video/icon/favicon-16x16.png">
+        <a target="_blank" href="https://2gether.video/guide/qa.html" style="display: inline;color: black;">Video Together 加载中...</p>
     </div>
 </div>
 
@@ -50,7 +50,7 @@
     let script = document.createElement('script');
     script.type = 'text/javascript';
 
-    let r = await fetch('http://127.0.0.1:8000/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600));
+    let r = await fetch('https://www.2gether.video/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600));
     let vt = await r.text();
     script.textContent = vt;
     document.getElementsByTagName('body')[0].appendChild(script);

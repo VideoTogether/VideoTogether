@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
-// @namespace    http://vt.panghair.com
+// @namespace    https://2gether.video/
 // @version      0.1
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
-// @icon         https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-32x32.png
+// @icon         https://2gether.video/icon/favicon-32x32.png
 // @grant        none
 // ==/UserScript==
 
@@ -13,6 +13,7 @@
     class VideoTogetherFlyPannel {
         constructor() {
             this.sessionKey = "VideoTogetherFlySaveSessionKey";
+            this.isInRoom = false;
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
@@ -21,7 +22,7 @@
     <div id="videoTogetherHeader" class="vt-modal-header">
       <div style="display: flex;align-items: center;">
         <img style="width: 16px; height: 16px;"
-          src="https://cdn.jsdelivr.net/gh/maggch97/VideoTogether/icon/favicon-16x16.png">
+          src="https://www.2gether.video/icon/favicon-16x16.png">
         <div class="vt-modal-title">Video Together</div>
       </div>
       <button id="videoTogetherMinimize" type="button" aria-label="Close" class="vt-modal-close">
@@ -342,6 +343,25 @@
                 this.statusText = document.querySelector("#videoTogetherStatusText");
                 this.InLobby();
                 this.Init();
+                this.observer = new MutationObserver(() => {
+                    // 节点变化触发视频检测功能
+                    if (!this.isInRoom && window.videoTogetherExtension && window.videoTogetherExtension.GetVideoDom) {
+                        if (!window.videoTogetherExtension.GetVideoDom()) {
+                            this.createRoomButton.style.display= 'none';
+                            this.inputRoomPassword.style.display = 'none';
+                            this.inputRoomPasswordLabel.style.display = 'none';
+                        } else {
+                            this.createRoomButton.style.display= '';
+                            this.inputRoomPassword.style.display = '';
+                            this.inputRoomPasswordLabel.style.display = '';
+                        }
+                    }
+                });
+                this.observer.observe(document.body, {
+                    subtree: true,
+                    attributes: true,
+                    childList: true,
+                })
             }
 
             try {
@@ -368,7 +388,7 @@
             let roomName = "VideoTogether_" + this.inputRoomName.value;
             alert("目前语音通话仍然只是实验性功能，有任何问题都欢迎点击帮助按钮反馈。为了隐私考虑，推荐使用超过7位的房间名");
             let voiceRoomIframe = document.createElement("iframe");
-            let url = new URL("https://videotogether.github.io/videotogether.fm/");
+            let url = new URL("https://voice.2gether.video");
             url.searchParams.set("room", roomName);
             voiceRoomIframe.src = url;
             voiceRoomIframe.id = "videoTogetherVoiceIframe"
@@ -407,6 +427,7 @@
             this.inputRoomPassword.style.display = "None";
             this.videoTogetherVideoVolumeDown.style = "display: None";
             this.videoTogetherVideoVolumeUp.style = "display: None";
+            this.isInRoom = true;
         }
 
         InLobby() {
@@ -419,6 +440,7 @@
             this.voiceButton.style = "display: None";
             this.videoTogetherVideoVolumeDown.style = "display: None";
             this.videoTogetherVideoVolumeUp.style = "display: None";
+            this.isInRoom = false;
         }
 
         CreateRoomButtonOnClick() {
@@ -435,7 +457,7 @@
         }
 
         HelpButtonOnClick() {
-            window.open('https://videotogether.github.io/guide/qa.html', '_blank');
+            window.open('https://2gether.video/guide/qa.html', '_blank');
         }
 
         UpdateStatusText(text, color) {
