@@ -135,7 +135,7 @@ def getStatistics():
 
 @app.route('/vt.user.js', methods=["get"])
 def getVtUserJs():
-    return send_file("vt.user.js")
+    return send_file("../../release/vt.user.js")
 
 if __name__ == '__main__':
     if sys.argv[1] == "debug":
