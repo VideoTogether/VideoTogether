@@ -62,6 +62,8 @@ const findChrome = require('carlo/lib/find_chrome');
                 await pageHost.keyboard.press("Space");
             }
             await sleep(5000);
+            await pageMember1.evaluate(() => { window.scroll(0, 0); });
+            await pageHost.evaluate(() => { window.scroll(0, 0); });
             await pageMember1.screenshot({ path: name + "_" + (++x) + '_member.png', fullPage: false });
             await pageHost.screenshot({ path: name + "_" + (x) + '_host.png', fullPage: false });
 

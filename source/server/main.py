@@ -1,3 +1,4 @@
+from copy import deepcopy
 import time
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
@@ -7,18 +8,21 @@ import hashlib
 import json
 
 # db切换redis开关，默认False使用内存，True切换redis
+# TODO 现在 redis 的代码混到了 API 里面，need someone help 写写好点
 dbSwitchToRedis = False
 if dbSwitchToRedis:
     import redis
 
 app = Flask(__name__)
 CORS(app)
+
 REDIS_DB_URL = {
     'host': '127.0.0.1',
     'port': 6379,
     'password': '',
     'db': 0
 }
+
 
 def getPool():
     return redis.ConnectionPool(host=REDIS_DB_URL.get('host'),
@@ -32,6 +36,7 @@ def getPool():
 def redisConnect(redisPool):
     return redis.Redis(connection_pool=redisPool)
 
+
 class Room:
     name: str
     password: str
@@ -42,11 +47,25 @@ class Room:
     paused: bool
     url: str
     duration: float
+    tempUser: str
+
+    def __init__(self) -> None:
+        self.tempUser = ""
 
     def toJsonResponse(self):
         tmpDict = self.__dict__.copy()
         tmpDict.pop("password")
+        tmpDict.pop("tempUser")
         return jsonify(tmpDict)
+
+
+class TempUser:
+    id: str
+    created: float
+    lastSeen: float
+
+# TODO 找个 json 库
+
 
 def RoomDecoder(obj):
     room = Room()
@@ -61,31 +80,49 @@ def RoomDecoder(obj):
     room.duration = obj['duration']
     return room
 
+
 database = dict()
+tempUserDatabase = dict()
 pool = None
+
 
 def generateErrorResponse(errorMessage):
     print({"errorMessage": errorMessage})
     return jsonify({"errorMessage": errorMessage})
 
+
 namespace = "vt_namespace"
+
 
 @app.route('/room/get', methods=["get"])
 def getRoom():
     name = request.args["name"]
+    if "tempUser" in request.args:
+        tempUserId = request.args["tempUser"]
+        if tempUserId not in tempUserDatabase:
+            tempUser = TempUser()
+            tempUser.id = tempUserId
+            tempUser.created = time.time()
+            tempUser.lastSeen = time.time()
+            tempUserDatabase[tempUserId] = tempUser
+        else:
+            tempUserDatabase[tempUserId].lastSeen = time.time()
     if not dbSwitchToRedis:
         if name not in database:
             return generateErrorResponse("房间不存在")
         return database[name].toJsonResponse()
     r = redisConnect(pool)
     if r.hexists(namespace, name):
-        cacheRoom = json.loads(r.hget(namespace, name), object_hook=RoomDecoder)
+        cacheRoom = json.loads(r.hget(namespace, name),
+                               object_hook=RoomDecoder)
         return cacheRoom.toJsonResponse()
     return generateErrorResponse("房间不存在")
+
 
 @app.route('/timestamp', methods=["get"])
 def getTimestamp():
     return jsonify({"timestamp": time.time()})
+
 
 @app.route('/room/update', methods=["get"])
 def updateRoom():
@@ -97,13 +134,15 @@ def updateRoom():
     if dbSwitchToRedis:
         r = redisConnect(pool)
         if r.hexists(namespace, room.name):
-            cacheRoom = json.loads(r.hget(namespace, room.name), object_hook=RoomDecoder)
+            cacheRoom = json.loads(
+                r.hget(namespace, room.name), object_hook=RoomDecoder)
             if cacheRoom.password != room.password:
                 return generateErrorResponse("密码错误")
     else:
         if room.name in database:
             if database[room.name].password != room.password:
                 return generateErrorResponse("密码错误")
+            room = deepcopy(database[room.name])
 
     room.playbackRate = request.args["playbackRate"]
     room.currentTime = float(request.args["currentTime"])
@@ -115,7 +154,26 @@ def updateRoom():
         # return generateErrorResponse("需要升级，点击帮助按钮获取更新")
     else:
         room.duration = float(request.args["duration"])
+        if not (room.duration > 0):
+            # fix NaN
+            room.duration = 1e9
     room.lastUpdateServerTime = time.time()
+
+    if "tempUser" in request.args:
+        tempUserId = request.args["tempUser"]
+        if tempUserId not in tempUserDatabase:
+            tempUser = TempUser()
+            tempUser.id = tempUserId
+            tempUser.created = time.time()
+            tempUser.lastSeen = time.time()
+            tempUserDatabase[tempUserId] = tempUser
+            room.tempUser = tempUserId
+            print(room.tempUser)
+        else:
+            print(tempUserId, "123", room.tempUser)
+            tempUserDatabase[tempUserId].lastSeen = time.time()
+            if room.tempUser != tempUserId:
+                return generateErrorResponse("其他房主正在同步")
 
     if not dbSwitchToRedis:
         database[room.name] = room
@@ -126,16 +184,19 @@ def updateRoom():
     sys.stderr.flush()
     return room.toJsonResponse()
 
+
 @app.route('/statistics', methods=["get"])
 def getStatistics():
     if not dbSwitchToRedis:
-        return jsonify({"roomCount": len(database)})
+        return jsonify({"roomCount": len(database), "userCount": len(tempUserDatabase)})
     r = redisConnect(pool)
     return jsonify({"roomCount": r.hlen(namespace)})
+
 
 @app.route('/vt.user.js', methods=["get"])
 def getVtUserJs():
     return send_file("../../release/vt.user.js")
+
 
 if __name__ == '__main__':
     if sys.argv[1] == "debug":

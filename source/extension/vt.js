@@ -55,42 +55,37 @@
                 this.videoTogetherVideoVolumeDown.onclick = () => {
                     this.volume -= 0.1;
                     this.volume = Math.max(0, this.volume);
-                    window.top.postMessage({
-                        type: MessageType.ChangeVideoVolume,
-                        data: { volume: this.volume }
-                    }, "*")
+                    window.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
                 }
                 this.videoTogetherVideoVolumeUp.onclick = () => {
                     this.volume += 0.1;
                     this.volume = Math.min(1, this.volume);
-                    window.top.postMessage({
-                        type: MessageType.ChangeVideoVolume,
-                        data: { volume: this.volume }
-                    }, "*")
+                    window.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
                 }
                 this.volume = 1;
                 this.statusText = document.querySelector("#videoTogetherStatusText");
                 this.InLobby();
                 this.Init();
-                this.observer = new MutationObserver(() => {
-                    // 节点变化触发视频检测功能
-                    if (!this.isInRoom && window.videoTogetherExtension && window.videoTogetherExtension.GetVideoDom) {
-                        if (!window.videoTogetherExtension.GetVideoDom()) {
-                            this.createRoomButton.style.display= 'none';
-                            this.inputRoomPassword.style.display = 'none';
-                            this.inputRoomPasswordLabel.style.display = 'none';
-                        } else {
-                            this.createRoomButton.style.display= '';
-                            this.inputRoomPassword.style.display = '';
-                            this.inputRoomPasswordLabel.style.display = '';
-                        }
-                    }
-                });
-                this.observer.observe(document.body, {
-                    subtree: true,
-                    attributes: true,
-                    childList: true,
-                })
+                // this observer may cause some bugs at some page, like https://2gether.video/guide/local.html
+                // this.observer = new MutationObserver(() => {
+                //     // 节点变化触发视频检测功能
+                //     if (!this.isInRoom && window.videoTogetherExtension && window.videoTogetherExtension.GetVideoDom) {
+                //         if (!window.videoTogetherExtension.GetVideoDom()) {
+                //             this.createRoomButton.style.display = 'none';
+                //             this.inputRoomPassword.style.display = 'none';
+                //             this.inputRoomPasswordLabel.style.display = 'none';
+                //         } else {
+                //             this.createRoomButton.style.display = '';
+                //             this.inputRoomPassword.style.display = '';
+                //             this.inputRoomPasswordLabel.style.display = '';
+                //         }
+                //     }
+                // });
+                // this.observer.observe(document.body, {
+                //     subtree: true,
+                //     attributes: true,
+                //     childList: true,
+                // })
             }
 
             try {
@@ -263,12 +258,16 @@
             this.serverTimestamp = 0;
             this.localTimestamp = 0;
             this.activatedVideo = undefined;
+            this.tempUser = this.generateUUID();
 
             this.isMain = (window.self == window.top);
             this.CreateVideoDomObserver();
             this.timer = setInterval(this.ScheduledTask.bind(this), 2 * 1000);
             this.videoMap = new Map();
             window.addEventListener('message', message => {
+                if (message.data.context) {
+                    this.tempUser = message.data.context.tempUser;
+                }
                 this.processReceivedMessage(message.data.type, message.data.data);
             });
             this.SyncTimeWithServer();
@@ -317,13 +316,16 @@
             for (let i = 0; i < iframs.length; i++) {
                 iframs[i].contentWindow.postMessage({
                     type: type,
-                    data: data
+                    data: data,
+                    context: {
+                        tempUser: this.tempUser
+                    }
                 }, "*");
                 // console.info("send ", type, iframs[i].contentWindow, data)
             }
         }
 
-        ForEachVideo(func) {
+        async ForEachVideo(func) {
             try {
                 // 腾讯视频
                 if (window.__PLAYER__ != undefined) {
@@ -339,15 +341,15 @@
                     videoWrapper.duration = window.__PLAYER__.currentVideoInfo.duration;
                     videoWrapper.playbackRateGetter = () => window.__PLAYER__.playbackRate;
                     videoWrapper.playbackRateSetter = (v) => window.__PLAYER__.playbackRate = v;
-                    func(videoWrapper);
+                    await func(videoWrapper);
                 }
             } catch (e) { console.error(e) };
 
-            this.video_tag_names.forEach(tag => {
+            this.video_tag_names.forEach(async tag => {
                 let videos = document.getElementsByTagName(tag);
                 for (let i = 0; i < videos.length; i++) {
                     try {
-                        func(videos[i]);
+                        await func(videos[i]);
                     } catch (e) { console.error(e) };
                 }
             });
@@ -374,25 +376,25 @@
                     this.videoMap.set(data.id, data);
                     break;
                 case MessageType.SyncMasterVideo:
-                    this.ForEachVideo(video => {
+                    this.ForEachVideo(async video => {
                         if (video.VideoTogetherVideoId == data.video.id) {
                             try {
-                                this.SyncMasterVideo(data, video);
+                                await this.SyncMasterVideo(data, video);
                                 _this.UpdateStatusText("同步成功" + _this.GetDisplayTimeText(), "green");
                             } catch (e) {
-                                this.UpdateStatusText("同步异常" + e, "green");
+                                this.UpdateStatusText(e, "red");
                             }
                         }
                     })
                     this.sendMessageToSon(type, data);
                     break;
                 case MessageType.SyncMemberVideo:
-                    this.ForEachVideo(video => {
+                    this.ForEachVideo(async video => {
                         if (video.VideoTogetherVideoId == data.video.id) {
                             try {
-                                this.SyncMemberVideo(data, video);
+                                await this.SyncMemberVideo(data, video);
                             } catch (e) {
-                                _this.UpdateStatusText(e, "green");
+                                _this.UpdateStatusText(e, "red");
                             }
                         }
                     })
@@ -523,10 +525,15 @@
         }
 
         async JoinRoom(name) {
-            let data = this.GetRoom(name);
-            this.roomName = name;
-            this.setRole(this.RoleEnum.Member);
-            window.videoTogetherFlyPannel.InRoom();
+            try {
+                this.tempUser = this.generateUUID();
+                let data = await this.GetRoom(name);
+                this.roomName = name;
+                this.setRole(this.RoleEnum.Member);
+                window.videoTogetherFlyPannel.InRoom();
+            } catch (e) {
+                this.UpdateStatusText(e, "red");
+            }
         }
 
         exitRoom() {
@@ -541,7 +548,7 @@
         async ScheduledTask() {
             let _this = this;
             try {
-                this.ForEachVideo(video => {
+                await this.ForEachVideo(video => {
                     if (video.VideoTogetherVideoId == undefined) {
                         video.VideoTogetherVideoId = _this.generateUUID();
                     }
@@ -630,6 +637,9 @@
                         closestVideo = video;
                         return;
                     }
+                    if (closestVideo == undefined) {
+                        closestVideo = video;
+                    }
                     if (Math.abs(video.duration - _this.duration) < closest) {
                         closest = Math.abs(video.duration - _this.duration);
                         closestVideo = video;
@@ -643,14 +653,13 @@
         // But we can sync when video event is traggered to enhance the performance
         // and reduce server workload
         async SyncMasterVideo(data, videoDom) {
-            this.UpdateRoom(data.roomName,
+            await this.UpdateRoom(data.roomName,
                 data.password,
                 data.link,
                 videoDom.playbackRate,
                 videoDom.currentTime,
                 videoDom.paused,
                 videoDom.duration);
-            window.videoTogetherFlyPannel.UpdateStatusText("同步成功 " + this.GetDisplayTimeText(), "green");
         }
 
         linkWithoutState(link) {
@@ -759,6 +768,7 @@
 
         async CreateRoom(name, password) {
             try {
+                this.tempUser = this.generateUUID();
                 let url = this.linkWithoutState(window.location);
                 let data = await this.UpdateRoom(name, password, url, 1, 0, true, 0);
                 this.setRole(this.RoleEnum.Master);
@@ -778,6 +788,7 @@
             apiUrl.searchParams.set("url", url);
             apiUrl.searchParams.set("lastUpdateClientTime", this.getLocalTimestamp());
             apiUrl.searchParams.set("duration", duration);
+            apiUrl.searchParams.set("tempUser", this.tempUser);
             // url.searchParams.set("lastUpdateClientTime", timestamp)
             let response = await fetch(apiUrl);
             let data = await this.CheckResponse(response);
@@ -787,6 +798,7 @@
         async GetRoom(name) {
             let url = new URL(this.video_together_host + "/room/get");
             url.searchParams.set("name", name);
+            url.searchParams.set("tempUser", this.tempUser);
             let response = await fetch(url);
             let data = await this.CheckResponse(response);
             return data;

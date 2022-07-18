@@ -50,7 +50,7 @@
     let script = document.createElement('script');
     script.type = 'text/javascript';
 
-    let r = await fetch('https://www.2gether.video/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600));
+    let r = await fetch('http://127.0.0.1:7000/release/vt.debug.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600));
     let vt = await r.text();
     script.textContent = vt;
     document.getElementsByTagName('body')[0].appendChild(script);
