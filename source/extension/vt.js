@@ -18,7 +18,7 @@
             this.isMain = (window.self == window.top);
             if (this.isMain) {
                 let wrapper = document.createElement("div");
-                wrapper.innerHTML = `{{{ {"user": "./html/pannel.html","order":100} }}}`;
+                wrapper.innerHTML = `{{{ {"user": "./html/autopannel.html","order":100} }}}`;
                 document.querySelector("body").appendChild(wrapper);
 
                 document.getElementById("videoTogetherMinimize").onclick = () => {
