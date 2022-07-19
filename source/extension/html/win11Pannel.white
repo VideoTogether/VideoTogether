@@ -1,0 +1,299 @@
+<div id="videoTogetherFlyPannel">
+  <div id="videoTogetherHeader" class="vt-modal-content">
+    <button id="videoTogetherMinimize" type="button" aria-label="Close" class="vt-modal-close">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="close" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true"
+            role="img" class="iconify iconify--ic" width="20" height="20" preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 24 24">
+            <path fill="currentColor" d="M18 12.998H6a1 1 0 0 1 0-2h12a1 1 0 0 1 0 2z"></path>
+          </svg>
+        </span>
+      </span>
+    </button>
+    <div class="vt-modal-header">
+      <img class="vt-logo-circle" style="width: 16px; height: 16px;"
+        src="https://www.2gether.video/icon/favicon-16x16.png">
+      <div class="vt-modal-title">Video Together</div>
+    </div>
+    <div class="vt-modal-body">
+      <span style="display: inline; height: 22px" id="videoTogetherRoleText"></span>
+      <span style="display: inline; height: 22px" id="videoTogetherStatusText"></span>
+      <div style="margin-bottom: 10px;">
+        <span id="videoTogetherRoomNameLabel">房间：</span>
+        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="请输入房间名">
+      </div>
+      <div>
+        <span id="videoTogetherRoomPasswordLabel">密码：</span>
+        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="密码,只有建房需要">
+      </div>
+    </div>
+    <div class="vt-modal-footer">
+      <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
+        <span>建 房</span>
+      </button>
+      <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
+        <span>加 入</span>
+      </button>
+      <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
+        <span>退 出</span>
+      </button>
+      <button id="videoTogetherVoiceButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
+        <span>通 话</span>
+      </button>
+      <button id="videoTogetherVideoVolumeDown" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
+        <span>-</span>
+      </button>
+      <button id="videoTogetherVideoVolumeUp" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
+        <span>+</span>
+      </button>
+      <button id="videoTogetherHelpButton" class="vt-btn" type="button">
+        <span>帮 助</span>
+      </button>
+    </div>
+  </div>
+</div>
+<div style="width: 24px; height: 24px;" id="VideoTogetherSamllIcon">
+  <img class="vt-logo-circle" draggable="false" width="24px" height="24px" id="videoTogetherMaximize"
+    src="data:image/png;base64,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">
+  </img>
+</div>
+<style>
+
+  .vt-logo-circle {
+    border-radius: 2px;
+  }
+
+  #videoTogetherFlyPannel {
+    background-color: #fff !important;
+    border: solid 1px #fff !important;
+    display: block;
+    z-index: 2147483647;
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    width: 260px;
+    height: 220px;
+    text-align: center;
+    border-radius: 5.6px;
+    box-shadow: 0 3px 6px -4px #fff, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
+  }
+	
+  .vt-modal-content {
+    width: 100%;
+    height: 100%;
+  }
+
+  #videoTogetherHeader {
+    cursor: move;
+    touch-action: none;
+    align-items: center;
+    display: block;
+  }
+
+  #videoTogetherRoomPasswordInput {
+    background-color: #efefef !important;
+    border: solid 1px #424242;
+    box-sizing: border-box;
+    transition: 0.5s;
+    border-radius: 4px;
+    width: 76%;
+	height: 22px;
+    outline: none;
+    color: #000 !important;
+  }
+  #videoTogetherRoomPasswordInput:focus {
+    border: 1px solid #63ADE5;
+  }
+  #videoTogetherRoomPasswordInput:hover {
+    border: 1px solid #63ADE5;
+  }
+  #videoTogetherRoomNameInput {
+    background-color: #efefef !important;
+    border: solid 1px #424242;
+    box-sizing: border-box;
+    border-radius: 4px;
+    width: 76%;
+	height: 22px;
+    outline: none;
+    transition: 0.5s;
+    color: #000 !important;
+  }
+  #videoTogetherRoomNameInput:focus {
+    border: 1px solid #63ADE5;
+  }
+  #videoTogetherRoomNameInput:hover {
+    border: 1px solid #63ADE5;
+  }
+	
+ #videoTogetherHelpButton:hover {
+    border-color: #63ADE5;
+    background-color: #63ADE5;
+  }
+  .vt-modal-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 10;
+    padding: 0;
+    color: #424242 !important;
+    font-weight: 700;
+    line-height: 1px;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    cursor: pointer;
+    transition: color .3s;
+  }
+
+  .vt-modal-close-x {
+    width: 46px;
+    height: 46px;
+    font-size: 16px;
+    font-style: normal;
+    line-height: 0px;
+    transition: 0.5s;
+    text-align: center;
+    text-transform: none;
+    text-rendering: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vt-modal-close-x:hover {
+    color: #1890ff;
+  }
+
+  .vt-modal-header {
+    display: flex;
+    padding: 12px;
+    color: #000;
+    background: #fff;
+    border-bottom: 1px solid #fff;
+    border-radius: 4px 4px 0 0;
+    align-items: center;
+	
+  }
+
+  .vt-modal-title {
+    margin: 0;
+    margin-left: 10px;
+    color: #424242 !important;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+    word-wrap: break-word;
+  }
+
+  .vt-modal-body {
+    padding: 8px 8px;
+    color:#424242 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    font-size: 16px;
+  }
+
+  .vt-modal-footer {
+    padding: 8px 8px;
+    text-align: right;
+    background: transparent;
+    border-top: 1px solid #fff !important;
+    border-radius: 0 0 2px 2px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .vt-btn {
+    position: relative;
+    display: inline-block;
+    font-weight: 400;
+    white-space: nowrap;
+    text-align: center;
+    background-image: none;
+    border: 1px solid transparent;
+    box-shadow: 0 2px #000;
+    cursor: pointer;
+    transition: all .5s cubic-bezier(.645, .045, .355, 1);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    height: 32px;
+    padding: 4px 15px;
+    font-size: 14px;
+    border-radius: 4px;
+    color: #000000d9;
+    border-color: #4cc2ff;
+    background: #fff;
+    outline: 1;
+    text-shadow: 0 -1px 0 rgb(0 0 0 / 12%);
+    box-shadow: 0 2px #0000000b;
+  }
+
+  .vt-btn:hover {
+    border-color: #4cc2ff !important;
+    background-color: #4cc2ff !important;
+  }
+
+  .vt-btn-primary {
+    color: #000 !important;
+    border-color: #4cc2ff;
+    background: #4cc2ff !important;
+  }
+
+  .vt-btn-primary:hover {
+    border-color: #efefef !important;
+    background-color: #efefef !important;
+  }
+
+  .vt-btn-secondary {
+    color: #000 !important;
+    border-color: #4cc2ff;
+    background: #4cc2ff !important;
+  }
+
+  .vt-btn-secondary:hover {
+    border-color: #efefef !important;
+    background-color: #efefef !important;
+  }
+
+  .vt-btn-dangerous {
+    color: #000 !important;
+    border-color: #4cc2ff !important;
+    background-color: #4cc2ff !important;
+  }
+
+  .vt-btn-dangerous:hover {
+    border-color: #ff5722 !important;
+    background-color: #ff5722 !important;
+  }
+
+  .vt-modal-content-item {
+    cursor: pointer;
+    padding: 0 12px;
+    width: 45%;
+    height: 60px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+  }
+
+  .vt-modal-content-item:hover {
+    background-color: #efefef !important;
+  }
+
+  #VideoTogetherSamllIcon {
+    display: none;
+    z-index: 2147483647;
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    text-align: center;
+  }
+
+</style>
