@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "priority": 1,
+        "action": {
+            "type": "redirect",
+            "redirect": {
+                "url": "https://videotogether.github.io/VideoBridge/bridge/aHR0cHM6Ly9uZC1zdGF0aWMuYmRzdGF0aWMuY29tL20tc3RhdGljL2Jhc2UvdGhpcmRQYXJ0eS92aWRlby1wbGF5ZXIvX25vbWQ1X25vbW9kL3ZpZGVvLXBsYXllcl8xNjU1OTcwOTAzNTQzLmpz"
+            }
+        },
+        "condition": {
+            "urlFilter": "bdstatic.com/m-static/base/thirdParty/video-player/_nomd5_nomod/video-player_1655970903543.js",
+            "resourceTypes": [
+                "script"
+            ]
+        }
+    }
+]

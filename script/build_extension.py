@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 import json
 import pathlib
+import shutil
 
 
 def ReadSource(path):
@@ -51,6 +52,8 @@ def build():
     for sourceSubDir, dirList, fileList in allSource:
         for sourceFile in fileList:
             sourceContent = ""
+            if not sourceFile.endswith("js"):
+                continue
             with open(Path(sourceSubDir).joinpath(sourceFile)) as f:
                 sourceContent = f.read()
             if r"{{{" not in sourceContent:
@@ -65,3 +68,6 @@ def build():
 
 if __name__ == '__main__':
     build()
+    shutil.copyfile("../release/vt.user.js", "../source/chrome/vt.user.js")
+    shutil.copyfile("../release/extension.chrome.user.js",
+                    "../source/chrome/extension.chrome.user.js")

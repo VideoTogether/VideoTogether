@@ -2,28 +2,49 @@
     "name": "Video Together",
     "description": "Watch video together",
     "version": "1.0",
-    "manifest_version": 2,
+    "manifest_version": 3,
     "content_scripts": [
         {
             "matches": [
-                "*://*/*"
+                "<all_urls>"
             ],
             "js": [
-                "extension.user.js"
+                "extension.chrome.user.js"
             ],
             "all_frames": true
         }
     ],
-    "background": {
-        "scripts": [
-            "background.js"
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "vt.user.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "declarative_net_request": {
+        "rule_resources": [
+            {
+                "id": "ruleset_1",
+                "enabled": true,
+                "path": "rules.json"
+            }
         ]
     },
+    "icons": {
+        "192": "./icon/android-icon-192x192.png"
+    },
     "permissions": [
+        "declarativeNetRequest",
         "webRequest",
-        "webRequestBlocking",
-        "storage",
-        "https://*/*",
-        "http://*/*"
+        "storage"
+    ],
+    "host_permissions": [
+        "*://google.com/*",
+        "*://microsoft.com/*",
+        "https://videotogether.github.io/*",
+        "*://example.com/*"
     ]
 }
