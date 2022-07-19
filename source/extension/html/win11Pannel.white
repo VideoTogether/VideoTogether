@@ -97,8 +97,8 @@
     box-sizing: border-box;
     transition: 0.5s;
     border-radius: 4px;
-    width: 76%;
-	height: 22px;
+    width: 72%;
+	height: 28px;
     outline: none;
     color: #000 !important;
   }
@@ -113,8 +113,8 @@
     border: solid 1px #424242;
     box-sizing: border-box;
     border-radius: 4px;
-    width: 76%;
-	height: 22px;
+    width: 72%;
+	height: 28px;
     outline: none;
     transition: 0.5s;
     color: #000 !important;
@@ -204,6 +204,7 @@
     border-top: 1px solid #fff !important;
     border-radius: 0 0 2px 2px;
     display: flex;
+    height: 20px;
     justify-content: space-between;
     align-items: center;
   }
@@ -253,8 +254,8 @@
 
   .vt-btn-secondary {
     color: #000 !important;
-    border-color: #4cc2ff;
-    background: #4cc2ff !important;
+    border-color: #23d591;
+    background: #23d591 !important;
   }
 
   .vt-btn-secondary:hover {
