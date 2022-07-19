@@ -37,6 +37,7 @@ body:
       description: |
         请填写您所使用的是哪种环境，细节越多越好！
         例子：
+        视频网址，这是最重要的，很多时候不能同步是因为视频网站遇到了兼容性问题：https://m.bilibili.com/video/BV13t4y157KU
         系统：Windows 10 21H2 19044.1806
         浏览器：Chrome 103.0.5060.114（正式版本） （64 位）
         插件：Tampermonkey 4.16.1
