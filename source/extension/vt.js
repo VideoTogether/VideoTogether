@@ -18,7 +18,7 @@
             this.isMain = (window.self == window.top);
             if (this.isMain) {
                 let wrapper = document.createElement("div");
-                wrapper.innerHTML = `{{{ {"user": "./html/autopannel.html","order":100} }}}`;
+                wrapper.innerHTML = `{{{ {"user": "./html/pannel.html","order":100} }}}`;
                 document.querySelector("body").appendChild(wrapper);
 
                 document.getElementById("videoTogetherMinimize").onclick = () => {
@@ -341,6 +341,36 @@
         }
 
         async ForEachVideo(func) {
+            try {
+                // 百度网盘
+                if (window.location.host == 'pan.baidu.com') {
+                    if (!this.BaiduPanPlayer) {
+                        for (let key in window["$"]["cache"]) {
+                            try{
+                                if (window["$"]["cache"][key]["handle"]["elem"].player) {
+                                    this.BaiduPanPlayer = window["$"]["cache"][key]["handle"]["elem"].player;
+                                    break;
+                                }
+                            }catch{}
+                        }
+                    }
+                    if (this.BaiduPanPlayer) {
+                        if (!this.BaiduPanPlayer.videoTogetherVideoWrapper) {
+                            this.BaiduPanPlayer.videoTogetherVideoWrapper = new VideoWrapper();
+                        }
+                        let videoWrapper = this.BaiduPanPlayer.videoTogetherVideoWrapper;
+                        videoWrapper.play = () => { this.BaiduPanPlayer.play() };
+                        videoWrapper.pause = () => { this.BaiduPanPlayer.pause() };
+                        videoWrapper.paused = this.BaiduPanPlayer.paused();
+                        videoWrapper.currentTimeGetter = () => this.BaiduPanPlayer.currentTime();
+                        videoWrapper.currentTimeSetter = (v) => this.BaiduPanPlayer.currentTime(v);
+                        videoWrapper.duration = this.BaiduPanPlayer.duration();
+                        videoWrapper.playbackRateGetter = () => { };
+                        videoWrapper.playbackRateSetter = (v) => { };
+                        await func(videoWrapper);
+                    }
+                }
+            } catch (e) { console.error(e) }
             try {
                 // 腾讯视频
                 if (window.__PLAYER__ != undefined) {
