@@ -304,23 +304,38 @@
             );
         }
 
+        PostMessage(window, data) {
+            if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
+                window.postMessage(data, "*");
+            } else {
+                if (!this.NativePostMessageFunction) {
+                    let temp = document.createElement("iframe");
+                    document.body.append(temp);
+                    this.NativePostMessageFunction = temp.contentWindow.postMessage;
+                }
+                this.NativePostMessageFunction.call(window, data, "*");
+
+                console.log(2)
+            }
+        }
+
         sendMessageToTop(type, data) {
-            window.top.postMessage({
+            this.PostMessage(window.top, {
                 type: type,
                 data: data
-            }, "*")
+            });
         }
 
         sendMessageToSon(type, data) {
             let iframs = document.getElementsByTagName("iframe");
             for (let i = 0; i < iframs.length; i++) {
-                iframs[i].contentWindow.postMessage({
+                this.PostMessage(iframs[i].contentWindow, {
                     type: type,
                     data: data,
                     context: {
                         tempUser: this.tempUser
                     }
-                }, "*");
+                });
                 // console.info("send ", type, iframs[i].contentWindow, data)
             }
         }
