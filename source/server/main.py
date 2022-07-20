@@ -48,15 +48,26 @@ class Room:
     url: str
     duration: float
     tempUser: str
+    public: bool
+    protected: bool
+    videoTitle: str
 
     def __init__(self) -> None:
         self.tempUser = ""
 
     def toJsonResponse(self):
         tmpDict = self.__dict__.copy()
+        tmpDict["userCount"] = len(roomUserDatabase[self.name])
         tmpDict.pop("password")
         tmpDict.pop("tempUser")
         return jsonify(tmpDict)
+
+    def toDict(self):
+        tmpDict = self.__dict__.copy()
+        tmpDict["userCount"] = len(roomUserDatabase[self.name])
+        tmpDict.pop("password")
+        tmpDict.pop("tempUser")
+        return tmpDict
 
 
 class TempUser:
@@ -82,6 +93,7 @@ def RoomDecoder(obj):
 
 
 database = dict()
+roomUserDatabase = dict()
 tempUserDatabase = dict()
 pool = None
 
@@ -92,6 +104,15 @@ def generateErrorResponse(errorMessage):
 
 
 namespace = "vt_namespace"
+
+
+@app.route('/room/public', methods=["get"])
+def listPublicRooms():
+    rooms = []
+    for name in database:
+        if database[name].public and not database[name].protected:
+            rooms.append(database[name].toDict())
+    return jsonify(rooms)
 
 
 @app.route('/room/get', methods=["get"])
@@ -107,9 +128,20 @@ def getRoom():
             tempUserDatabase[tempUserId] = tempUser
         else:
             tempUserDatabase[tempUserId].lastSeen = time.time()
+        if name in roomUserDatabase:
+            roomUserDatabase[name].add(tempUserId)
+
     if not dbSwitchToRedis:
         if name not in database:
             return generateErrorResponse("房间不存在")
+        if "password" in request.args:
+            password = hashlib.sha256(
+                request.args["password"].encode('utf-8')).hexdigest()
+            if database[name].protected and database[name].password != password:
+                return generateErrorResponse("密码错误")
+        else:
+            if database[name].protected:
+                return generateErrorResponse("密码错误，请更新插件")
         return database[name].toJsonResponse()
     r = redisConnect(pool)
     if r.hexists(namespace, name):
@@ -175,7 +207,17 @@ def updateRoom():
             if room.tempUser != tempUserId:
                 return generateErrorResponse("其他房主正在同步")
 
+    if "public" in request.args:
+        room.public = request.args["public"] == 'true'
+    if "protected" in request.args:
+        room.protected = request.args["protected"] == 'true'
+    if "videoTitle" in request.args:
+        room.videoTitle = request.args["videoTitle"]
+
     if not dbSwitchToRedis:
+        if room.name not in roomUserDatabase:
+            roomUserDatabase[room.name] = set()
+        roomUserDatabase[room.name].add(room.tempUser)
         database[room.name] = room
     else:
         r = redisConnect(pool)
@@ -199,6 +241,7 @@ def getVtUserJs():
 
 
 if __name__ == '__main__':
+    app.config["JSON_AS_ASCII"] = False
     if sys.argv[1] == "debug":
         app.debug = False
         app.run(host='0.0.0.0')
