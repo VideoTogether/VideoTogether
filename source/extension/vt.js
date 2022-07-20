@@ -354,6 +354,19 @@
             }
         }
 
+        async Fetch(url) {
+            if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
+                return await window.fetch(url);
+            } else {
+                if (!this.NativeFetchFunction) {
+                    let temp = document.createElement("iframe");
+                    document.body.append(temp);
+                    this.NativeFetchFunction = temp.contentWindow.fetch;
+                }
+                return await this.NativeFetchFunction.call(window, url);
+            }
+        }
+
         sendMessageToTop(type, data) {
             this.PostMessage(window.top, {
                 type: type,
@@ -558,7 +571,7 @@
 
         async SyncTimeWithServer() {
             let startTime = this.getLocalTimestamp()
-            let response = await fetch(this.video_together_host + "/timestamp");
+            let response = await this.Fetch(this.video_together_host + "/timestamp");
             let endTime = this.getLocalTimestamp();
             let data = await this.CheckResponse(response);
             if (typeof (data["timestamp"]) == "number") {
@@ -883,7 +896,7 @@
             apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
             // url.searchParams.set("lastUpdateClientTime", timestamp)
-            let response = await fetch(apiUrl);
+            let response = await this.Fetch(apiUrl);
             let data = await this.CheckResponse(response);
             return data;
         }
@@ -893,7 +906,7 @@
             url.searchParams.set("name", name);
             url.searchParams.set("tempUser", this.tempUser);
             url.searchParams.set("password", password);
-            let response = await fetch(url);
+            let response = await this.Fetch(url);
             let data = await this.CheckResponse(response);
             return data;
         }
