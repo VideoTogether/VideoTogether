@@ -206,11 +206,13 @@ def updateRoom():
             tempUserDatabase[tempUserId].lastSeen = time.time()
             if room.tempUser != tempUserId:
                 return generateErrorResponse("其他房主正在同步")
-
+    room.public = False
     if "public" in request.args:
         room.public = request.args["public"] == 'true'
+    room.protected = False
     if "protected" in request.args:
         room.protected = request.args["protected"] == 'true'
+    room.videoTitle = ""
     if "videoTitle" in request.args:
         room.videoTitle = request.args["videoTitle"]
 
