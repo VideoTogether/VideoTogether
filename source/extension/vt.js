@@ -210,6 +210,9 @@
         GetRoomData: 7,
         ChangeVoiceVolume: 8,
         ChangeVideoVolume: 9,
+        LoadStorageData: 10,
+        SyncStorageData: 11,
+        SetStorageData: 12,
     }
 
     let VIDEO_EXPIRED_SECOND = 10

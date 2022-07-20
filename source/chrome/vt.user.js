@@ -19,277 +19,296 @@
             if (this.isMain) {
                 let wrapper = document.createElement("div");
                 wrapper.innerHTML = `<div id="videoTogetherFlyPannel">
-    <div id="videoTogetherHeader" class="vt-modal-header">
-      <div style="display: flex;align-items: center;">
-        <img style="width: 16px; height: 16px;"
-          src="https://www.2gether.video/icon/favicon-16x16.png">
-        <div class="vt-modal-title">Video Together</div>
-      </div>
-      <button id="videoTogetherMinimize" type="button" aria-label="Close" class="vt-modal-close">
-        <span class="vt-modal-close-x">
-          <span role="img" aria-label="close" class="vt-anticon vt-anticon-close vt-modal-close-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true"
-              role="img" class="iconify iconify--ic" width="20" height="20" preserveAspectRatio="xMidYMid meet"
-              viewBox="0 0 24 24">
-              <path fill="currentColor" d="M18 12.998H6a1 1 0 0 1 0-2h12a1 1 0 0 1 0 2z"></path>
-            </svg>
-          </span>
+  <div id="videoTogetherHeader" class="vt-modal-header">
+    <div style="display: flex;align-items: center;">
+      <img style="width: 16px; height: 16px;" src="https://www.2gether.video/icon/favicon-16x16.png">
+      <div class="vt-modal-title">Video Together</div>
+    </div>
+    <button id="videoTogetherSetting" type="button" aria-label="Setting" class="vt-modal-setting vt-modal-title-button">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path
+              d="M24 13.616v-3.232c-1.651-.587-2.694-.752-3.219-2.019v-.001c-.527-1.271.1-2.134.847-3.707l-2.285-2.285c-1.561.742-2.433 1.375-3.707.847h-.001c-1.269-.526-1.435-1.576-2.019-3.219h-3.232c-.582 1.635-.749 2.692-2.019 3.219h-.001c-1.271.528-2.132-.098-3.707-.847l-2.285 2.285c.745 1.568 1.375 2.434.847 3.707-.527 1.271-1.584 1.438-3.219 2.02v3.232c1.632.58 2.692.749 3.219 2.019.53 1.282-.114 2.166-.847 3.707l2.285 2.286c1.562-.743 2.434-1.375 3.707-.847h.001c1.27.526 1.436 1.579 2.019 3.219h3.232c.582-1.636.75-2.69 2.027-3.222h.001c1.262-.524 2.12.101 3.698.851l2.285-2.286c-.744-1.563-1.375-2.433-.848-3.706.527-1.271 1.588-1.44 3.221-2.021zm-12 2.384c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z" />
+          </svg>
         </span>
+      </span>
+    </button>
+    <button id="videoTogetherMinimize" type="button" aria-label="Close" class="vt-modal-close vt-modal-title-button">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="close" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true"
+            role="img" class="iconify iconify--ic" width="20" height="20" preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 24 24">
+            <path fill="currentColor" d="M18 12.998H6a1 1 0 0 1 0-2h12a1 1 0 0 1 0 2z"></path>
+          </svg>
+        </span>
+      </span>
+    </button>
+  </div>
+  <div class="vt-modal-content">
+    <div class="vt-modal-body">
+      <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
+      <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
+      <div style="margin-bottom: 10px;">
+        <span id="videoTogetherRoomNameLabel">房间：</span>
+        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="请输入房间名">
+      </div>
+      <div>
+        <span id="videoTogetherRoomPasswordLabel">密码：</span>
+        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="密码,只有建房需要">
+      </div>
+    </div>
+    <div class="vt-modal-footer">
+      <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
+        <span>建 房</span>
+      </button>
+      <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
+        <span>加 入</span>
+      </button>
+      <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
+        <span>退 出</span>
+      </button>
+      <button id="videoTogetherVoiceButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
+        <span>通 话</span>
+      </button>
+      <button id="videoTogetherVideoVolumeDown" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
+        <span>-</span>
+      </button>
+      <button id="videoTogetherVideoVolumeUp" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
+        <span>+</span>
+      </button>
+      <button id="videoTogetherHelpButton" class="vt-btn" type="button">
+        <span>帮 助</span>
       </button>
     </div>
-    <div class="vt-modal-content">
-      <div class="vt-modal-body">
-        <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
-        <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
-        <div style="margin-bottom: 10px;">
-          <span id="videoTogetherRoomNameLabel">房间：</span>
-          <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="请输入房间名">
-        </div>
-        <div>
-          <span id="videoTogetherRoomPasswordLabel">密码：</span>
-          <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="密码,只有建房需要">
-        </div>
-      </div>
-      <div class="vt-modal-footer">
-        <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
-          <span>建 房</span>
-        </button>
-        <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
-          <span>加 入</span>
-        </button>
-        <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
-          <span>退 出</span>
-        </button>
-        <button id="videoTogetherVoiceButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
-          <span>通 话</span>
-        </button>
-        <button id="videoTogetherVideoVolumeDown" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
-          <span>-</span>
-        </button>
-        <button id="videoTogetherVideoVolumeUp" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
-          <span>+</span>
-        </button>
-        <button id="videoTogetherHelpButton" class="vt-btn" type="button">
-          <span>帮 助</span>
-        </button>
-      </div>
-    </div>
   </div>
-  <div style="width: 24px; height: 24px;" id="VideoTogetherSamllIcon">
-    <img draggable="false" width="24px" height="24px" id="videoTogetherMaximize"
-      src="data:image/png;base64,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">
-    </img>
-  </div>
-  
-  <style>
-    #videoTogetherFlyPannel {
-      background-color: #ffffff;
-      display: block;
-      z-index: 2147483647;
-      position: fixed;
-      bottom: 15px;
-      right: 15px;
-      width: 260px;
-      height: 210px;
-      text-align: center;
-      border: solid 1px #e9e9e9;
-      box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
-      border-radius: 10px;
-    }
-  
-    #videoTogetherFlyPannel #videoTogetherHeader {
-      cursor: move;
-      touch-action: none;
-      align-items: center;
-      display: flex;
-    }
-  
-    .vt-modal-content {
-      /* position: relative; */
-      width: 100%;
-      height: 100%;
-    }
-  
-    .vt-modal-close {
-      position: absolute;
-      top: 0;
-      right: 0;
-      z-index: 10;
-      padding: 0;
-      color: #00000073;
-      font-weight: 700;
-      line-height: 1;
-      text-decoration: none;
-      background: transparent;
-      border: 0;
-      outline: 0;
-      cursor: pointer;
-      transition: color .3s;
-    }
-  
-    .vt-modal-close-x {
-      width: 46px;
-      height: 46px;
-      font-size: 16px;
-      font-style: normal;
-      line-height: 46px;
-      text-align: center;
-      text-transform: none;
-      text-rendering: auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-  
-    .vt-modal-close-x:hover {
-      color: #1890ff;
-    }
-  
-    .vt-modal-header {
-      display: flex;
-      padding: 12px;
-      color: #000000d9;
-      background: #fff;
-      border-bottom: 1px solid #f0f0f0;
-      border-radius: 10px 10px 0 0;
-      align-items: center;
-    }
-  
-    .vt-modal-title {
-      margin: 0;
-      margin-left: 10px;
-      color: #000000d9;
-      font-weight: 500;
-      font-size: 16px;
-      line-height: 22px;
-      word-wrap: break-word;
-    }
-  
-    .vt-modal-body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow-y: auto;
-      font-size: 16px;
-    }
-  
-    .vt-modal-footer {
-      padding: 10px 16px;
-      text-align: right;
-      background: transparent;
-      border-top: 1px solid #f0f0f0;
-      border-radius: 0 0 2px 2px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-    }
-  
-    .vt-btn {
-      line-height: 1.5715;
-      position: relative;
-      display: inline-block;
-      font-weight: 400;
-      white-space: nowrap;
-      text-align: center;
-      background-image: none;
-      border: 1px solid transparent;
-      box-shadow: 0 2px #00000004;
-      cursor: pointer;
-      transition: all .3s cubic-bezier(.645, .045, .355, 1);
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      user-select: none;
-      touch-action: manipulation;
-      height: 32px;
-      padding: 4px 15px;
-      font-size: 14px;
-      border-radius: 2px;
-      color: #000000d9;
-      border-color: #d9d9d9;
-      background: #fff;
-      outline: 0;
-      text-shadow: 0 -1px 0 rgb(0 0 0 / 12%);
-      box-shadow: 0 2px #0000000b;
-    }
-  
-    .vt-btn:hover {
-      border-color: #e3e5e7 !important;
-      background-color: #e3e5e7 !important;
-    }
-  
-    .vt-btn-primary {
-      color: #fff;
-      border-color: #1890ff;
-      background: #1890ff !important;
-    }
-  
-    .vt-btn-primary:hover {
-      border-color: #6ebff4 !important;
-      background-color: #6ebff4 !important;
-    }
-  
-    .vt-btn-secondary {
-      color: #fff;
-      border-color: #23d591;
-      background: #23d591 !important;
-    }
-  
-    .vt-btn-secondary:hover {
-      border-color: #8af0bf !important;
-      background-color: #8af0bf !important;
-    }
-  
-    .vt-btn-dangerous {
-      color: #fff;
-      border-color: #ff4d4f !important;
-      background-color: #ff4d4f !important;
-    }
-  
-    .vt-btn-dangerous:hover {
-      border-color: #f77173 !important;
-      background-color: #f77173 !important;
-    }
-  
-    .vt-modal-content-item {
-      cursor: pointer;
-      box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.16);
-      padding: 0 12px;
-      width: 45%;
-      height: 60px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-    }
-  
-    .vt-modal-content-item:hover {
-      background-color: #efefef;
-    }
-  
-    #VideoTogetherSamllIcon {
-      display: none;
-      z-index: 2147483647;
-      position: fixed;
-      bottom: 15px;
-      right: 15px;
-      text-align: center;
-    }
-    #videoTogetherRoomNameInput,#videoTogetherRoomPasswordInput{
-        width: 180px !important;
-        height: auto !important;
-        font-family: inherit !important;
-        font-size: inherit !important;
-        display: inline-block;
-        padding: 0 !important;
-        background-color: #ffffff !important;
-        border: 1px solid #e9e9e9 !important;
-        margin: 0 !important;
-    }
-  </style>
-  `;
+</div>
+<div style="width: 24px; height: 24px;" id="VideoTogetherSamllIcon">
+  <img draggable="false" width="24px" height="24px" id="videoTogetherMaximize"
+    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAACrFBMVEXg9b7e87jd87jd9Lnd9Lre9Lng9b/j98jm98vs99fy9ubu89/e1sfJqKnFnqLGoaXf9Lvd87Xe87fd8rfV67Ti9sbk98nm9sze48TX3rjU1rTKr6jFnaLe9Lfe87Xe9LjV7LPN4q3g78PJuqfQ1a7OzarIsabEnaHi9sXd8rvd8rbd87axx4u70Jrl+cvm+szQxq25lZTR1a7KvaXFo6LFnaHEnKHd6r3Y57TZ7bLb8bTZ7rKMomClun/k+MrOx6yue4PIvqfP06vLv6fFoqLEnKDT27DS3a3W6K7Y7bDT6auNq2eYn3KqlYShYXTOwLDAzZ7MyanKtqbEoaHDm6DDm5/R2K3Q2KzT4q3W6a7P3amUhWp7SEuMc2rSyri3zJe0xpPV17TKuqbGrqLEnqDQ2K3O06rP0arR2qzJx6GZX160j4rP1LOiuH2GnVzS3rXb47zQ063OzanHr6PDnaDMxajIsaXLwKfEt5y6mI/GyqSClVZzi0bDzp+8nY/d6L/X4rbQ1qzMyKjEqKHFpqLFpaLGqaO2p5KCjlZ5jky8z5izjoOaXmLc5r3Z57jU4K7S3K3NyqnBm56Mg2KTmWnM0KmwhH2IOUunfXnh8cXe8b7Z7LPV4rDBmZ3Cmp+6mZWkk32/qZihbG97P0OdinXQ3rTk+Mjf9L/d8rja6ri9lpqnh4qhgoWyk5Kmd3qmfHW3oou2vZGKpmaUrXDg9MPf9L3e876yj5Ori42Mc3aDbG6MYmyifXfHyaPU3rHH0aKDlVhkejW70Zbf9bze87be87ng9cCLcnWQd3qEbG9/ZmmBXmSflYS4u5ra5Lnd6r7U5ba2ypPB153c87re9b2Ba22EbW+AamyDb3CNgXmxsZng7sTj9sjk98rk+Mng9cHe9Lze9Lrd87n////PlyWlAAAAAWJLR0TjsQauigAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAd0SU1FB+YGGQYXBzHy0g0AAAEbSURBVBjTARAB7/4AAAECAwQFBgcICQoLDA0ODwAQEREREhMUFRYXGBkaGxwOAAYdHhEfICEWFiIjJCUmDicAKCkqKx8sLS4vMDEyMzQ1NgA3ODk6Ozw9Pj9AQUJDRDVFAEZHSElKS0xNTk9QUVJTVFUAVldYWVpbXF1eX2BhYmNkVABlZmdoaWprbG1ub3BxcnN0AEJ1dnd4eXp7fH1+f4CBgoMAc4QnhYaHiImKi4yNjo+QkQBFVFU2kpOUlZaXmJmam5ucAFRVnZ6foKGio6SlpqeoE6kAVaqrrK2ur7CxsrO0tQEDtgC3uLm6u7y9vr/AwcLDxMXGAMfIycrLzM3Oz9DR0tMdAdQA1da619jZ2tvc3d7f4OEB4iRLaea64H7qAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIyLTA2LTI1VDA2OjIzOjAyKzAwOjAwlVQlhgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMi0wNi0yNVQwNjoyMzowMiswMDowMOQJnToAAAAgdEVYdHNvZnR3YXJlAGh0dHBzOi8vaW1hZ2VtYWdpY2sub3JnvM8dnQAAABh0RVh0VGh1bWI6OkRvY3VtZW50OjpQYWdlcwAxp/+7LwAAABh0RVh0VGh1bWI6OkltYWdlOjpIZWlnaHQAMTkyQF1xVQAAABd0RVh0VGh1bWI6OkltYWdlOjpXaWR0aAAxOTLTrCEIAAAAGXRFWHRUaHVtYjo6TWltZXR5cGUAaW1hZ2UvcG5nP7JWTgAAABd0RVh0VGh1bWI6Ok1UaW1lADE2NTYxMzgxODJHYkS0AAAAD3RFWHRUaHVtYjo6U2l6ZQAwQkKUoj7sAAAAVnRFWHRUaHVtYjo6VVJJAGZpbGU6Ly8vbW50bG9nL2Zhdmljb25zLzIwMjItMDYtMjUvNGU5YzJlYjRjNmRhMjIwZDgzYjcyOTYxZmI1ZTJiY2UuaWNvLnBuZ7tNVVEAAAAASUVORK5CYII=">
+  </img>
+</div>
+
+<style>
+  #videoTogetherFlyPannel {
+    background-color: #ffffff;
+    display: block;
+    z-index: 2147483647;
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    width: 260px;
+    height: 210px;
+    text-align: center;
+    border: solid 1px #e9e9e9;
+    box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
+    border-radius: 10px;
+  }
+
+  #videoTogetherFlyPannel #videoTogetherHeader {
+    cursor: move;
+    touch-action: none;
+    align-items: center;
+    display: flex;
+  }
+
+  .vt-modal-content {
+    /* position: relative; */
+    width: 100%;
+    height: 100%;
+  }
+
+  .vt-modal-setting {
+    position: absolute;
+    top: 0;
+    right: 40;
+  }
+
+  .vt-modal-title-button {
+    z-index: 10;
+    padding: 0;
+    color: #00000073;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    cursor: pointer;
+    transition: color .3s;
+  }
+
+  .vt-modal-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  .vt-modal-close-x {
+    width: 46px;
+    height: 46px;
+    font-size: 16px;
+    font-style: normal;
+    line-height: 46px;
+    text-align: center;
+    text-transform: none;
+    text-rendering: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vt-modal-close-x:hover {
+    color: #1890ff;
+  }
+
+  .vt-modal-header {
+    display: flex;
+    padding: 12px;
+    color: #000000d9;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+    border-radius: 10px 10px 0 0;
+    align-items: center;
+  }
+
+  .vt-modal-title {
+    margin: 0;
+    margin-left: 10px;
+    color: #000000d9;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+    word-wrap: break-word;
+  }
+
+  .vt-modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    font-size: 16px;
+  }
+
+  .vt-modal-footer {
+    padding: 10px 16px;
+    text-align: right;
+    background: transparent;
+    border-top: 1px solid #f0f0f0;
+    border-radius: 0 0 2px 2px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .vt-btn {
+    line-height: 1.5715;
+    position: relative;
+    display: inline-block;
+    font-weight: 400;
+    white-space: nowrap;
+    text-align: center;
+    background-image: none;
+    border: 1px solid transparent;
+    box-shadow: 0 2px #00000004;
+    cursor: pointer;
+    transition: all .3s cubic-bezier(.645, .045, .355, 1);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    height: 32px;
+    padding: 4px 15px;
+    font-size: 14px;
+    border-radius: 2px;
+    color: #000000d9;
+    border-color: #d9d9d9;
+    background: #fff;
+    outline: 0;
+    text-shadow: 0 -1px 0 rgb(0 0 0 / 12%);
+    box-shadow: 0 2px #0000000b;
+  }
+
+  .vt-btn:hover {
+    border-color: #e3e5e7 !important;
+    background-color: #e3e5e7 !important;
+  }
+
+  .vt-btn-primary {
+    color: #fff;
+    border-color: #1890ff;
+    background: #1890ff !important;
+  }
+
+  .vt-btn-primary:hover {
+    border-color: #6ebff4 !important;
+    background-color: #6ebff4 !important;
+  }
+
+  .vt-btn-secondary {
+    color: #fff;
+    border-color: #23d591;
+    background: #23d591 !important;
+  }
+
+  .vt-btn-secondary:hover {
+    border-color: #8af0bf !important;
+    background-color: #8af0bf !important;
+  }
+
+  .vt-btn-dangerous {
+    color: #fff;
+    border-color: #ff4d4f !important;
+    background-color: #ff4d4f !important;
+  }
+
+  .vt-btn-dangerous:hover {
+    border-color: #f77173 !important;
+    background-color: #f77173 !important;
+  }
+
+  .vt-modal-content-item {
+    cursor: pointer;
+    box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.16);
+    padding: 0 12px;
+    width: 45%;
+    height: 60px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+  }
+
+  .vt-modal-content-item:hover {
+    background-color: #efefef;
+  }
+
+  #VideoTogetherSamllIcon {
+    display: none;
+    z-index: 2147483647;
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    text-align: center;
+  }
+
+  #videoTogetherRoomNameInput,
+  #videoTogetherRoomPasswordInput {
+    width: 180px !important;
+    height: auto !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    display: inline-block;
+    padding: 0 !important;
+    background-color: #ffffff !important;
+    border: 1px solid #e9e9e9 !important;
+    margin: 0 !important;
+  }
+</style>`;
                 document.querySelector("body").appendChild(wrapper);
 
                 document.getElementById("videoTogetherMinimize").onclick = () => {
@@ -481,6 +500,9 @@
         GetRoomData: 7,
         ChangeVoiceVolume: 8,
         ChangeVideoVolume: 9,
+        LoadStorageData: 10,
+        SyncStorageData: 11,
+        SetStorageData: 12,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
