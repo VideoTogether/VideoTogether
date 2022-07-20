@@ -17,18 +17,25 @@
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
+                window.addEventListener("message", e => {
+                    if (e.data.type == MessageType.LoadStorageData) {
+                        if (e.data.data.MinimiseDefault) {
+                            this.Minimize();
+                        } else {
+                            this.Maximize();
+                        }
+                        window.VideoTogetherStorage = e.data.data;
+                    }
+                    if (e.data.type == MessageType.SyncStorageData) {
+                        window.VideoTogetherStorage = e.data.data;
+                    }
+                });
                 let wrapper = document.createElement("div");
                 wrapper.innerHTML = `{{{ {"user": "./html/pannel.html","order":100} }}}`;
                 document.querySelector("body").appendChild(wrapper);
 
-                document.getElementById("videoTogetherMinimize").onclick = () => {
-                    document.getElementById("videoTogetherFlyPannel").style.display = "none";
-                    document.getElementById("VideoTogetherSamllIcon").style.display = "block"
-                }
-                document.getElementById("videoTogetherMaximize").onclick = () => {
-                    document.getElementById("videoTogetherFlyPannel").style.display = "block";
-                    document.getElementById("VideoTogetherSamllIcon").style.display = "none"
-                }
+                document.getElementById("videoTogetherMinimize").onclick = this.Minimize.bind(this);
+                document.getElementById("videoTogetherMaximize").onclick = this.Maximize.bind(this);
 
                 this.createRoomButton = document.querySelector('#videoTogetherCreateButton');
                 this.joinRoomButton = document.querySelector("#videoTogetherJoinButton");
@@ -91,6 +98,16 @@
             try {
                 document.querySelector("#videoTogetherLoading").remove()
             } catch { }
+        }
+
+        Minimize() {
+            document.getElementById("videoTogetherFlyPannel").style.display = "none";
+            document.getElementById("VideoTogetherSamllIcon").style.display = "block"
+        }
+
+        Maximize() {
+            document.getElementById("videoTogetherFlyPannel").style.display = "block";
+            document.getElementById("VideoTogetherSamllIcon").style.display = "none"
         }
 
         Init() {
@@ -349,12 +366,12 @@
                 if (window.location.host == 'pan.baidu.com') {
                     if (!this.BaiduPanPlayer) {
                         for (let key in window["$"]["cache"]) {
-                            try{
+                            try {
                                 if (window["$"]["cache"][key]["handle"]["elem"].player) {
                                     this.BaiduPanPlayer = window["$"]["cache"][key]["handle"]["elem"].player;
                                     break;
                                 }
-                            }catch{}
+                            } catch { }
                         }
                     }
                     if (this.BaiduPanPlayer) {
