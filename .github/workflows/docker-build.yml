@@ -1,4 +1,4 @@
-name: Build Image and Publish to Dockerhub & GPR
+name: Docker Build 
 
 on:
   release:
@@ -20,10 +20,7 @@ jobs:
       - name: Get current date
         id: date
         run: echo "::set-output name=today::$(date +'%Y-%m-%d')"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
+        
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
@@ -38,7 +35,6 @@ jobs:
           else
             echo "TAG_NAME=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
           fi
-
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
@@ -56,12 +52,11 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./Dockerfile
-          platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8,linux/ppc64le,linux/s390x
+          file: Dockerfile
+          platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            pigeonpig/videotogether:dev
+            pigeonpig/videotogether:latest
             pigeonpig/videotogether:${{ env.TAG_NAME }}
-            pigeonpig/videotogether:${{ steps.date.outputs.today }}
           # ghcr.io/videotogether/videotogether:dev
           # ghcr.io/videotogether/videotogether:${{ env.TAG_NAME }}
