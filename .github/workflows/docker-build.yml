@@ -57,8 +57,7 @@ jobs:
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            pigeonpig/videotogether:dev
+            pigeonpig/videotogether:latest
             pigeonpig/videotogether:${{ env.TAG_NAME }}
-            pigeonpig/videotogether:${{ steps.date.outputs.today }}
           # ghcr.io/videotogether/videotogether:dev
           # ghcr.io/videotogether/videotogether:${{ env.TAG_NAME }}
