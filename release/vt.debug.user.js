@@ -110,7 +110,7 @@
 
 <style>
   #videoTogetherFlyPannel {
-    background-color: #ffffff;
+    background-color: #ffffff !important;
     display: none;
     z-index: 2147483647;
     position: fixed;
@@ -119,7 +119,7 @@
     width: 260px;
     height: 210px;
     text-align: center;
-    border: solid 1px #e9e9e9;
+    border: solid 1px #e9e9e9 !important;
     box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
     border-radius: 10px;
   }
@@ -207,6 +207,7 @@
     align-items: center;
     overflow-y: auto;
     font-size: 16px;
+    color: black;
   }
 
   .vt-modal-footer {
@@ -321,6 +322,7 @@
     font-size: inherit !important;
     display: inline-block;
     padding: 0 !important;
+    color: #00000073;
     background-color: #ffffff !important;
     border: 1px solid #e9e9e9 !important;
     margin: 0 !important;
