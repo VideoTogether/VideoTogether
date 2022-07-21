@@ -69,7 +69,7 @@
         if(window.videoTogetherFlyPannel == undefined){
             let script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
+            script.src = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.user.js';
             document.getElementsByTagName('body')[0].appendChild(script);
         }
     }, 5000);
