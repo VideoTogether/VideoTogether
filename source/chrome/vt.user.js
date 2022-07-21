@@ -1141,6 +1141,9 @@
                     try {
                         console.info("play");
                         await videoDom.play();
+                        if (videoDom.paused) {
+                            throw new Error("请手动点击播放");
+                        }
                     } catch (e) {
                         throw new Error("请手动点击播放");
                     }
