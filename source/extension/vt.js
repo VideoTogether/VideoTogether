@@ -105,13 +105,13 @@
         Minimize() {
             this.disableDefaultSize = true;
             document.getElementById("videoTogetherFlyPannel").style.display = "none";
-            document.getElementById("VideoTogetherSamllIcon").style.display = "block"
+            document.getElementById("videoTogetherSamllIcon").style.display = "block"
         }
 
         Maximize() {
             this.disableDefaultSize = true;
             document.getElementById("videoTogetherFlyPannel").style.display = "block";
-            document.getElementById("VideoTogetherSamllIcon").style.display = "none"
+            document.getElementById("videoTogetherSamllIcon").style.display = "none"
         }
 
         Init() {
@@ -311,6 +311,18 @@
                 try {
                     this.RecoveryState();
                     this.EnableDraggable();
+
+                    setTimeout(() => {
+                        let allDoms = document.querySelectorAll("*");
+                        for (let i = 0; i < allDoms.length; i++) {
+                            const cssObj = window.getComputedStyle(allDoms[i], null);
+                            console.log(cssObj.getPropertyValue("z-index"));
+                            if (cssObj.getPropertyValue("z-index") == 2147483647 && !allDoms[i].id.startsWith("videoTogether")) {
+                                console.log(cssObj.getPropertyValue("z-index"));
+                                allDoms[i].style.zIndex = 2147483646;
+                            }
+                        }
+                    }, 2000);
                 } catch (e) { console.error(e) }
             }
         }
