@@ -60,10 +60,19 @@
 </style>
 `
     document.getElementsByTagName('body')[0].appendChild(wrapper);
-    var script = document.createElement('script');
+    let script = document.createElement('script');
     script.type = 'text/javascript';
     script.src = chrome.runtime.getURL('vt.user.js');
     document.getElementsByTagName('body')[0].appendChild(script);
+    // fallback to china service
+    setTimeout(() => {
+        if(window.videoTogetherFlyPannel == undefined){
+            let script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
+            document.getElementsByTagName('body')[0].appendChild(script);
+        }
+    }, 5000);
     function filter(e) {
         let target = e.target;
 

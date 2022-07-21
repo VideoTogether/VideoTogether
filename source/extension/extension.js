@@ -17,10 +17,19 @@
     let wrapper = document.createElement("div");
     wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`
     document.getElementsByTagName('body')[0].appendChild(wrapper);
-    var script = document.createElement('script');
+    let script = document.createElement('script');
     script.type = 'text/javascript';
     script.src = {{{ {"": "./config/vt_url","chrome":"./config/vt_chrome_url", "order":0} }}};
     document.getElementsByTagName('body')[0].appendChild(script);
+    // fallback to china service
+    setTimeout(() => {
+        if(window.videoTogetherFlyPannel == undefined){
+            let script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = {{{ {"": "./config/vt_china_url", "order":0} }}};
+            document.getElementsByTagName('body')[0].appendChild(script);
+        }
+    }, 5000);
     function filter(e) {
         let target = e.target;
 
