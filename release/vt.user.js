@@ -575,7 +575,9 @@
                 Member: 3,
             }
             this.video_together_host = 'https://vt.panghair.com:5000/';
+            this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video"]
+
             this.timer = 0
             this.roomName = ""
             this.roomPassword = ""
@@ -616,9 +618,15 @@
                                 allDoms[i].style.zIndex = 2147483646;
                             }
                         }
-                    }, 2000);
+                    }, 3000);
                 } catch (e) { console.error(e) }
             }
+            setTimeout(() => {
+                // fall back to china service
+                if (this.serverTimestamp == 0) {
+                    this.video_together_host = this.video_together_backup_host;
+                }
+            }, 3000);
         }
 
         setRole(role) {
