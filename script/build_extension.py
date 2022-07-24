@@ -6,6 +6,7 @@ import json
 import pathlib
 import shutil
 
+current_path = os.path.dirname(__file__)
 
 def ReadSource(path):
     with open(path) as f:
@@ -68,6 +69,6 @@ def build():
 
 if __name__ == '__main__':
     build()
-    shutil.copyfile("./release/vt.user.js", "./source/chrome/vt.user.js")
-    shutil.copyfile("./release/extension.chrome.user.js",
-                    "./source/chrome/extension.chrome.user.js")
+    shutil.copyfile("/../release/vt.user.js", "/../source/chrome/vt.user.js")
+    shutil.copyfile("/../release/extension.chrome.user.js",
+                    "/../source/chrome/extension.chrome.user.js")
