@@ -618,7 +618,7 @@
                                 allDoms[i].style.zIndex = 2147483646;
                             }
                         }
-                    }, 3000);
+                    }, 2000);
                 } catch (e) { console.error(e) }
             }
             setTimeout(() => {
@@ -626,7 +626,7 @@
                 if (this.serverTimestamp == 0) {
                     this.video_together_host = this.video_together_backup_host;
                 }
-            }, 3000);
+            }, 2000);
         }
 
         setRole(role) {

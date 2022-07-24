@@ -45,6 +45,7 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
 
 def build():
     global releasePath
+    global rootPath
     path = Path(os.path.realpath(sys.argv[0]))
     rootPath = path.parent.parent
     sourcePath = rootPath.joinpath("source")
@@ -69,6 +70,7 @@ def build():
 
 if __name__ == '__main__':
     build()
-    shutil.copyfile("/../release/vt.user.js", "/../source/chrome/vt.user.js")
-    shutil.copyfile("/../release/extension.chrome.user.js",
-                    "/../source/chrome/extension.chrome.user.js")
+    global rootPath
+    shutil.copyfile(rootPath.joinpath("release/vt.user.js"), rootPath.joinpath("source/chrome/vt.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/extension.chrome.user.js"),
+                    rootPath.joinpath("source/chrome/extension.chrome.user.js"))
