@@ -36,13 +36,13 @@ jobs:
             echo "TAG_NAME=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
           fi
       - name: Login to DockerHub
-        uses: docker/login-action@v1.10.0
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # - name: Login to the GPR
-      #   uses: docker/login-action@v1
+      #   uses: docker/login-action@v2
       #   with:
       #     registry: ghcr.io
       #     username: ${{ github.actor }}
