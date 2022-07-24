@@ -318,9 +318,7 @@
                         let allDoms = document.querySelectorAll("*");
                         for (let i = 0; i < allDoms.length; i++) {
                             const cssObj = window.getComputedStyle(allDoms[i], null);
-                            console.log(cssObj.getPropertyValue("z-index"));
                             if (cssObj.getPropertyValue("z-index") == 2147483647 && !allDoms[i].id.startsWith("videoTogether")) {
-                                console.log(cssObj.getPropertyValue("z-index"));
                                 allDoms[i].style.zIndex = 2147483646;
                             }
                         }
@@ -369,8 +367,6 @@
                     this.NativePostMessageFunction = temp.contentWindow.postMessage;
                 }
                 this.NativePostMessageFunction.call(window, data, "*");
-
-                console.log(2)
             }
         }
 
