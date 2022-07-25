@@ -6,10 +6,48 @@
 // @author       maggch@outlook.com
 // @match        *://*/*
 // @icon         https://2gether.video/icon/favicon-32x32.png
-// @grant        none
+// @grant        GM.xmlHttpRequest
+// @grant        GM_addElement
+// @connect      api.2gether.video
+// @connect      api.chizhou.in
+// @connect      api.panghair.com
+// @connect      vt.panghair.com
 // ==/UserScript==
 
 (function () {
+    window.addEventListener("message",e=>{
+        if(e.data.source == "VideoTogether"){
+            switch(e.data.type){
+                case 13:
+                    GM.xmlHttpRequest({
+                        method:e.data.data.method,
+                        url: e.data.data.url,
+                        data: e.data.data.data,
+                        onload: function(response){
+                            window.postMessage({
+                                source:"VideoTogether",
+                                type:14,
+                                data:{
+                                    id:e.data.data.id,
+                                    data:JSON.parse(response.responseText)
+                                }
+                            })
+                        },
+                        onerror: function(error) {
+                            window.postMessage({
+                                source:"VideoTogether",
+                                type:14,
+                                data:{
+                                    id:e.data.data.id,
+                                    error:error,
+                                }
+                            })
+                        }
+                    })
+                    break;
+            }
+        }
+    });
     if (window.VideoTogetherLoading) {
         return;
     }
@@ -21,6 +59,13 @@
     script.type = 'text/javascript';
     script.src = {{{ {"": "./config/vt_url","chrome":"./config/vt_chrome_url", "order":0} }}};
     document.getElementsByTagName('body')[0].appendChild(script);
+    try{
+        GM_addElement('script', {
+            src: script.src,
+            type: 'text/javascript'
+          })
+    }catch(e){};
+
     // fallback to china service
     setTimeout(() => {
         if(window.videoTogetherFlyPannel == undefined){
@@ -28,6 +73,12 @@
             script.type = 'text/javascript';
             script.src = {{{ {"": "./config/vt_china_url", "order":0} }}};
             document.getElementsByTagName('body')[0].appendChild(script);
+            try{
+                GM_addElement('script', {
+                    src: script.src,
+                    type: 'text/javascript'
+                  })
+            }catch(e){};
         }
     }, 5000);
     function filter(e) {

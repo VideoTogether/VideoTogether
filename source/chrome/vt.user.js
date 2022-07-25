@@ -537,6 +537,8 @@
         LoadStorageData: 10,
         SyncStorageData: 11,
         SetStorageData: 12,
+        FetchRequest: 13,
+        FetchResponse: 14
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -574,6 +576,9 @@
                 Master: 2,
                 Member: 3,
             }
+            this.cspBlockedHost = {};
+            // TODO clear
+            this.rspMap = {};
             this.video_together_host = 'https://vt.panghair.com:5000/';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video"]
@@ -590,6 +595,10 @@
             this.tempUser = this.generateUUID();
 
             this.isMain = (window.self == window.top);
+            document.addEventListener("securitypolicyviolation", (e) => {
+                let host = (new URL(e.blockedURI)).host;
+                this.cspBlockedHost[host] = true;
+            });
             this.CreateVideoDomObserver();
             this.timer = setInterval(this.ScheduledTask.bind(this), 2 * 1000);
             this.videoMap = new Map();
@@ -601,7 +610,8 @@
                 }
                 this.processReceivedMessage(message.data.type, message.data.data);
             });
-            this.SyncTimeWithServer();
+
+            this.RunWithRetry(this.SyncTimeWithServer.bind(this), 2);
 
             if (this.isMain) {
                 try {
@@ -624,7 +634,7 @@
                 if (this.serverTimestamp == 0) {
                     this.video_together_host = this.video_together_backup_host;
                 }
-            }, 2000);
+            }, 3000);
         }
 
         setRole(role) {
@@ -665,6 +675,26 @@
         }
 
         async Fetch(url) {
+            let host = (new URL(url)).host;
+            if (this.cspBlockedHost[host]) {
+                let id = this.generateUUID()
+                this.sendMessageToTop(MessageType.FetchRequest, {
+                    id: id,
+                    url: url.toString(),
+                    method: "GET",
+                    data: null,
+                });
+                return await new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        reject(new Error("超时"));
+                    }, 5000);
+                    setInterval(() => {
+                        if (this.rspMap[id] != undefined) {
+                            resolve({ json: () => this.rspMap[id], status: 200 });
+                        }
+                    }, 200);
+                })
+            }
             if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
                 return await window.fetch(url);
             } else {
@@ -679,6 +709,7 @@
 
         sendMessageToTop(type, data) {
             this.PostMessage(window.top, {
+                source: "VideoTogether",
                 type: type,
                 data: data
             });
@@ -688,6 +719,7 @@
             let iframs = document.getElementsByTagName("iframe");
             for (let i = 0; i < iframs.length; i++) {
                 this.PostMessage(iframs[i].contentWindow, {
+                    source: "VideoTogether",
                     type: type,
                     data: data,
                     context: {
@@ -839,9 +871,26 @@
                         video.volume = data.volume;
                     });
                     this.sendMessageToSon(type, data);
+                case MessageType.FetchResponse:
+                    if (data.data) {
+                        this.rspMap[data.id] = data.data;
+                        setTimeout(() => {
+                            delete this.rspMap[data.id];
+                        }, 5 * 1000);
+                    } else {
+
+                    }
                 default:
                     // console.info("unhandled message:", type, data)
                     break;
+            }
+        }
+
+        async RunWithRetry(func, count) {
+            for (let i = 0; i < count; i++) {
+                try {
+                    return await func();
+                } catch (e) { };
             }
         }
 
