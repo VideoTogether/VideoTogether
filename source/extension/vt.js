@@ -408,8 +408,28 @@
 
         async ForEachVideo(func) {
             try {
+                // Netflix
+                if (window.location.host.includes("netflix")) {
+                    try {
+                        let videoPlayer = netflix.appContext.state.playerApp.getAPI().videoPlayer;
+                        let player = videoPlayer.getVideoPlayerBySessionId(videoPlayer.getAllPlayerSessionIds()[0]);
+                        if (!player.videoTogetherVideoWrapper) {
+                            player.videoTogetherVideoWrapper = new VideoWrapper();
+                        }
+                        let videoWrapper = player.videoTogetherVideoWrapper;
+                        videoWrapper.play = async () => await player.play();
+                        videoWrapper.pause = async () => await player.pause();
+                        videoWrapper.paused = player.isPaused()
+                        videoWrapper.currentTimeGetter = () => player.getCurrentTime() / 1000;
+                        videoWrapper.currentTimeSetter = (v) => player.seek(1000 * v);
+                        videoWrapper.duration = player.getDuration() / 1000;
+                        videoWrapper.playbackRateGetter = () => player.getPlaybackRate();
+                        videoWrapper.playbackRateSetter = (v) => { player.setPlaybackRate(v) };
+                        await func(videoWrapper);
+                    } catch (e) { }
+                }
                 // 百度网盘
-                if (window.location.host == 'pan.baidu.com') {
+                if (window.location.host.includes('pan.baidu.com')) {
                     if (!this.BaiduPanPlayer) {
                         for (let key in window["$"]["cache"]) {
                             try {
@@ -425,8 +445,8 @@
                             this.BaiduPanPlayer.videoTogetherVideoWrapper = new VideoWrapper();
                         }
                         let videoWrapper = this.BaiduPanPlayer.videoTogetherVideoWrapper;
-                        videoWrapper.play = () => { this.BaiduPanPlayer.play() };
-                        videoWrapper.pause = () => { this.BaiduPanPlayer.pause() };
+                        videoWrapper.play = async () => await this.BaiduPanPlayer.play();
+                        videoWrapper.pause = async () => await this.BaiduPanPlayer.pause();
                         videoWrapper.paused = this.BaiduPanPlayer.paused();
                         videoWrapper.currentTimeGetter = () => this.BaiduPanPlayer.currentTime();
                         videoWrapper.currentTimeSetter = (v) => this.BaiduPanPlayer.currentTime(v);
@@ -436,7 +456,7 @@
                         await func(videoWrapper);
                     }
                 }
-            } catch (e) { console.error(e) }
+            } catch (e) { }
             try {
                 // 腾讯视频
                 if (window.__PLAYER__ != undefined) {
@@ -444,8 +464,8 @@
                         window.__PLAYER__.videoTogetherVideoWrapper = new VideoWrapper();
                     }
                     let videoWrapper = window.__PLAYER__.videoTogetherVideoWrapper;
-                    videoWrapper.play = () => { window.__PLAYER__.corePlayer.play() };
-                    videoWrapper.pause = () => { window.__PLAYER__.corePlayer.pause() };
+                    videoWrapper.play = async () => await window.__PLAYER__.corePlayer.play();
+                    videoWrapper.pause = async () => await window.__PLAYER__.corePlayer.pause();
                     videoWrapper.paused = window.__PLAYER__.paused;
                     videoWrapper.currentTimeGetter = () => window.__PLAYER__.currentVideoInfo.playtime;
                     videoWrapper.currentTimeSetter = (v) => { if (!videoWrapper.videoTogetherPaused) { window.__PLAYER__.seek(v) } };
@@ -454,7 +474,7 @@
                     videoWrapper.playbackRateSetter = (v) => window.__PLAYER__.playbackRate = v;
                     await func(videoWrapper);
                 }
-            } catch (e) { console.error(e) };
+            } catch (e) { };
 
             this.video_tag_names.forEach(async tag => {
                 let videos = document.getElementsByTagName(tag);
@@ -871,7 +891,9 @@
                 }
             }
             if (videoDom.playbackRate != room["playbackRate"]) {
-                videoDom.playbackRate = room["playbackRate"];
+                try {
+                    videoDom.playbackRate = parseFloat(room["playbackRate"]);
+                } catch (e) { }
             }
             this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" })
         }
