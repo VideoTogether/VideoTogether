@@ -710,7 +710,7 @@
         async JoinRoom(name, password) {
             try {
                 this.tempUser = this.generateUUID();
-                let data = await this.GetRoom(name, password);
+                let data = await this.RunWithRetry(async () => await this.GetRoom(name, password), 2);
                 this.roomName = name;
                 this.password = password;
                 this.setRole(this.RoleEnum.Member);
@@ -963,7 +963,7 @@
             try {
                 this.tempUser = this.generateUUID();
                 let url = this.linkWithoutState(window.location);
-                let data = await this.UpdateRoom(name, password, url, 1, 0, true, 0);
+                let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0), 2);
                 this.setRole(this.RoleEnum.Master);
                 this.roomName = name;
                 this.password = password;
