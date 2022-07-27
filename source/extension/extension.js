@@ -45,6 +45,7 @@
         return;
     }
     window.VideoTogetherLoading = true;
+    let ExtensionInitSuccess = false;
     window.addEventListener("message", async e => {
         if (e.data.source == "VideoTogether") {
             switch (e.data.type) {
@@ -93,6 +94,9 @@
                         console.error("permission error", e.data);
                     }
                 }
+                case 17: {
+                    ExtensionInitSuccess = true;
+                }
             }
         }
     });
@@ -116,7 +120,6 @@
             type: 16,
             data: data
         }, "*");
-        window.VideoTogetherStoragePosted = true;
     }
     PostStorage();
     setInterval(() => {
@@ -150,7 +153,7 @@
 
     // fallback to china service
     setTimeout(() => {
-        if (window.videoTogetherFlyPannel == undefined) {
+        if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.user.js';

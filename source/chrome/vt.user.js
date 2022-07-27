@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1658934166
+// @version      1658939040
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -362,12 +362,12 @@
                 this.videoTogetherVideoVolumeDown.onclick = () => {
                     this.volume -= 0.1;
                     this.volume = Math.max(0, this.volume);
-                    window.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
+                    window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
                 }
                 this.videoTogetherVideoVolumeUp.onclick = () => {
                     this.volume += 0.1;
                     this.volume = Math.min(1, this.volume);
-                    window.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
+                    window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
                 }
                 this.volume = 1;
                 this.statusText = document.querySelector("#videoTogetherStatusText");
@@ -529,6 +529,8 @@
 
         SetStorageValue: 15,
         SyncStorageValue: 16,
+
+        ExtensionInitSuccess: 17,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -583,7 +585,7 @@
             this.localTimestamp = 0;
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1658934166';
+            this.version = '1658939040';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -711,6 +713,14 @@
 
         sendMessageToTop(type, data) {
             this.PostMessage(window.top, {
+                source: "VideoTogether",
+                type: type,
+                data: data
+            });
+        }
+
+        sendMessageToSelf(type, data) {
+            this.PostMessage(window, {
                 source: "VideoTogether",
                 type: type,
                 data: data
@@ -894,10 +904,10 @@
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
                         this.sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: this.generateUUID() });
                     }
-                    if(window.VideoTogetherSettingEnabled == undefined){
-                        try{
+                    if (window.VideoTogetherSettingEnabled == undefined) {
+                        try {
                             document.getElementById('videoTogetherSetting').href = "https://setting.2gether.video/v2.html";
-                        }catch(e){}
+                        } catch (e) { }
                     }
                     window.VideoTogetherSettingEnabled = true;
                     break;
@@ -1388,6 +1398,7 @@
     if (window.videoTogetherExtension === undefined) {
         window.videoTogetherExtension = null;
         window.videoTogetherExtension = new VideoTogetherExtension();
+        window.videoTogetherExtension.sendMessageToSelf(MessageType.ExtensionInitSuccess, {})
     }
     try {
         document.querySelector("#videoTogetherLoading").remove()

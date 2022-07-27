@@ -68,12 +68,12 @@
                 this.videoTogetherVideoVolumeDown.onclick = () => {
                     this.volume -= 0.1;
                     this.volume = Math.max(0, this.volume);
-                    window.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
+                    window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
                 }
                 this.videoTogetherVideoVolumeUp.onclick = () => {
                     this.volume += 0.1;
                     this.volume = Math.min(1, this.volume);
-                    window.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
+                    window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
                 }
                 this.volume = 1;
                 this.statusText = document.querySelector("#videoTogetherStatusText");
@@ -235,6 +235,8 @@
 
         SetStorageValue: 15,
         SyncStorageValue: 16,
+
+        ExtensionInitSuccess: 17,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -423,6 +425,14 @@
             });
         }
 
+        sendMessageToSelf(type, data) {
+            this.PostMessage(window, {
+                source: "VideoTogether",
+                type: type,
+                data: data
+            });
+        }
+
         sendMessageToSon(type, data) {
             let iframs = document.getElementsByTagName("iframe");
             for (let i = 0; i < iframs.length; i++) {
@@ -600,10 +610,10 @@
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
                         this.sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: this.generateUUID() });
                     }
-                    if(window.VideoTogetherSettingEnabled == undefined){
-                        try{
+                    if (window.VideoTogetherSettingEnabled == undefined) {
+                        try {
                             document.getElementById('videoTogetherSetting').href = "https://setting.2gether.video/v2.html";
-                        }catch(e){}
+                        } catch (e) { }
                     }
                     window.VideoTogetherSettingEnabled = true;
                     break;
@@ -1094,6 +1104,7 @@
     if (window.videoTogetherExtension === undefined) {
         window.videoTogetherExtension = null;
         window.videoTogetherExtension = new VideoTogetherExtension();
+        window.videoTogetherExtension.sendMessageToSelf(MessageType.ExtensionInitSuccess, {})
     }
     try {
         document.querySelector("#videoTogetherLoading").remove()

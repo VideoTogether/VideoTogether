@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1658934166
+// @version      1658939040
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -17,7 +17,7 @@
 // ==/UserScript==
 
 (function () {
-    let version = '1658934166'
+    let version = '1658939040'
     let type = 'Chrome'
     async function AppendKey(key) {
         let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
@@ -45,6 +45,7 @@
         return;
     }
     window.VideoTogetherLoading = true;
+    let ExtensionInitSuccess = false;
     window.addEventListener("message", async e => {
         if (e.data.source == "VideoTogether") {
             switch (e.data.type) {
@@ -93,6 +94,9 @@
                         console.error("permission error", e.data);
                     }
                 }
+                case 17: {
+                    ExtensionInitSuccess = true;
+                }
             }
         }
     });
@@ -116,7 +120,6 @@
             type: 16,
             data: data
         }, "*");
-        window.VideoTogetherStoragePosted = true;
     }
     PostStorage();
     setInterval(() => {
@@ -193,7 +196,7 @@
 
     // fallback to china service
     setTimeout(() => {
-        if (window.videoTogetherFlyPannel == undefined) {
+        if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.user.js';
