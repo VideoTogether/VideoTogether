@@ -6,6 +6,13 @@
 // @author       maggch@outlook.com
 // @match        *://*/*
 // @icon         https://2gether.video/icon/favicon-32x32.png
-// @grant        none
-// @require      http://127.0.0.1:8000/release/vt.debug.user.js
+// @grant        GM.xmlHttpRequest
+// @grant        GM_addElement
+// @grant        GM.setValue
+// @grant        GM.getValue
+// @connect      api.2gether.video
+// @connect      api.chizhou.in
+// @connect      api.panghair.com
+// @connect      vt.panghair.com
+// @require      http://127.0.0.1:7000/release/extension.debug.user.js?ts=10938
 // ==/UserScript==

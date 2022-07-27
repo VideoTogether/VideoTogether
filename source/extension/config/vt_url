@@ -1,1 +1,1 @@
-'https://www.2gether.video/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600)
+'http://127.0.0.1:7000/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600)

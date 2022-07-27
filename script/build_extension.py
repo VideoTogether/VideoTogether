@@ -5,6 +5,7 @@ import os
 import json
 import pathlib
 import shutil
+from time import time
 
 current_path = os.path.dirname(__file__)
 
@@ -28,6 +29,7 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
                 resultFilename = resultFilename + "."+subName["name"]
         resultPath = releasePath.joinpath(resultFilename+extension)
         print(resultPath)
+        content = content.replace('{{timestamp}}', str(int(time())))
         WriteSource(resultPath, content)
         return
     start = content.index(r'{{{')

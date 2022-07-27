@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
-// @namespace    http://vt.panghair.com
-// @version      0.1
+// @namespace    https://2gether.video/
+// @version      1658934166
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
 // @icon         https://2gether.video/icon/favicon-32x32.png
 // @grant        GM.xmlHttpRequest
 // @grant        GM_addElement
+// @grant        GM.setValue
+// @grant        GM.getValue
 // @connect      api.2gether.video
 // @connect      api.chizhou.in
 // @connect      api.panghair.com
@@ -15,43 +17,112 @@
 // ==/UserScript==
 
 (function () {
-    window.addEventListener("message",e=>{
-        if(e.data.source == "VideoTogether"){
-            switch(e.data.type){
-                case 13:
+    let version = '1658934166'
+    let type = 'userscript'
+    async function AppendKey(key) {
+        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
+        try {
+            let keys = new Set(JSON.parse(keysStr));
+            keys.add(key);
+            await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
+        } catch (e) {
+            await GM.setValue("[]");
+        }
+    }
+
+    async function GetKeys() {
+        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
+        try {
+            let keys = new Set(JSON.parse(keysStr));
+            return Array.from(keys);
+        } catch (e) {
+            await GM.setValue("[]");
+            return [];
+        }
+    }
+
+    if (window.VideoTogetherLoading) {
+        return;
+    }
+    window.VideoTogetherLoading = true;
+    window.addEventListener("message", async e => {
+        if (e.data.source == "VideoTogether") {
+            switch (e.data.type) {
+                case 13: {
+                    let url = new URL(e.data.data.url);
+                    if (!url.host.endsWith("2gether.video") && !url.host.endsWith("chizhou.in") && !url.host.endsWith("panghair.com")) {
+                        console.error("permission error", e.data);
+                        return;
+                    }
                     GM.xmlHttpRequest({
-                        method:e.data.data.method,
+                        method: e.data.data.method,
                         url: e.data.data.url,
                         data: e.data.data.data,
-                        onload: function(response){
+                        onload: function (response) {
                             window.postMessage({
-                                source:"VideoTogether",
-                                type:14,
-                                data:{
-                                    id:e.data.data.id,
-                                    data:JSON.parse(response.responseText)
+                                source: "VideoTogether",
+                                type: 14,
+                                data: {
+                                    id: e.data.data.id,
+                                    data: JSON.parse(response.responseText)
                                 }
                             })
                         },
-                        onerror: function(error) {
+                        onerror: function (error) {
                             window.postMessage({
-                                source:"VideoTogether",
-                                type:14,
-                                data:{
-                                    id:e.data.data.id,
-                                    error:error,
+                                source: "VideoTogether",
+                                type: 14,
+                                data: {
+                                    id: e.data.data.id,
+                                    error: error,
                                 }
                             })
                         }
                     })
                     break;
+                }
+                case 15: {
+                    if (window.location.host.endsWith("videotogether.gitee.io")
+                        || window.location.host.endsWith("videotogether.github.io")
+                        || window.location.host.endsWith("2gether.video")
+                        || e.data.data.key.startsWith("Public")) {
+                        GM.setValue(e.data.data.key, e.data.data.value)
+                        AppendKey(e.data.data.key);
+                        break;
+                    } else {
+                        console.error("permission error", e.data);
+                    }
+                }
             }
         }
     });
-    if (window.VideoTogetherLoading) {
-        return;
+    let isMain = window.self == window.top;
+
+    async function PostStorage() {
+        let keys = await GetKeys();
+        let data = {}
+        for (let i = 0; i < keys.length; i++) {
+            data[keys[i]] = await GM.getValue(keys[i]);
+            if (data[keys[i]] == 'true') {
+                data[keys[i]] = true;
+            }
+            if (data[keys[i]] == 'false') {
+                data[keys[i]] = false;
+            }
+        }
+        data["LoaddingVersion"] = version;
+        window.top.postMessage({
+            source: "VideoTogether",
+            type: 16,
+            data: data
+        }, "*");
+        window.VideoTogetherStoragePosted = true;
     }
-    window.VideoTogetherLoading = true;
+    PostStorage();
+    setInterval(() => {
+        PostStorage();
+    }, 1000);
+
     let wrapper = document.createElement("div");
     wrapper.innerHTML = `<div id="videoTogetherLoading">
     <div id="videoTogetherLoadingwrap">
@@ -100,28 +171,39 @@
     document.getElementsByTagName('body')[0].appendChild(wrapper);
     let script = document.createElement('script');
     script.type = 'text/javascript';
-    script.src = 'https://www.2gether.video/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
+    switch (type) {
+        case "userscript":
+            script.src = 'https://www.2gether.video/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
+            break;
+        case "Chrome":
+            script.src = chrome.runtime.getURL('vt.user.js')
+            break;
+        case "userscript_debug":
+            script.src = 'http://127.0.0.1:7000/release/vt.user.js?timestamp=' + parseInt(Date.now());
+            break;
+    }
+
     document.getElementsByTagName('body')[0].appendChild(script);
-    try{
+    try {
         GM_addElement('script', {
             src: script.src,
             type: 'text/javascript'
-          })
-    }catch(e){};
+        })
+    } catch (e) { };
 
     // fallback to china service
     setTimeout(() => {
-        if(window.videoTogetherFlyPannel == undefined){
+        if (window.videoTogetherFlyPannel == undefined) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.user.js';
             document.getElementsByTagName('body')[0].appendChild(script);
-            try{
+            try {
                 GM_addElement('script', {
                     src: script.src,
                     type: 'text/javascript'
-                  })
-            }catch(e){};
+                })
+            } catch (e) { };
         }
     }, 5000);
     function filter(e) {
