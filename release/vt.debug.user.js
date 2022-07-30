@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1658939040
+// @version      1659171443
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -585,7 +585,7 @@
             this.localTimestamp = 0;
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1658939040';
+            this.version = '1659171443';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

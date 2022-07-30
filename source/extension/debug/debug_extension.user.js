@@ -10,6 +10,7 @@
 // @grant        GM_addElement
 // @grant        GM.setValue
 // @grant        GM.getValue
+// @connect      2gether.video
 // @connect      api.2gether.video
 // @connect      api.chizhou.in
 // @connect      api.panghair.com

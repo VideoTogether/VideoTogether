@@ -10,6 +10,7 @@
 // @grant        GM_addElement
 // @grant        GM.setValue
 // @grant        GM.getValue
+// @connect      2gether.video
 // @connect      api.2gether.video
 // @connect      api.chizhou.in
 // @connect      api.panghair.com
@@ -39,6 +40,20 @@
             await GM.setValue("[]");
             return [];
         }
+    }
+
+    function InsertInlineJs(url) {
+        try {
+            GM.xmlHttpRequest({
+                method: "GET",
+                url: url,
+                onload: function (response) {
+                    let inlineScript = document.createElement("script");
+                    inlineScript.textContent = response.responseText;
+                    document.head.appendChild(inlineScript);
+                }
+            })
+        } catch (e) { };
     }
 
     if (window.VideoTogetherLoading) {
@@ -133,7 +148,7 @@
     script.type = 'text/javascript';
     switch (type) {
         case "userscript":
-            script.src = 'https://www.2gether.video/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
+            script.src = 'https://2gether.video/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
             break;
         case "Chrome":
             script.src = chrome.runtime.getURL('vt.user.js')
@@ -143,8 +158,9 @@
             break;
     }
 
-    document.getElementsByTagName('body')[0].appendChild(script);
+    document.body.appendChild(script);
     try {
+        InsertInlineJs(script.src);
         GM_addElement('script', {
             src: script.src,
             type: 'text/javascript'
@@ -157,8 +173,9 @@
             let script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.user.js';
-            document.getElementsByTagName('body')[0].appendChild(script);
+            document.body.appendChild(script);
             try {
+                InsertInlineJs(script.src);
                 GM_addElement('script', {
                     src: script.src,
                     type: 'text/javascript'
