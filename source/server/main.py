@@ -56,15 +56,12 @@ class Room:
         self.tempUser = ""
 
     def toJsonResponse(self):
-        tmpDict = self.__dict__.copy()
-        tmpDict["userCount"] = len(roomUserDatabase[self.name])
-        tmpDict.pop("password")
-        tmpDict.pop("tempUser")
-        return jsonify(tmpDict)
+        return jsonify(self.toDict())
 
     def toDict(self):
         tmpDict = self.__dict__.copy()
         tmpDict["userCount"] = len(roomUserDatabase[self.name])
+        tmpDict["timestamp"] = time.time()
         tmpDict.pop("password")
         tmpDict.pop("tempUser")
         return tmpDict

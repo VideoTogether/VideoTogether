@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
-// @namespace    http://vt.panghair.com
-// @version      0.1
+// @namespace    https://2gether.video/
+// @version      {{timestamp}}
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -10,6 +10,8 @@
 // @grant        GM_addElement
 // @grant        GM.setValue
 // @grant        GM.getValue
+// @grant        GM_getTab
+// @grant        GM_saveTab
 // @connect      2gether.video
 // @connect      api.2gether.video
 // @connect      api.chizhou.in

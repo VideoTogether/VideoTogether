@@ -229,6 +229,7 @@
         LoadStorageData: 10,
         SyncStorageData: 11,
         SetStorageData: 12,
+        // --------------------
 
         FetchRequest: 13,
         FetchResponse: 14,
@@ -237,6 +238,9 @@
         SyncStorageValue: 16,
 
         ExtensionInitSuccess: 17,
+
+        SetTabStorage: 18,
+        SetTabStorageSuccess: 19,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -294,7 +298,8 @@
             this.version = '{{timestamp}}';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
-
+            // we need a common callback function to deal with all message
+            this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
                 let host = (new URL(e.blockedURI)).host;
                 this.cspBlockedHost[host] = true;
@@ -310,12 +315,16 @@
                 }
                 this.processReceivedMessage(message.data.type, message.data.data);
             });
-
+            window.addEventListener('click', message=>{
+                setTimeout(this.ScheduledTask.bind(this), 200);
+            })
             this.RunWithRetry(this.SyncTimeWithServer.bind(this), 2);
 
             if (this.isMain) {
                 try {
-                    this.RecoveryState();
+                    setTimeout(() => {
+                        this.RecoveryState();
+                    }, 2000);
                     this.EnableDraggable();
 
                     setTimeout(() => {
@@ -589,7 +598,7 @@
                         video.volume = data.volume;
                     });
                     this.sendMessageToSon(type, data);
-                case MessageType.FetchResponse:
+                case MessageType.FetchResponse: {
                     if (data.data) {
                         this.rspMap[data.id] = data.data;
                         setTimeout(() => {
@@ -598,8 +607,14 @@
                     } else {
 
                     }
+                    break;
+                }
                 case MessageType.SyncStorageValue: {
                     window.VideoTogetherStorage = data;
+                    try {
+                        this.RecoveryState()
+                    } catch (e) { };
+
                     if (!window.videoTogetherFlyPannel.disableDefaultSize && !window.VideoTogetherSettingEnabled) {
                         if (data.MinimiseDefault) {
                             window.videoTogetherFlyPannel.Minimize();
@@ -616,6 +631,10 @@
                         } catch (e) { }
                     }
                     window.VideoTogetherSettingEnabled = true;
+                    break;
+                }
+                case MessageType.SetTabStorageSuccess: {
+                    this.SetTabStorageSuccessCallback();
                     break;
                 }
                 default:
@@ -665,7 +684,6 @@
                     for (var i = 0; i < mutation.addedNodes.length; i++) {
 
                         if (mutation.addedNodes[i].tagName == "VIDEO" || mutation.addedNodes[i].tagName == "BWP-VIDEO") {
-                            console.info(mutation.addedNodes[i]);
                             try {
                                 _this.AddVideoListener(mutation.addedNodes[i]);
                             } catch { }
@@ -698,23 +716,26 @@
         }
 
         RecoveryState() {
-            console.info("recovery: ", window.location)
+            if (this.recovered) {
+                return;
+            }
+            this.recovered = true;
             function RecoveryStateFrom(getFunc) {
-                let vtRole = getFunc("videoTogetherRole");
-                let vtUrl = getFunc("videoTogetherUrl");
+                let vtRole = getFunc("VideoTogetherRole");
+                let vtUrl = getFunc("VideoTogetherUrl");
                 let vtRoomName = getFunc("VideoTogetherRoomName");
-                let timestamp = parseFloat(getFunc("videoTogetherTimestamp"));
+                let timestamp = parseFloat(getFunc("VideoTogetherTimestamp"));
                 let password = getFunc("VideoTogetherPassword");
                 if (timestamp + 10 < Date.now() / 1000) {
                     return;
                 }
 
                 if (vtUrl != null && vtRoomName != null) {
-                    if (vtRole == this.RoleEnum.Member) {
+                    if (vtRole == this.RoleEnum.Member || vtRole == this.RoleEnum.Master) {
                         this.setRole(parseInt(vtRole));
                         this.url = vtUrl;
                         this.roomName = vtRoomName;
-                        this.password = password
+                        this.password = password;
                         window.videoTogetherFlyPannel.inputRoomName.value = vtRoomName;
                         window.videoTogetherFlyPannel.inputRoomPassword.value = password;
                         window.videoTogetherFlyPannel.InRoom();
@@ -723,9 +744,14 @@
             }
 
             let url = new URL(window.location);
-
-            let localTimestamp = window.sessionStorage.getItem("videoTogetherTimestamp");
-            let urlTimestamp = url.searchParams.get("videoTogetherTimestamp");
+            if (window.VideoTogetherStorage?.VideoTogetherTabStorageEnabled) {
+                try {
+                    RecoveryStateFrom.bind(this)(key => window.VideoTogetherStorage.VideoTogetherTabStorage[key]);
+                } catch (e) { console.error(e) };
+                return;
+            }
+            let localTimestamp = window.sessionStorage.getItem("VideoTogetherTimestamp");
+            let urlTimestamp = url.searchParams.get("VideoTogetherTimestamp");
             if (localTimestamp == null && urlTimestamp == null) {
                 return;
             } else if (localTimestamp == null) {
@@ -794,8 +820,19 @@
                     case this.RoleEnum.Null:
                         return;
                     case this.RoleEnum.Master: {
+                        if (window.VideoTogetherStorage?.VideoTogetherTabStorageEnabled) {
+                            let state = this.GetRoomState("");
+                            this.sendMessageToTop(MessageType.SetTabStorage, state);
+                        }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
+                            await this.UpdateRoom(this.roomName,
+                                this.password,
+                                this.linkWithoutState(window.location),
+                                1,
+                                0,
+                                true,
+                                1e9);
                             throw new Error("页面没有视频");
                         } else {
                             this.sendMessageToTop(MessageType.SyncMasterVideo, { video: video, password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
@@ -806,10 +843,18 @@
                         let room = await this.GetRoom(this.roomName, this.password);
                         this.duration = room["duration"];
                         if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
-                            if (this.SaveStateToSessionStorageWhenSameOrigin(room["url"])) {
-                                this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                            if (window.VideoTogetherStorage?.VideoTogetherTabStorageEnabled) {
+                                let state = this.GetRoomState(room["url"]);
+                                this.sendMessageToTop(MessageType.SetTabStorage, state);
+                                this.SetTabStorageSuccessCallback = () => {
+                                    this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                }
                             } else {
-                                this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
+                                if (this.SaveStateToSessionStorageWhenSameOrigin(room["url"])) {
+                                    this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                } else {
+                                    this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
+                                }
                             }
                         }
                         let video = this.GetVideoDom();
@@ -880,12 +925,22 @@
 
         linkWithoutState(link) {
             let url = new URL(link);
-            url.searchParams.delete("videoTogetherUrl");
+            url.searchParams.delete("VideoTogetherUrl");
             url.searchParams.delete("VideoTogetherRoomName");
-            url.searchParams.delete("videoTogetherRole");
+            url.searchParams.delete("VideoTogetherRole");
             url.searchParams.delete("VideoTogetherPassword");
-            url.searchParams.delete("videoTogetherTimestamp");
+            url.searchParams.delete("VideoTogetherTimestamp");
             return url.toString();
+        }
+
+        GetRoomState(link) {
+            return {
+                VideoTogetherUrl: link,
+                VideoTogetherRoomName: this.roomName,
+                VideoTogetherPassword: this.password,
+                VideoTogetherRole: this.role,
+                VideoTogetherTimestamp: Date.now() / 1000,
+            }
         }
 
         SaveStateToSessionStorageWhenSameOrigin(link) {
@@ -893,11 +948,11 @@
                 let url = new URL(link);
                 let currentUrl = new URL(window.location);
                 if (url.origin == currentUrl.origin) {
-                    window.sessionStorage.setItem("videoTogetherUrl", link);
+                    window.sessionStorage.setItem("VideoTogetherUrl", link);
                     window.sessionStorage.setItem("VideoTogetherRoomName", this.roomName);
                     window.sessionStorage.setItem("VideoTogetherPassword", this.password);
-                    window.sessionStorage.setItem("videoTogetherRole", this.role);
-                    window.sessionStorage.setItem("videoTogetherTimestamp", Date.now() / 1000);
+                    window.sessionStorage.setItem("VideoTogetherRole", this.role);
+                    window.sessionStorage.setItem("VideoTogetherTimestamp", Date.now() / 1000);
                     return true;
                 } else {
                     return false;
@@ -912,11 +967,11 @@
             if (link.toLowerCase().includes("youtube")) {
                 url.searchParams.set("app", "desktop");
             }
-            url.searchParams.set("videoTogetherUrl", link);
+            url.searchParams.set("VideoTogetherUrl", link);
             url.searchParams.set("VideoTogetherRoomName", this.roomName);
             url.searchParams.set("VideoTogetherPassword", this.password);
-            url.searchParams.set("videoTogetherRole", this.role);
-            url.searchParams.set("videoTogetherTimestamp", Date.now() / 1000);
+            url.searchParams.set("VideoTogetherRole", this.role);
+            url.searchParams.set("VideoTogetherTimestamp", Date.now() / 1000);
             let urlStr = url.toString();
             if (tmpSearch.length > 1) {
                 urlStr = urlStr + "&" + tmpSearch.slice(1);
@@ -976,6 +1031,9 @@
                     videoDom.playbackRate = parseFloat(room["playbackRate"]);
                 } catch (e) { }
             }
+            if (videoDom.duration == NaN) {
+                throw new Error("请手动点击播放");
+            }
             this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" })
         }
 
@@ -1018,9 +1076,22 @@
             apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
             // url.searchParams.set("lastUpdateClientTime", timestamp)
+            let startTime = this.getLocalTimestamp()
             let response = await this.Fetch(apiUrl);
             let data = await this.CheckResponse(response);
+            let endTime = this.getLocalTimestamp();
+            this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
+        }
+
+        async UpdateTimestampIfneeded(serverTimestamp, startTime, endTime) {
+            if (typeof (serverTimestamp) == 'number') {
+                let localTimestamp = (startTime + endTime) / 2;
+                if (this.localTimestamp == 0 || localTimestamp - serverTimestamp < this.localTimestamp - this.serverTimestamp) {
+                    this.localTimestamp = localTimestamp;
+                    this.serverTimestamp = serverTimestamp;
+                }
+            }
         }
 
         async GetRoom(name, password) {
@@ -1028,8 +1099,11 @@
             url.searchParams.set("name", name);
             url.searchParams.set("tempUser", this.tempUser);
             url.searchParams.set("password", password);
+            let startTime = this.getLocalTimestamp()
             let response = await this.Fetch(url);
             let data = await this.CheckResponse(response);
+            let endTime = this.getLocalTimestamp();
+            this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
 

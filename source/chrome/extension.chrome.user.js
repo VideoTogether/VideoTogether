@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1659171443
+// @version      1659522887
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -10,6 +10,8 @@
 // @grant        GM_addElement
 // @grant        GM.setValue
 // @grant        GM.getValue
+// @grant        GM_getTab
+// @grant        GM_saveTab
 // @connect      2gether.video
 // @connect      api.2gether.video
 // @connect      api.chizhou.in
@@ -18,8 +20,18 @@
 // ==/UserScript==
 
 (function () {
-    let version = '1659171443'
+    let version = '1659522887'
     let type = 'Chrome'
+
+    try {
+        GM_getTab(function (tabObj) {
+            tabObj.VideoTogetherTabStorageTest = true;
+            GM_saveTab(tabObj);
+            window.VideoTogetherTabStorage = tabObj.VideoTogetherTabStorage;
+            window.VideoTogetherTabStorageEnabled = true;
+        })
+    } catch (e) { };
+
     async function AppendKey(key) {
         let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
         try {
@@ -53,6 +65,21 @@
                     document.head.appendChild(inlineScript);
                 }
             })
+        } catch (e) { };
+    }
+
+    function SetTabStorage(data) {
+        try {
+            GM_getTab(function (tabObj) {
+                tabObj.VideoTogetherTabStorage = data;
+                GM_saveTab(tabObj);
+                window.VideoTogetherTabStorage = tabObj.VideoTogetherTabStorage;
+                window.postMessage({
+                    source: "VideoTogether",
+                    type: 19,
+                    data: tabObj.VideoTogetherTabStorage
+                })
+            });
         } catch (e) { };
     }
 
@@ -108,13 +135,20 @@
                     } else {
                         console.error("permission error", e.data);
                     }
+                    break;
                 }
                 case 17: {
                     ExtensionInitSuccess = true;
+                    break;
+                }
+                case 18: {
+                    SetTabStorage(e.data.data);
+                    break;
                 }
             }
         }
     });
+
     let isMain = window.self == window.top;
 
     async function PostStorage() {
@@ -130,15 +164,27 @@
             }
         }
         data["LoaddingVersion"] = version;
+        data["VideoTogetherTabStorageEnabled"] = window.VideoTogetherTabStorageEnabled;
+        data["VideoTogetherTabStorage"] = window.VideoTogetherTabStorage;
         window.top.postMessage({
             source: "VideoTogether",
             type: 16,
             data: data
         }, "*");
     }
-    PostStorage();
+    function PostStorageWithTab() {
+        try {
+            GM_getTab(function (tabObj) {
+                window.VideoTogetherTabStorage = tabObj.VideoTogetherTabStorage;
+                PostStorage();
+            });
+        } catch (e) {
+            PostStorage();
+        };
+    }
+    PostStorageWithTab();
     setInterval(() => {
-        PostStorage();
+        PostStorageWithTab();
     }, 1000);
 
     let wrapper = document.createElement("div");
@@ -197,7 +243,7 @@
             script.src = chrome.runtime.getURL('vt.user.js')
             break;
         case "userscript_debug":
-            script.src = 'http://127.0.0.1:7000/release/vt.user.js?timestamp=' + parseInt(Date.now());
+            script.src = 'http://127.0.0.1:7000/release/vt.debug.user.js?timestamp=' + parseInt(Date.now());
             break;
     }
 
