@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1659522887
+// @version      1659523987
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -20,7 +20,7 @@
 // ==/UserScript==
 
 (function () {
-    let version = '1659522887'
+    let version = '1659523987'
     let type = 'Chrome'
 
     try {
@@ -93,7 +93,7 @@
             switch (e.data.type) {
                 case 13: {
                     let url = new URL(e.data.data.url);
-                    if (!url.host.endsWith("2gether.video") && !url.host.endsWith("chizhou.in") && !url.host.endsWith("panghair.com")) {
+                    if (!url.hostname.endsWith("2gether.video") && !url.hostname.endsWith("chizhou.in") && !url.hostname.endsWith("panghair.com")) {
                         console.error("permission error", e.data);
                         return;
                     }
@@ -125,9 +125,9 @@
                     break;
                 }
                 case 15: {
-                    if (window.location.host.endsWith("videotogether.gitee.io")
-                        || window.location.host.endsWith("videotogether.github.io")
-                        || window.location.host.endsWith("2gether.video")
+                    if (window.location.hostname.endsWith("videotogether.gitee.io")
+                        || window.location.hostname.endsWith("videotogether.github.io")
+                        || window.location.hostname.endsWith("2gether.video")
                         || e.data.data.key.startsWith("Public")) {
                         GM.setValue(e.data.data.key, e.data.data.value)
                         AppendKey(e.data.data.key);
