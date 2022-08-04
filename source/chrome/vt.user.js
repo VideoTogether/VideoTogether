@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1659613923
+// @version      1659627903
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -589,7 +589,7 @@
             this.localTimestamp = 0;
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1659613923';
+            this.version = '1659627903';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
             // we need a common callback function to deal with all message
@@ -999,9 +999,9 @@
         }
 
         async SyncTimeWithServer() {
-            let startTime = this.getLocalTimestamp()
+            let startTime = Date.now() / 1000;
             let response = await this.Fetch(this.video_together_host + "/timestamp");
-            let endTime = this.getLocalTimestamp();
+            let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
             if (typeof (data["timestamp"]) == "number") {
                 this.serverTimestamp = data["timestamp"];
@@ -1370,10 +1370,10 @@
             apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
             // url.searchParams.set("lastUpdateClientTime", timestamp)
-            let startTime = this.getLocalTimestamp()
+            let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
             let data = await this.CheckResponse(response);
-            let endTime = this.getLocalTimestamp();
+            let endTime = Date.now() / 1000;
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
@@ -1393,10 +1393,10 @@
             url.searchParams.set("name", name);
             url.searchParams.set("tempUser", this.tempUser);
             url.searchParams.set("password", password);
-            let startTime = this.getLocalTimestamp()
+            let startTime = Date.now() / 1000;
             let response = await this.Fetch(url);
             let data = await this.CheckResponse(response);
-            let endTime = this.getLocalTimestamp();
+            let endTime = Date.now() / 1000;
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }

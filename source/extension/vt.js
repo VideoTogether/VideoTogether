@@ -705,9 +705,9 @@
         }
 
         async SyncTimeWithServer() {
-            let startTime = this.getLocalTimestamp()
+            let startTime = Date.now() / 1000;
             let response = await this.Fetch(this.video_together_host + "/timestamp");
-            let endTime = this.getLocalTimestamp();
+            let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
             if (typeof (data["timestamp"]) == "number") {
                 this.serverTimestamp = data["timestamp"];
@@ -1076,10 +1076,10 @@
             apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
             // url.searchParams.set("lastUpdateClientTime", timestamp)
-            let startTime = this.getLocalTimestamp()
+            let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
             let data = await this.CheckResponse(response);
-            let endTime = this.getLocalTimestamp();
+            let endTime = Date.now() / 1000;
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
@@ -1099,10 +1099,10 @@
             url.searchParams.set("name", name);
             url.searchParams.set("tempUser", this.tempUser);
             url.searchParams.set("password", password);
-            let startTime = this.getLocalTimestamp()
+            let startTime = Date.now() / 1000;
             let response = await this.Fetch(url);
             let data = await this.CheckResponse(response);
-            let endTime = this.getLocalTimestamp();
+            let endTime = Date.now() / 1000;
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
