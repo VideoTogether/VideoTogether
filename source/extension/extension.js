@@ -10,8 +10,8 @@
 // @grant        GM_addElement
 // @grant        GM.setValue
 // @grant        GM.getValue
-// @grant        GM_getTab
-// @grant        GM_saveTab
+// @grant        GM.getTab
+// @grant        GM.saveTab
 // @connect      2gether.video
 // @connect      api.2gether.video
 // @connect      api.chizhou.in
@@ -22,15 +22,6 @@
 (function () {
     let version = '{{timestamp}}'
     let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug", "order":0} }}}'
-
-    try {
-        GM_getTab(function (tabObj) {
-            tabObj.VideoTogetherTabStorageTest = true;
-            GM_saveTab(tabObj);
-            window.VideoTogetherTabStorage = tabObj.VideoTogetherTabStorage;
-            window.VideoTogetherTabStorageEnabled = true;
-        })
-    } catch (e) { };
 
     async function AppendKey(key) {
         let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
@@ -68,18 +59,16 @@
         } catch (e) { };
     }
 
-    function SetTabStorage(data) {
+    async function SetTabStorage(data) {
         try {
-            GM_getTab(function (tabObj) {
-                tabObj.VideoTogetherTabStorage = data;
-                GM_saveTab(tabObj);
-                window.VideoTogetherTabStorage = tabObj.VideoTogetherTabStorage;
-                window.postMessage({
-                    source: "VideoTogether",
-                    type: 19,
-                    data: tabObj.VideoTogetherTabStorage
-                })
-            });
+            let tabObj = await GM.getTab();
+            tabObj.VideoTogetherTabStorage = data;
+            await GM.saveTab(tabObj);
+            window.postMessage({
+                source: "VideoTogether",
+                type: 19,
+                data: tabObj.VideoTogetherTabStorage
+            })
         } catch (e) { };
     }
 
@@ -142,7 +131,7 @@
                     break;
                 }
                 case 18: {
-                    SetTabStorage(e.data.data);
+                    await SetTabStorage(e.data.data);
                     break;
                 }
             }
@@ -164,27 +153,22 @@
             }
         }
         data["LoaddingVersion"] = version;
-        data["VideoTogetherTabStorageEnabled"] = window.VideoTogetherTabStorageEnabled;
-        data["VideoTogetherTabStorage"] = window.VideoTogetherTabStorage;
+        data["VideoTogetherTabStorageEnabled"] = true;
+        try{
+            data["VideoTogetherTabStorage"] = (await GM.getTab()).VideoTogetherTabStorage;
+        }catch(e){
+            data["VideoTogetherTabStorageEnabled"] = false;
+        }
         window.top.postMessage({
             source: "VideoTogether",
             type: 16,
             data: data
         }, "*");
     }
-    function PostStorageWithTab() {
-        try {
-            GM_getTab(function (tabObj) {
-                window.VideoTogetherTabStorage = tabObj.VideoTogetherTabStorage;
-                PostStorage();
-            });
-        } catch (e) {
-            PostStorage();
-        };
-    }
-    PostStorageWithTab();
+
+    PostStorage();
     setInterval(() => {
-        PostStorageWithTab();
+        PostStorage();
     }, 1000);
 
     let wrapper = document.createElement("div");
