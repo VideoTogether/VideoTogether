@@ -182,7 +182,8 @@
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
             this.SaveRoomInfo(roomName, password);
-            window.videoTogetherExtension.CreateRoom(roomName, password)
+            window.videoTogetherExtension.CreateRoom(roomName, password);
+            window.videoTogetherExtension.AlertVote();
         }
 
         JoinRoomButtonOnClick() {
@@ -190,7 +191,8 @@
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
             this.SaveRoomInfo(roomName, password);
-            window.videoTogetherExtension.JoinRoom(roomName, password)
+            window.videoTogetherExtension.JoinRoom(roomName, password);
+            window.videoTogetherExtension.AlertVote();
         }
 
         HelpButtonOnClick() {
@@ -315,7 +317,7 @@
                 }
                 this.processReceivedMessage(message.data.type, message.data.data);
             });
-            window.addEventListener('click', message=>{
+            window.addEventListener('click', message => {
                 setTimeout(this.ScheduledTask.bind(this), 200);
             })
             this.RunWithRetry(this.SyncTimeWithServer.bind(this), 2);
@@ -344,6 +346,16 @@
                     this.video_together_host = this.video_together_backup_host;
                 }
             }, 3000);
+        }
+
+        AlertVote() {
+            if (window.VideoTogetherSettingEnabled && Date.now() / 1000 < 1660838400) {
+                if (window.VideoTogetherStorage?.PublicLastVoteTime == undefined || window.VideoTogetherStorage?.PublicLastVoteTime + 86400 < Date.now() / 1000) {
+                    this.sendMessageToTop(MessageType.SetStorageValue, { key: "PublicLastVoteTime", value: Date.now() / 1000 });
+                    alert("我们正在参加微软 Edge 浏览器举办的插件开发大赛,\n您宝贵的投票是对我们开发维护这个插件的最大鼓励.\n并且非常欢迎拉上对象来投票. 这个弹窗每天只会出现一次,非常抱歉打扰到您.");
+                    window.open('https://videotogether.gitee.io/vote.html', '_self');
+                }
+            }
         }
 
         setRole(role) {
