@@ -182,7 +182,7 @@
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
             this.SaveRoomInfo(roomName, password);
-            window.videoTogetherExtension.CreateRoom(roomName, password)
+            window.videoTogetherExtension.CreateRoom(roomName, password);
         }
 
         JoinRoomButtonOnClick() {
@@ -190,7 +190,7 @@
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
             this.SaveRoomInfo(roomName, password);
-            window.videoTogetherExtension.JoinRoom(roomName, password)
+            window.videoTogetherExtension.JoinRoom(roomName, password);
         }
 
         HelpButtonOnClick() {
@@ -707,9 +707,9 @@
         }
 
         async SyncTimeWithServer() {
-            let startTime = this.getLocalTimestamp()
+            let startTime = Date.now() / 1000;
             let response = await this.Fetch(this.video_together_host + "/timestamp");
-            let endTime = this.getLocalTimestamp();
+            let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
         }
@@ -1074,9 +1074,9 @@
             apiUrl.searchParams.set("public", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PublicVideoRoom));
             apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
-            let startTime = this.getLocalTimestamp()
+            let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
-            let endTime = this.getLocalTimestamp();
+            let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
@@ -1096,9 +1096,9 @@
             url.searchParams.set("name", name);
             url.searchParams.set("tempUser", this.tempUser);
             url.searchParams.set("password", password);
-            let startTime = this.getLocalTimestamp()
+            let startTime = Date.now() / 1000;
             let response = await this.Fetch(url);
-            let endTime = this.getLocalTimestamp();
+            let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;

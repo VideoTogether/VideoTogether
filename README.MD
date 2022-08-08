@@ -52,4 +52,12 @@ QQ群: 170200260
 
 
 ### 赞助
+
+项目天使轮赞助
+
 <img src="https://user-images.githubusercontent.com/23057110/175770059-c8faad24-dc79-42da-9359-bf462eb7e884.png" width="300">
+
+七夕追加赞助
+
+<img width="290" alt="B54A4B2B-D606-4CD8-B5BF-0AA53CD1B010" src="https://user-images.githubusercontent.com/23057110/182861201-022c9460-9174-47ce-b8d8-3ab3ff737e25.png">
+
