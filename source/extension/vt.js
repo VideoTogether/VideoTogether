@@ -291,8 +291,10 @@
             this.role = this.RoleEnum.Null
             this.url = ""
             this.duration = undefined
-            this.serverTimestamp = 0;
-            this.localTimestamp = 0;
+
+            this.minTrip = 1e9;
+            this.timeOffset = 0;
+
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
             this.version = '{{timestamp}}';
@@ -315,7 +317,7 @@
                 }
                 this.processReceivedMessage(message.data.type, message.data.data);
             });
-            window.addEventListener('click', message=>{
+            window.addEventListener('click', message => {
                 setTimeout(this.ScheduledTask.bind(this), 200);
             })
             this.RunWithRetry(this.SyncTimeWithServer.bind(this), 2);
@@ -340,7 +342,7 @@
             }
             setTimeout(() => {
                 // fall back to china service
-                if (this.serverTimestamp == 0) {
+                if (this.minTrip == 1e9) {
                     this.video_together_host = this.video_together_backup_host;
                 }
             }, 3000);
@@ -701,7 +703,7 @@
         }
 
         getLocalTimestamp() {
-            return Date.now() / 1000 - this.localTimestamp + this.serverTimestamp;
+            return Date.now() / 1000 + this.timeOffset;
         }
 
         async SyncTimeWithServer() {
@@ -709,10 +711,7 @@
             let response = await this.Fetch(this.video_together_host + "/timestamp");
             let endTime = this.getLocalTimestamp();
             let data = await this.CheckResponse(response);
-            if (typeof (data["timestamp"]) == "number") {
-                this.serverTimestamp = data["timestamp"];
-                this.localTimestamp = (startTime + endTime) / 2;
-            }
+            this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
         }
 
         RecoveryState() {
@@ -809,7 +808,7 @@
             } catch { };
 
             try {
-                if (this.serverTimestamp == 0) {
+                if (this.minTrip == 1e9) {
                     await this.SyncTimeWithServer();
                 }
             } catch { };
@@ -1075,21 +1074,19 @@
             apiUrl.searchParams.set("public", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PublicVideoRoom));
             apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
-            // url.searchParams.set("lastUpdateClientTime", timestamp)
             let startTime = this.getLocalTimestamp()
             let response = await this.Fetch(apiUrl);
-            let data = await this.CheckResponse(response);
             let endTime = this.getLocalTimestamp();
+            let data = await this.CheckResponse(response);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
 
         async UpdateTimestampIfneeded(serverTimestamp, startTime, endTime) {
-            if (typeof (serverTimestamp) == 'number') {
-                let localTimestamp = (startTime + endTime) / 2;
-                if (this.localTimestamp == 0 || localTimestamp - serverTimestamp < this.localTimestamp - this.serverTimestamp) {
-                    this.localTimestamp = localTimestamp;
-                    this.serverTimestamp = serverTimestamp;
+            if (typeof serverTimestamp == 'number' && typeof startTime == 'number' && typeof endTime == 'number') {
+                if (endTime - startTime < this.minTrip) {
+                    this.timeOffset = serverTimestamp - (startTime + endTime) / 2;
+                    this.minTrip = endTime - startTime;
                 }
             }
         }
@@ -1101,8 +1098,8 @@
             url.searchParams.set("password", password);
             let startTime = this.getLocalTimestamp()
             let response = await this.Fetch(url);
-            let data = await this.CheckResponse(response);
             let endTime = this.getLocalTimestamp();
+            let data = await this.CheckResponse(response);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
