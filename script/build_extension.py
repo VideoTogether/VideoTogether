@@ -9,6 +9,7 @@ from time import time
 
 current_path = os.path.dirname(__file__)
 
+
 def ReadSource(path):
     with open(path) as f:
         return f.read()
@@ -19,9 +20,30 @@ def WriteSource(path, content):
         f.write(content)
 
 
+languages = {
+    '': './source/extension/localization/zh-cn.json',
+    'zh-cn': './source/extension/localization/zh-cn.json',
+    'en-us': './source/extension/localization/en-us.json',
+}
+
+
 def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
+    global rootPath
     global releasePath
     if r"{{{" not in content:
+        if '$}' in content:
+            for lan in languages:
+                newContent = content
+                newSubNameList = deepcopy(subNameList)
+                newSubNameList.append({"name": lan, "order": 99})
+                with open(rootPath.joinpath(languages[lan])) as f:
+                    strings = json.load(f)
+                    for key in strings:
+                        newContent = newContent.replace(
+                            '{$'+key+'$}', strings[key])
+                compile(sourceSubDir, extension,
+                        rawFilename, newSubNameList, newContent)
+            return
         resultFilename = rawFilename
         subNameList.sort(key=lambda x: x["order"])
         for subName in subNameList:
@@ -73,6 +95,7 @@ def build():
 if __name__ == '__main__':
     build()
     global rootPath
-    shutil.copyfile(rootPath.joinpath("release/vt.user.js"), rootPath.joinpath("source/chrome/vt.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.user.js"),
+                    rootPath.joinpath("source/chrome/vt.user.js"))
     shutil.copyfile(rootPath.joinpath("release/extension.chrome.user.js"),
                     rootPath.joinpath("source/chrome/extension.chrome.user.js"))

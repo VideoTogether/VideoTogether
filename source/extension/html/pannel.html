@@ -34,26 +34,26 @@
       <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
       <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
       <div style="margin-bottom: 10px;">
-        <span id="videoTogetherRoomNameLabel">房间：</span>
-        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="请输入房间名">
+        <span id="videoTogetherRoomNameLabel">{$room_input_lable$}</span>
+        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="{$room_input_placeholder$}">
       </div>
       <div>
-        <span id="videoTogetherRoomPasswordLabel">密码：</span>
-        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="密码,只有建房需要">
+        <span id="videoTogetherRoomPasswordLabel">{$password_input_lable$}</span>
+        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="{$password_input_placeholder$}">
       </div>
     </div>
     <div class="vt-modal-footer">
       <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
-        <span>建 房</span>
+        <span>{$create_room_button$}</span>
       </button>
       <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
-        <span>加 入</span>
+        <span>{$join_room_button$}</span>
       </button>
       <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
-        <span>退 出</span>
+        <span>{$exit_room_button$}</span>
       </button>
       <button id="videoTogetherVoiceButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
-        <span>通 话</span>
+        <span>{$voice_call_button$}</span>
       </button>
       <button id="videoTogetherVideoVolumeDown" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
         <span>-</span>
@@ -62,7 +62,7 @@
         <span>+</span>
       </button>
       <button id="videoTogetherHelpButton" class="vt-btn" type="button">
-        <span>帮 助</span>
+        <span>{$help_room_button$}</span>
       </button>
     </div>
   </div>
@@ -279,9 +279,15 @@
     text-align: center;
   }
 
+  #videoTogetherRoomNameLabel,
+  #videoTogetherRoomPasswordLabel {
+    display: inline-block;
+    width: 70px !important;
+  }
+
   #videoTogetherRoomNameInput,
   #videoTogetherRoomPasswordInput {
-    width: 180px !important;
+    width: 150px !important;
     height: auto !important;
     font-family: inherit !important;
     font-size: inherit !important;

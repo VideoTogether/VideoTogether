@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1659955538
+// @version      1659964124
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -78,7 +78,7 @@
       </div>
       <div>
         <span id="videoTogetherRoomPasswordLabel">密码：</span>
-        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="密码,只有建房需要">
+        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="输入建房密码">
       </div>
     </div>
     <div class="vt-modal-footer">
@@ -318,9 +318,15 @@
     text-align: center;
   }
 
+  #videoTogetherRoomNameLabel,
+  #videoTogetherRoomPasswordLabel {
+    display: inline-block;
+    width: 70px !important;
+  }
+
   #videoTogetherRoomNameInput,
   #videoTogetherRoomPasswordInput {
-    width: 180px !important;
+    width: 150px !important;
     height: auto !important;
     font-family: inherit !important;
     font-size: inherit !important;
@@ -591,7 +597,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1659955538';
+            this.version = '1659964124';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
             // we need a common callback function to deal with all message
@@ -860,7 +866,7 @@
                         if (video.VideoTogetherVideoId == data.video.id) {
                             try {
                                 await this.SyncMasterVideo(data, video);
-                                _this.UpdateStatusText("同步成功" + _this.GetDisplayTimeText(), "green");
+                                _this.UpdateStatusText("同步成功 " + _this.GetDisplayTimeText(), "green");
                             } catch (e) {
                                 this.UpdateStatusText(e, "red");
                             }

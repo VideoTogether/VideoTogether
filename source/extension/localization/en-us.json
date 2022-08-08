@@ -1,0 +1,19 @@
+{
+    "room_input_lable": "Room:",
+    "room_input_placeholder": "Name of room",
+    "password_input_lable": "Password:",
+    "password_input_placeholder": "Host's password",
+    "create_room_button": "Create",
+    "join_room_button": "Join",
+    "help_room_button": "Help",
+    "voice_call_button": "Call",
+    "exit_room_button": "Exit",
+    "host_role": "Host",
+    "memeber_role": "Member",
+    "no_video_in_this_page":"No video in this page",
+    "sync_success":"Sync",
+    "voice_call_experimental_alert":"Voice Call is experimental now",
+    "timeout":"timeout",
+    "need_to_play_manually":"Need to play manually",
+    "no_video":"No video"
+}

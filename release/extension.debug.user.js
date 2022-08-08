@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1659627903
+// @version      1659964124
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -20,7 +20,7 @@
 // ==/UserScript==
 
 (function () {
-    let version = '1659627903'
+    let version = '1659964124'
     let type = 'userscript_debug'
 
     async function AppendKey(key) {
