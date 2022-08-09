@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1660053446
+// @version      1660054170
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -23,11 +23,11 @@
 
 (async function () {
     try{
-        if($.browser.isGecko){
+        if(navigator.userAgent.indexOf("Firefox") > 0){
             alert("Firefox is not supported by VideoTogether")
         }
     }catch(e){};
-    let version = '1660053446'
+    let version = '1660054170'
     let type = 'userscript_beta'
 
     let languages = ['en-us', 'zh-cn'];
