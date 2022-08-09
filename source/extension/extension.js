@@ -22,6 +22,11 @@
 // ==/UserScript==
 
 (async function () {
+    try{
+        if($.browser.isGecko){
+            alert("Firefox is not supported by VideoTogether")
+        }
+    }catch(e){};
     let version = '{{timestamp}}'
     let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
 
