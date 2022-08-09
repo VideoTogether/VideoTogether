@@ -991,7 +991,8 @@
         }
 
         CalculateRealCurrent(data) {
-            return data["currentTime"] + this.getLocalTimestamp() - data["lastUpdateClientTime"];
+            let playbackRate = parseFloat(data["playbackRate"]);
+            return data["currentTime"] + (this.getLocalTimestamp() - data["lastUpdateClientTime"]) * (isNaN(playbackRate) ? 1 : playbackRate);
         }
 
         GetDisplayTimeText() {
