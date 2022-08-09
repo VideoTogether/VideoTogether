@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1660045683
+// @version      1660049222
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -597,7 +597,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1660045683';
+            this.version = '1660049222';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
             // we need a common callback function to deal with all message
@@ -1342,7 +1342,7 @@
                     videoDom.playbackRate = parseFloat(room["playbackRate"]);
                 } catch (e) { }
             }
-            if (videoDom.duration == NaN) {
+            if (isNaN(videoDom.duration)) {
                 throw new Error("请手动点击播放");
             }
             this.sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" })

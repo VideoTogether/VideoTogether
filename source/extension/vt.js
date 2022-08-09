@@ -1042,7 +1042,7 @@
                     videoDom.playbackRate = parseFloat(room["playbackRate"]);
                 } catch (e) { }
             }
-            if (videoDom.duration == NaN) {
+            if (isNaN(videoDom.duration)) {
                 throw new Error("{$need_to_play_manually$}");
             }
             this.sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" })
