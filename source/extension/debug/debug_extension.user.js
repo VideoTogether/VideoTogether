@@ -10,12 +10,14 @@
 // @grant        GM_addElement
 // @grant        GM.setValue
 // @grant        GM.getValue
-// @grant        GM_getTab
-// @grant        GM_saveTab
+// @grant        GM.getTab
+// @grant        GM.saveTab
 // @connect      2gether.video
 // @connect      api.2gether.video
 // @connect      api.chizhou.in
 // @connect      api.panghair.com
 // @connect      vt.panghair.com
+// @connect      raw.githubusercontent.com
+// @connect      videotogether.oss-cn-hangzhou.aliyuncs.com
 // @require      http://127.0.0.1:7000/release/extension.debug.user.js?ts=10938
 // ==/UserScript==

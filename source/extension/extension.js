@@ -17,11 +17,36 @@
 // @connect      api.chizhou.in
 // @connect      api.panghair.com
 // @connect      vt.panghair.com
+// @connect      raw.githubusercontent.com
+// @connect      videotogether.oss-cn-hangzhou.aliyuncs.com
 // ==/UserScript==
 
-(function () {
+(async function () {
     let version = '{{timestamp}}'
-    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug", "order":0} }}}'
+    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
+
+    let languages = ['en-us', 'zh-cn'];
+    let language = 'en-us';
+    let prefixLen = 0;
+    let settingLanguage = await GM.getValue("DisplayLanguage");
+
+    if (typeof settingLanguage != 'string') {
+        settingLanguage = navigator.language;
+    }
+    if (typeof settingLanguage == 'string') {
+        settingLanguage =settingLanguage.toLowerCase();
+        for (let i = 0; i < languages.length; i++) {
+            for (let j = 0; j < languages[i].length && j < settingLanguage.length; j++) {
+                if (languages[i][j] != settingLanguage[j]) {
+                    break;
+                }
+                if (j > prefixLen) {
+                    prefixLen = j;
+                    language = languages[i];
+                }
+            }
+        }
+    }
 
     async function AppendKey(key) {
         let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
@@ -152,11 +177,12 @@
                 data[keys[i]] = false;
             }
         }
+        data["UserscriptType"] = type;
         data["LoaddingVersion"] = version;
         data["VideoTogetherTabStorageEnabled"] = true;
-        try{
+        try {
             data["VideoTogetherTabStorage"] = (await GM.getTab()).VideoTogetherTabStorage;
-        }catch(e){
+        } catch (e) {
             data["VideoTogetherTabStorageEnabled"] = false;
         }
         window.top.postMessage({
@@ -178,13 +204,16 @@
     script.type = 'text/javascript';
     switch (type) {
         case "userscript":
-            script.src = 'https://2gether.video/release/vt.user.js?timestamp=' + parseInt(Date.now() / 1000 / 3600);
+            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
             break;
         case "Chrome":
-            script.src = chrome.runtime.getURL('vt.user.js')
+            script.src = chrome.runtime.getURL(`vt.${language}.user.js`)
             break;
         case "userscript_debug":
-            script.src = 'http://127.0.0.1:7000/release/vt.debug.user.js?timestamp=' + parseInt(Date.now());
+            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
+            break;
+        case "userscript_beta":
+            script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/main/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
     }
 
@@ -202,7 +231,7 @@
         if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.user.js';
+            script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js`;
             document.body.appendChild(script);
             try {
                 InsertInlineJs(script.src);

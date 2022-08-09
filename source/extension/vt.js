@@ -725,7 +725,7 @@
                 let vtRoomName = getFunc("VideoTogetherRoomName");
                 let timestamp = parseFloat(getFunc("VideoTogetherTimestamp"));
                 let password = getFunc("VideoTogetherPassword");
-                if (timestamp + 10 < Date.now() / 1000) {
+                if (timestamp + 60 < Date.now() / 1000) {
                     return;
                 }
 
@@ -784,6 +784,8 @@
             this.roomName = "";
             this.setRole(this.RoleEnum.Null);
             window.videoTogetherFlyPannel.InLobby();
+            let state = this.GetRoomState("");
+            this.sendMessageToTop(MessageType.SetTabStorage, state);
         }
 
         async ScheduledTask() {
@@ -845,9 +847,13 @@
                             if (window.VideoTogetherStorage?.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(room["url"]);
                                 this.sendMessageToTop(MessageType.SetTabStorage, state);
-                                this.SetTabStorageSuccessCallback = () => {
-                                    this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
-                                }
+                                setInterval(() => {
+                                    if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == room["url"]) {
+                                        this.SetTabStorageSuccessCallback = () => {
+                                            this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                        }
+                                    }
+                                }, 200);
                             } else {
                                 if (this.SaveStateToSessionStorageWhenSameOrigin(room["url"])) {
                                     this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
@@ -855,6 +861,9 @@
                                     this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
                                 }
                             }
+                        } else {
+                            let state = this.GetRoomState("");
+                            this.sendMessageToTop(MessageType.SetTabStorage, state);
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
@@ -933,6 +942,9 @@
         }
 
         GetRoomState(link) {
+            if (this.role == this.RoleEnum.Null) {
+                return {};
+            }
             return {
                 VideoTogetherUrl: link,
                 VideoTogetherRoomName: this.roomName,

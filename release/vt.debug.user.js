@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1659964124
+// @version      1660045683
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -597,7 +597,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1659964124';
+            this.version = '1660045683';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
             // we need a common callback function to deal with all message
@@ -1025,7 +1025,7 @@
                 let vtRoomName = getFunc("VideoTogetherRoomName");
                 let timestamp = parseFloat(getFunc("VideoTogetherTimestamp"));
                 let password = getFunc("VideoTogetherPassword");
-                if (timestamp + 10 < Date.now() / 1000) {
+                if (timestamp + 60 < Date.now() / 1000) {
                     return;
                 }
 
@@ -1084,6 +1084,8 @@
             this.roomName = "";
             this.setRole(this.RoleEnum.Null);
             window.videoTogetherFlyPannel.InLobby();
+            let state = this.GetRoomState("");
+            this.sendMessageToTop(MessageType.SetTabStorage, state);
         }
 
         async ScheduledTask() {
@@ -1145,9 +1147,13 @@
                             if (window.VideoTogetherStorage?.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(room["url"]);
                                 this.sendMessageToTop(MessageType.SetTabStorage, state);
-                                this.SetTabStorageSuccessCallback = () => {
-                                    this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
-                                }
+                                setInterval(() => {
+                                    if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == room["url"]) {
+                                        this.SetTabStorageSuccessCallback = () => {
+                                            this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                        }
+                                    }
+                                }, 200);
                             } else {
                                 if (this.SaveStateToSessionStorageWhenSameOrigin(room["url"])) {
                                     this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
@@ -1155,6 +1161,9 @@
                                     this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
                                 }
                             }
+                        } else {
+                            let state = this.GetRoomState("");
+                            this.sendMessageToTop(MessageType.SetTabStorage, state);
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
@@ -1233,6 +1242,9 @@
         }
 
         GetRoomState(link) {
+            if (this.role == this.RoleEnum.Null) {
+                return {};
+            }
             return {
                 VideoTogetherUrl: link,
                 VideoTogetherRoomName: this.roomName,

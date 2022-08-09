@@ -23,7 +23,7 @@
 
 (async function () {
     let version = '1660045683'
-    let type = 'Chrome'
+    let type = 'userscript_beta'
 
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
