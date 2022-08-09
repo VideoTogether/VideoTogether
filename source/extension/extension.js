@@ -23,7 +23,7 @@
 
 (async function () {
     try{
-        if($.browser.isGecko){
+        if(navigator.userAgent.indexOf("Firefox") > 0){
             alert("Firefox is not supported by VideoTogether")
         }
     }catch(e){};
