@@ -173,7 +173,7 @@ def updateRoom():
                 return generateErrorResponse("密码错误")
             room = deepcopy(database[room.name])
 
-    room.playbackRate = request.args["playbackRate"]
+    room.playbackRate = float(request.args["playbackRate"])
     room.currentTime = float(request.args["currentTime"])
     room.paused = request.args["paused"] != "false"
     room.url = request.args["url"]
