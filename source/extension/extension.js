@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      {{timestamp}}
+// @version      1660054541
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -27,13 +27,16 @@
             alert("Firefox is not supported by VideoTogether")
         }
     }catch(e){};
-    let version = '{{timestamp}}'
+    let version = '1660054541'
     let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
 
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
     let prefixLen = 0;
-    let settingLanguage = await GM.getValue("DisplayLanguage");
+    let settingLanguage = undefined;
+    try{
+        settingLanguage = await GM.getValue("DisplayLanguage");
+    }catch(e){};
 
     if (typeof settingLanguage != 'string') {
         settingLanguage = navigator.language;

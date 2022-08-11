@@ -33,7 +33,10 @@
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
     let prefixLen = 0;
-    let settingLanguage = await GM.getValue("DisplayLanguage");
+    let settingLanguage = undefined;
+    try{
+        settingLanguage = await GM.getValue("DisplayLanguage");
+    }catch(e){};
 
     if (typeof settingLanguage != 'string') {
         settingLanguage = navigator.language;
