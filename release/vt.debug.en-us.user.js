@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1660213714
+// @version      1660223877
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -597,7 +597,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1660213714';
+            this.version = '1660223877';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
             // we need a common callback function to deal with all message
@@ -1043,7 +1043,7 @@
             }
 
             let url = new URL(window.location);
-            if (window.VideoTogetherStorage?.VideoTogetherTabStorageEnabled) {
+            if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                 try {
                     RecoveryStateFrom.bind(this)(key => window.VideoTogetherStorage.VideoTogetherTabStorage[key]);
                 } catch (e) { console.error(e) };
@@ -1121,7 +1121,7 @@
                     case this.RoleEnum.Null:
                         return;
                     case this.RoleEnum.Master: {
-                        if (window.VideoTogetherStorage?.VideoTogetherTabStorageEnabled) {
+                        if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
                         }
@@ -1144,7 +1144,7 @@
                         let room = await this.GetRoom(this.roomName, this.password);
                         this.duration = room["duration"];
                         if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
-                            if (window.VideoTogetherStorage?.VideoTogetherTabStorageEnabled) {
+                            if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(room["url"]);
                                 this.sendMessageToTop(MessageType.SetTabStorage, state);
                                 setInterval(() => {
