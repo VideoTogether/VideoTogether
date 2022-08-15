@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1660054541
+// @version      1660571145
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,27 +22,35 @@
 // ==/UserScript==
 
 (async function () {
-    try{
-        if(navigator.userAgent.indexOf("Firefox") > 0){
+    try {
+        Element.prototype.VideoTogetherAttachShadow = Element.prototype.attachShadow;
+        Element.prototype.attachShadow = function () {
+            console.log('attachShadow');
+            return this.VideoTogetherAttachShadow({ mode: "open" });
+        };
+    } catch (e) { };
+
+    try {
+        if (navigator.userAgent.indexOf("Firefox") > 0) {
             alert("Firefox is not supported by VideoTogether")
         }
-    }catch(e){};
-    let version = '1660054541'
+    } catch (e) { };
+    let version = '1660571145'
     let type = 'Chrome'
 
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
     let prefixLen = 0;
     let settingLanguage = undefined;
-    try{
+    try {
         settingLanguage = await GM.getValue("DisplayLanguage");
-    }catch(e){};
+    } catch (e) { };
 
     if (typeof settingLanguage != 'string') {
         settingLanguage = navigator.language;
     }
     if (typeof settingLanguage == 'string') {
-        settingLanguage =settingLanguage.toLowerCase();
+        settingLanguage = settingLanguage.toLowerCase();
         for (let i = 0; i < languages.length; i++) {
             for (let j = 0; j < languages[i].length && j < settingLanguage.length; j++) {
                 if (languages[i][j] != settingLanguage[j]) {

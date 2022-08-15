@@ -531,6 +531,13 @@
                 }
             } catch (e) { };
 
+            // baidupan vip
+            try {
+                let video = document.getElementById("video-root").shadowRoot.getElementById("html5player_html5_api");
+                if (video != undefined) {
+                    await func(video);
+                }
+            } catch (e) { };
             this.video_tag_names.forEach(async tag => {
                 let videos = document.getElementsByTagName(tag);
                 for (let i = 0; i < videos.length; i++) {

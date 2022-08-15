@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1660223877
+// @version      1660571145
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -597,7 +597,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1660223877';
+            this.version = '1660571145';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
             // we need a common callback function to deal with all message
@@ -831,6 +831,13 @@
                 }
             } catch (e) { };
 
+            // baidupan vip
+            try {
+                let video = document.getElementById("video-root").shadowRoot.getElementById("html5player_html5_api");
+                if (video != undefined) {
+                    await func(video);
+                }
+            } catch (e) { };
             this.video_tag_names.forEach(async tag => {
                 let videos = document.getElementsByTagName(tag);
                 for (let i = 0; i < videos.length; i++) {
