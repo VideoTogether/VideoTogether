@@ -176,7 +176,7 @@ def updateRoom():
     try:
         room.playbackRate = float(request.args["playbackRate"])
     except:
-        room.playbackRate
+        room.playbackRate = 1
     room.currentTime = float(request.args["currentTime"])
     room.paused = request.args["paused"] != "false"
     room.url = request.args["url"]
