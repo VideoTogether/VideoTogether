@@ -170,7 +170,7 @@ def updateRoom():
     else:
         if room.name in database:
             if database[room.name].password != room.password:
-                return generateErrorResponse("密码错误")
+                return generateErrorResponse("房名已存在，密码错误")
             room = deepcopy(database[room.name])
 
     try:
