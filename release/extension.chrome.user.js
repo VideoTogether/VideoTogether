@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1660571145
+// @version      1661186633
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -35,9 +35,71 @@
             alert("Firefox is not supported by VideoTogether")
         }
     } catch (e) { };
-    let version = '1660571145'
+    let version = '1661186633'
     let type = 'Chrome'
+    if (type == "Chrome") {
+        var GM = {}
+        GM.setValue = async (key, value) => {
+            return await new Promise((resolve, reject) => {
+                try {
+                    let item = {};
+                    item[key] = value;
+                    chrome.storage.local.set(item, function () {
+                        resolve();
+                    });
+                } catch (e) {
+                    reject(e);
+                }
+            })
+        }
+        GM.getValue = async (key) => {
+            return await new Promise((resolve, reject) => {
+                try {
+                    chrome.storage.local.get([key], function (result) {
+                        resolve(result[key]);
+                    });
+                } catch (e) {
+                    reject(e);
+                }
 
+            })
+        }
+        GM.getTab = async () => {
+            return await new Promise((resolve, reject) => {
+                try {
+                    chrome.runtime.sendMessage({ type: 1 }, function (response) {
+                        resolve(response);
+                    })
+                } catch (e) {
+                    reject(e);
+                }
+
+            })
+        }
+        GM.saveTab = async (tab) => {
+            return await new Promise((resolve, reject) => {
+                try {
+                    chrome.runtime.sendMessage({ type: 2, tab: tab }, function (response) {
+                        resolve(response);
+                    })
+                } catch (e) {
+                    reject(e);
+                }
+            })
+        }
+        GM.xmlHttpRequest = async (props) => {
+            try {
+                chrome.runtime.sendMessage({ type: 3, props: props }, function (response) {
+                    if (response.error != undefined) {
+                        throw response.error;
+                    }
+                    props.onload(response);
+                })
+            } catch (e) {
+                props.onerror(e);
+            }
+        }
+    }
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
     let prefixLen = 0;
@@ -71,7 +133,7 @@
             keys.add(key);
             await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
         } catch (e) {
-            await GM.setValue("[]");
+            await GM.setValue("VideoTogetherKeys", "[]");
         }
     }
 
@@ -81,7 +143,7 @@
             let keys = new Set(JSON.parse(keysStr));
             return Array.from(keys);
         } catch (e) {
-            await GM.setValue("[]");
+            await GM.setValue("VideoTogetherKeys", "[]");
             return [];
         }
     }
@@ -123,7 +185,10 @@
             switch (e.data.type) {
                 case 13: {
                     let url = new URL(e.data.data.url);
-                    if (!url.hostname.endsWith("2gether.video") && !url.hostname.endsWith("chizhou.in") && !url.hostname.endsWith("panghair.com")) {
+                    if (!url.hostname.endsWith("2gether.video")
+                        && !url.hostname.endsWith("chizhou.in")
+                        && !url.hostname.endsWith("panghair.com")
+                        && !url.hostname.endsWith("aliyuncs.com")) {
                         console.error("permission error", e.data);
                         return;
                     }
@@ -132,12 +197,17 @@
                         url: e.data.data.url,
                         data: e.data.data.data,
                         onload: function (response) {
+                            let data = null;
+                            try {
+                                data = JSON.parse(response.responseText);
+                            } catch (e) { };
                             window.postMessage({
                                 source: "VideoTogether",
                                 type: 14,
                                 data: {
                                     id: e.data.data.id,
-                                    data: JSON.parse(response.responseText)
+                                    data: data,
+                                    text: response.responseText
                                 }
                             })
                         },
@@ -266,7 +336,7 @@
             script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
             break;
         case "Chrome":
-            script.src = chrome.runtime.getURL(`vt.${language}.user.js`)
+            script.src = chrome.runtime.getURL(`load.${language}.js`)
             break;
         case "userscript_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
@@ -277,16 +347,21 @@
     }
 
     document.body.appendChild(script);
-    try {
-        InsertInlineJs(script.src);
-        GM_addElement('script', {
-            src: script.src,
-            type: 'text/javascript'
-        })
-    } catch (e) { };
+    if (type != "Chrome") {
+        try {
+            InsertInlineJs(script.src);
+            GM_addElement('script', {
+                src: script.src,
+                type: 'text/javascript'
+            })
+        } catch (e) { };
+    }
 
     // fallback to china service
     setTimeout(() => {
+        if (type == "Chrome") {
+            return;
+        }
         if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';

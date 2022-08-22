@@ -15,5 +15,6 @@
     "voice_call_experimental_alert":"目前语音通话仍然只是实验性功能，有任何问题都欢迎点击帮助按钮反馈。为了隐私考虑，推荐使用超过7位的房间名",
     "timeout":"超时",
     "need_to_play_manually":"请手动点击播放",
-    "no_video":"没有视频"
+    "no_video":"没有视频",
+    "locale":"zh-cn"
 }

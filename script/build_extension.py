@@ -82,7 +82,7 @@ def build():
                 continue
             with open(Path(sourceSubDir).joinpath(sourceFile)) as f:
                 sourceContent = f.read()
-            if r"{{{" not in sourceContent:
+            if r"{{{" not in sourceContent and '{$' not in sourceContent:
                 continue
             print(Path(sourceSubDir).joinpath(sourceFile))
             resultContent = sourceContent
@@ -95,7 +95,9 @@ def build():
 if __name__ == '__main__':
     build()
     global rootPath
-    shutil.copyfile(rootPath.joinpath("release/vt.user.js"),
-                    rootPath.joinpath("source/chrome/vt.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/load.en-us.js"),
+                    rootPath.joinpath("source/chrome/load.en-us.js"))
+    shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
+                    rootPath.joinpath("source/chrome/load.zh-cn.js"))
     shutil.copyfile(rootPath.joinpath("release/extension.chrome.user.js"),
                     rootPath.joinpath("source/chrome/extension.chrome.user.js"))
