@@ -38,7 +38,7 @@
     let version = '{{timestamp}}'
     let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
     if (type == "Chrome") {
-        var GM = {}
+        window.GM = {};
         GM.setValue = async (key, value) => {
             return await new Promise((resolve, reject) => {
                 try {
