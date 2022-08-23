@@ -300,6 +300,9 @@
             this.version = '{{timestamp}}';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
+
+            this.allLinksTargetModified = false;
+
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
@@ -652,6 +655,13 @@
             }
         }
 
+        openAllLinksInSelf() {
+            let hrefs = document.getElementsByTagName("a");
+            for (let i = 0; i < hrefs.length; i++) {
+                hrefs[i].target = "_self";
+            }
+        }
+
         async RunWithRetry(func, count) {
             for (let i = 0; i < count; i++) {
                 try {
@@ -695,6 +705,13 @@
                         if (mutation.addedNodes[i].tagName == "VIDEO" || mutation.addedNodes[i].tagName == "BWP-VIDEO") {
                             try {
                                 _this.AddVideoListener(mutation.addedNodes[i]);
+                            } catch { }
+                        }
+                        if (mutation.addedNodes[i].tagName == "A") {
+                            try {
+                                if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+                                    mutation.addedNodes[i].target = "_self";
+                                }
                             } catch { }
                         }
                     }
@@ -822,6 +839,14 @@
                 }
             } catch { };
 
+            if (this.role != this.RoleEnum.Null) {
+                try {
+                    if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
+                        this.allLinksTargetModified = true;
+                        this.openAllLinksInSelf();
+                    }
+                } catch { }
+            }
 
             try {
                 switch (this.role) {
