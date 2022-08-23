@@ -53,10 +53,12 @@
     let script = document.createElement('script');
     script.type = 'text/javascript';
     script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
-    document.body.appendChild(script);
+    try {
+        document.body.appendChild(script);
+    } catch { };
     try {
         InsertInlineJs(script.src);
-    } catch (e) { };
+    } catch { };
 
     // fallback to china service
     setTimeout(() => {
@@ -64,14 +66,16 @@
             document.querySelector("#videoTogetherLoading").remove()
         } catch { }
 
-        if (window.videoTogetherExtension != undefined) {
+        if (window.videoTogetherExtension == undefined) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js`;
-            document.body.appendChild(script);
+            try {
+                document.body.appendChild(script);
+            } catch { };
             try {
                 InsertInlineJs(script.src);
-            } catch (e) { };
+            } catch { };
         }
 
     }, 5000);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1661187734
+// @version      1661254234
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -35,7 +35,7 @@
             alert("Firefox is not supported by VideoTogether")
         }
     } catch (e) { };
-    let version = '1661187734'
+    let version = '1661254234'
     let type = 'userscript_debug'
     if (type == "Chrome") {
         window.GM = {};
