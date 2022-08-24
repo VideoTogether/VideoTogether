@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1661256288
+// @version      1661345405
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -597,7 +597,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1661256288';
+            this.version = '1661345405';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1007,13 +1007,18 @@
                                 _this.AddVideoListener(mutation.addedNodes[i]);
                             } catch { }
                         }
-                        if (mutation.addedNodes[i].tagName == "A") {
-                            try {
-                                if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+
+                        try {
+                            if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+                                if (mutation.addedNodes[i].tagName == "A") {
                                     mutation.addedNodes[i].target = "_self";
                                 }
-                            } catch { }
-                        }
+                                let links = mutation.addedNodes[i].getElementsByTagName("a");
+                                for (let i = 0; i < links.length; i++) {
+                                    links[i].target = "_self";
+                                }
+                            }
+                        } catch { }
                     }
                 });
             });

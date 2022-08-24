@@ -707,13 +707,18 @@
                                 _this.AddVideoListener(mutation.addedNodes[i]);
                             } catch { }
                         }
-                        if (mutation.addedNodes[i].tagName == "A") {
-                            try {
-                                if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+
+                        try {
+                            if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+                                if (mutation.addedNodes[i].tagName == "A") {
                                     mutation.addedNodes[i].target = "_self";
                                 }
-                            } catch { }
-                        }
+                                let links = mutation.addedNodes[i].getElementsByTagName("a");
+                                for (let i = 0; i < links.length; i++) {
+                                    links[i].target = "_self";
+                                }
+                            }
+                        } catch { }
                     }
                 });
             });
