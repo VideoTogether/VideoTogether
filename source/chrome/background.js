@@ -3,12 +3,31 @@ let tabs = []
 chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     switch (msg.type) {
         case 1:
-            if (tabs[sender.tab.id] == undefined) tabs[sender.tab.id] = {};
-            sendResponse(tabs[sender.tab.id]);
+            try {
+                let tabId = `tab-${sender.tab.id}`;
+                chrome.storage.session.get(tabId, tab => {
+                    sendResponse(tab[tabId] == null ? {} : tab[tabId]);
+                })
+                return true;
+            } catch (e) {
+                console.log("fallback");
+                if (tabs[sender.tab.id] == undefined) tabs[sender.tab.id] = {};
+                sendResponse(tabs[sender.tab.id]);
+            }
             break;
         case 2:
-            tabs[sender.tab.id] = msg.tab;
-            sendResponse(tabs[sender.tab.id]);
+            try {
+                let tabId = `tab-${sender.tab.id}`;
+                let item = {};
+                item[tabId] = msg.tab;
+                chrome.storage.session.set(item, () => {
+                    sendResponse(msg.tab);
+                })
+                return true;
+            } catch (e) {
+                tabs[sender.tab.id] = msg.tab;
+                sendResponse(tabs[sender.tab.id]);
+            }
             break;
         case 3:
             let props = msg.props;

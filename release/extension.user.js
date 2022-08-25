@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1661256288
+// @version      1661431777
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -23,11 +23,14 @@
 
 (async function () {
     try {
-        Element.prototype.VideoTogetherAttachShadow = Element.prototype.attachShadow;
-        Element.prototype.attachShadow = function () {
-            console.log('attachShadow');
-            return this.VideoTogetherAttachShadow({ mode: "open" });
-        };
+        let origin = Element.prototype.attachShadow;
+        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(origin))) {
+            Element.prototype._attachShadow = origin;
+            Element.prototype.attachShadow = function () {
+                console.log('attachShadow');
+                return this._attachShadow({ mode: "open" });
+            };
+        }
     } catch (e) { };
 
     try {
@@ -35,7 +38,7 @@
             alert("Firefox is not supported by VideoTogether")
         }
     } catch (e) { };
-    let version = '1661256288'
+    let version = '1661431777'
     let type = 'userscript'
     if (type == "Chrome") {
         window.GM = {};

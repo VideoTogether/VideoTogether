@@ -1,10 +1,13 @@
 (function () {
     try {
-        Element.prototype.VideoTogetherAttachShadow = Element.prototype.attachShadow;
-        Element.prototype.attachShadow = function () {
-            console.log('attachShadow');
-            return this.VideoTogetherAttachShadow({ mode: "open" });
-        };
+        let origin = Element.prototype.attachShadow;
+        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(origin))) {
+            Element.prototype._attachShadow = origin;
+            Element.prototype.attachShadow = function () {
+                console.log('attachShadow');
+                return this._attachShadow({ mode: "open" });
+            };
+        }
     } catch (e) { };
 
     let NativePostMessageFunction = undefined;
