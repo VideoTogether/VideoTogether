@@ -8,6 +8,10 @@
 
 # 如果您认为这个分支代码侵犯了您的任何利益,请联系我们,我们会立马删除这个分支
 
+# Note: The code of the m3u8 branch is purely experimental and will not be distributed to any users of VideoTogehter through any channels
+
+# If you think this branch code infringes any of your interests, please contact us and we will delete this branch immediately
+
 文档正在完善中
 请加入插件的交流群获取更详细的帮助信息，以及反馈问题
 
