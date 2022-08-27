@@ -302,6 +302,7 @@
             this.UserId = undefined;
 
             this.allLinksTargetModified = false;
+            this.shadowRootDom = []
 
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
@@ -338,6 +339,9 @@
                             const cssObj = window.getComputedStyle(allDoms[i], null);
                             if (cssObj.getPropertyValue("z-index") == 2147483647 && !allDoms[i].id.startsWith("videoTogether")) {
                                 allDoms[i].style.zIndex = 2147483646;
+                                if(allDoms[i].shadowRoot != null){
+                                    this.shadowRootDom.push(allDoms[i]);
+                                }
                             }
                         }
                     }, 2000);
@@ -959,13 +963,26 @@
         // But we can sync when video event is traggered to enhance the performance
         // and reduce server workload
         async SyncMasterVideo(data, videoDom) {
+            let src = "";
+            console.log(this.shadowRootDom);
+            for (let i = 0; i < this.shadowRootDom.length; i++) {
+                let dom = this.shadowRootDom[i];
+                console.log(dom)
+                try {
+                    let links = dom.shadowRoot.querySelectorAll(".copy-link");
+                    if (links.length != 0) {
+                        src = links[0].title;
+                    }
+                }catch{}
+            }
             await this.UpdateRoom(data.roomName,
                 data.password,
                 data.link,
                 videoDom.playbackRate,
                 videoDom.currentTime,
                 videoDom.paused,
-                videoDom.duration);
+                videoDom.duration,
+                src);
         }
 
         linkWithoutState(link) {
@@ -1040,7 +1057,10 @@
         async SyncMemberVideo(data, videoDom) {
             let room = await this.GetRoom(data.roomName, data.password);
             this.sendMessageToTop(MessageType.GetRoomData, room);
-
+            console.log(room);
+            if(room['src'] != null && videoDom.src !=room['src'] ){
+                videoDom.src = room['src'];
+            }
             // useless
             this.duration = room["duration"];
             // useless
@@ -1110,7 +1130,7 @@
             } catch (e) { this.UpdateStatusText(e, "red") }
         }
 
-        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration) {
+        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, src) {
             let apiUrl = new URL(this.video_together_host + "/room/update");
             apiUrl.searchParams.set("name", name);
             apiUrl.searchParams.set("password", password);
@@ -1124,6 +1144,7 @@
             apiUrl.searchParams.set("public", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PublicVideoRoom));
             apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
+            apiUrl.searchParams.set("src", src);
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;

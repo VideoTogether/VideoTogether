@@ -51,6 +51,7 @@ class Room:
     public: bool
     protected: bool
     videoTitle: str
+    src: str
 
     def __init__(self) -> None:
         self.tempUser = ""
@@ -215,7 +216,8 @@ def updateRoom():
     room.videoTitle = ""
     if "videoTitle" in request.args:
         room.videoTitle = request.args["videoTitle"]
-
+    if "src" in request.args:
+        room.src = request.args["src"]
     if not dbSwitchToRedis:
         if room.name not in roomUserDatabase:
             roomUserDatabase[room.name] = set()
