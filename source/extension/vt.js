@@ -309,7 +309,9 @@
                 let host = (new URL(e.blockedURI)).host;
                 this.cspBlockedHost[host] = true;
             });
-            this.CreateVideoDomObserver();
+            try {
+                this.CreateVideoDomObserver();
+            } catch { }
             this.timer = setInterval(this.ScheduledTask.bind(this), 2 * 1000);
             this.videoMap = new Map();
             window.addEventListener('message', message => {
@@ -724,7 +726,7 @@
                     }
                 });
             });
-            observer.observe(document.body, { childList: true, subtree: true })
+            observer.observe(document.body || document.documentElement, { childList: true, subtree: true })
             this.video_tag_names.forEach(vTag => {
                 let videos = document.getElementsByTagName(vTag);
                 for (let i = 0; i < videos.length; i++) {
