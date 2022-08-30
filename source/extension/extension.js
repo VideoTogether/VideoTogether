@@ -255,30 +255,32 @@
     let isMain = window.self == window.top;
 
     async function PostStorage() {
-        let keys = await GetKeys();
-        let data = {}
-        for (let i = 0; i < keys.length; i++) {
-            data[keys[i]] = await GM.getValue(keys[i]);
-            if (data[keys[i]] == 'true') {
-                data[keys[i]] = true;
-            }
-            if (data[keys[i]] == 'false') {
-                data[keys[i]] = false;
-            }
-        }
-        data["UserscriptType"] = type;
-        data["LoaddingVersion"] = version;
-        data["VideoTogetherTabStorageEnabled"] = true;
         try {
-            data["VideoTogetherTabStorage"] = (await GM.getTab()).VideoTogetherTabStorage;
-        } catch (e) {
-            data["VideoTogetherTabStorageEnabled"] = false;
-        }
-        window.top.postMessage({
-            source: "VideoTogether",
-            type: 16,
-            data: data
-        }, "*");
+            let keys = await GetKeys();
+            let data = {}
+            for (let i = 0; i < keys.length; i++) {
+                data[keys[i]] = await GM.getValue(keys[i]);
+                if (data[keys[i]] == 'true') {
+                    data[keys[i]] = true;
+                }
+                if (data[keys[i]] == 'false') {
+                    data[keys[i]] = false;
+                }
+            }
+            data["UserscriptType"] = type;
+            data["LoaddingVersion"] = version;
+            data["VideoTogetherTabStorageEnabled"] = true;
+            try {
+                data["VideoTogetherTabStorage"] = (await GM.getTab()).VideoTogetherTabStorage;
+            } catch (e) {
+                data["VideoTogetherTabStorageEnabled"] = false;
+            }
+            window.top.postMessage({
+                source: "VideoTogether",
+                type: 16,
+                data: data
+            }, "*");
+        } catch { }
     }
 
     PostStorage();
@@ -287,8 +289,8 @@
     }, 1000);
 
     let wrapper = document.createElement("div");
-    wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`
-    document.getElementsByTagName('body')[0].appendChild(wrapper);
+    wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`;
+    (document.body || document.documentElement).appendChild(wrapper);
     let script = document.createElement('script');
     script.type = 'text/javascript';
     switch (type) {
@@ -306,7 +308,7 @@
             break;
     }
 
-    document.body.appendChild(script);
+    (document.body || document.documentElement).appendChild(script);
     if (type != "Chrome") {
         try {
             InsertInlineJs(script.src);
@@ -326,7 +328,7 @@
             let script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js`;
-            document.body.appendChild(script);
+            (document.body || document.documentElement).appendChild(script);
             try {
                 InsertInlineJs(script.src);
                 GM_addElement('script', {

@@ -38,7 +38,7 @@
                 });
                 let wrapper = document.createElement("div");
                 wrapper.innerHTML = `{{{ {"user": "./html/pannel.html","order":100} }}}`;
-                document.querySelector("body").appendChild(wrapper);
+                (document.body || document.documentElement).appendChild(wrapper);
 
                 document.getElementById("videoTogetherMinimize").onclick = this.Minimize.bind(this);
                 document.getElementById("videoTogetherMaximize").onclick = this.Maximize.bind(this);
@@ -124,7 +124,7 @@
             voiceRoomIframe.id = "videoTogetherVoiceIframe"
             voiceRoomIframe.allow = "camera;microphone"
             voiceRoomIframe.style.display = "None";
-            document.querySelector("body").appendChild(voiceRoomIframe);
+            document.body.appendChild(voiceRoomIframe);
             this.voiceButton.style = "display: None";
             this.videoTogetherVideoVolumeDown.style = "";
             this.videoTogetherVideoVolumeUp.style = "";
@@ -381,6 +381,7 @@
             } else {
                 if (!this.NativePostMessageFunction) {
                     let temp = document.createElement("iframe");
+                    temp.style.display = 'None';
                     document.body.append(temp);
                     this.NativePostMessageFunction = temp.contentWindow.postMessage;
                 }
@@ -424,6 +425,7 @@
             } else {
                 if (!this.NativeFetchFunction) {
                     let temp = document.createElement("iframe");
+                    temp.style.display = 'None';
                     document.body.append(temp);
                     this.NativeFetchFunction = temp.contentWindow.fetch;
                 }

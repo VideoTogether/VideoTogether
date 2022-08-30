@@ -1,0 +1,46 @@
+<script>
+    const WORKER_HOSTNAME = "${WORKER_HOSTNAME}"
+
+    function getProxyURL(origin, force = false) {
+        if (origin.startsWith("/")) {
+            return origin;
+        }
+        let url = new URL(origin);
+        if (url.hostname.endsWith(WORKER_HOSTNAME)) {
+            // TODO port
+            return origin;
+        }
+        if(url.hostname.endsWith("2gether.video")){
+            return origin;
+        }
+        if(url.pathname.endsWith(".ts")){
+            return origin;
+        }
+        url.host = url.host.replaceAll(\/\\./g, '_') + '.' + WORKER_HOSTNAME;
+        console.log("origin", origin ,'->',url.toString());
+        return url.toString();
+    }
+    window._fetch = window.fetch
+
+    window.fetch = async function (url, options) {
+        return await window._fetch(getProxyURL(url), options)
+    }
+
+    XMLHttpRequest.prototype._open = XMLHttpRequest.prototype.open
+    XMLHttpRequest.prototype.open = function (a, url, c, d, e) {
+        return this._open(a, getProxyURL(url), c, d, e);
+    }
+
+    setInterval(() => {
+        let iframs = document.getElementsByTagName("iframe");
+        for (let i = 0; i < iframs.length; i++) {
+            try {
+                if (iframs[i].src != getProxyURL(iframs[i].src, true)) {
+                    iframs[i].src = getProxyURL(iframs[i].src, true)
+                }
+            } catch { }
+
+        }
+    }, 2000);
+
+</script>

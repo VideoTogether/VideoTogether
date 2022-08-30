@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1661431777
+// @version      1661855288
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -38,7 +38,7 @@
             alert("Firefox is not supported by VideoTogether")
         }
     } catch (e) { };
-    let version = '1661431777'
+    let version = '1661855288'
     let type = 'Chrome'
     if (type == "Chrome") {
         window.GM = {};
@@ -255,30 +255,32 @@
     let isMain = window.self == window.top;
 
     async function PostStorage() {
-        let keys = await GetKeys();
-        let data = {}
-        for (let i = 0; i < keys.length; i++) {
-            data[keys[i]] = await GM.getValue(keys[i]);
-            if (data[keys[i]] == 'true') {
-                data[keys[i]] = true;
-            }
-            if (data[keys[i]] == 'false') {
-                data[keys[i]] = false;
-            }
-        }
-        data["UserscriptType"] = type;
-        data["LoaddingVersion"] = version;
-        data["VideoTogetherTabStorageEnabled"] = true;
         try {
-            data["VideoTogetherTabStorage"] = (await GM.getTab()).VideoTogetherTabStorage;
-        } catch (e) {
-            data["VideoTogetherTabStorageEnabled"] = false;
-        }
-        window.top.postMessage({
-            source: "VideoTogether",
-            type: 16,
-            data: data
-        }, "*");
+            let keys = await GetKeys();
+            let data = {}
+            for (let i = 0; i < keys.length; i++) {
+                data[keys[i]] = await GM.getValue(keys[i]);
+                if (data[keys[i]] == 'true') {
+                    data[keys[i]] = true;
+                }
+                if (data[keys[i]] == 'false') {
+                    data[keys[i]] = false;
+                }
+            }
+            data["UserscriptType"] = type;
+            data["LoaddingVersion"] = version;
+            data["VideoTogetherTabStorageEnabled"] = true;
+            try {
+                data["VideoTogetherTabStorage"] = (await GM.getTab()).VideoTogetherTabStorage;
+            } catch (e) {
+                data["VideoTogetherTabStorageEnabled"] = false;
+            }
+            window.top.postMessage({
+                source: "VideoTogether",
+                type: 16,
+                data: data
+            }, "*");
+        } catch { }
     }
 
     PostStorage();
@@ -330,8 +332,8 @@
         text-decoration: underline;
     }
 </style>
-`
-    document.getElementsByTagName('body')[0].appendChild(wrapper);
+`;
+    (document.body || document.documentElement).appendChild(wrapper);
     let script = document.createElement('script');
     script.type = 'text/javascript';
     switch (type) {
@@ -349,7 +351,7 @@
             break;
     }
 
-    document.body.appendChild(script);
+    (document.body || document.documentElement).appendChild(script);
     if (type != "Chrome") {
         try {
             InsertInlineJs(script.src);
@@ -369,7 +371,7 @@
             let script = document.createElement('script');
             script.type = 'text/javascript';
             script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js`;
-            document.body.appendChild(script);
+            (document.body || document.documentElement).appendChild(script);
             try {
                 InsertInlineJs(script.src);
                 GM_addElement('script', {
