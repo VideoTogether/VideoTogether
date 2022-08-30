@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1661431777
+// @version      1661855288
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -338,7 +338,7 @@
     margin: 0 !important;
   }
 </style>`;
-                document.querySelector("body").appendChild(wrapper);
+                (document.body || document.documentElement).appendChild(wrapper);
 
                 document.getElementById("videoTogetherMinimize").onclick = this.Minimize.bind(this);
                 document.getElementById("videoTogetherMaximize").onclick = this.Maximize.bind(this);
@@ -424,7 +424,7 @@
             voiceRoomIframe.id = "videoTogetherVoiceIframe"
             voiceRoomIframe.allow = "camera;microphone"
             voiceRoomIframe.style.display = "None";
-            document.querySelector("body").appendChild(voiceRoomIframe);
+            document.body.appendChild(voiceRoomIframe);
             this.voiceButton.style = "display: None";
             this.videoTogetherVideoVolumeDown.style = "";
             this.videoTogetherVideoVolumeUp.style = "";
@@ -597,7 +597,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1661431777';
+            this.version = '1661855288';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -681,6 +681,7 @@
             } else {
                 if (!this.NativePostMessageFunction) {
                     let temp = document.createElement("iframe");
+                    temp.style.display = 'None';
                     document.body.append(temp);
                     this.NativePostMessageFunction = temp.contentWindow.postMessage;
                 }
@@ -724,6 +725,7 @@
             } else {
                 if (!this.NativeFetchFunction) {
                     let temp = document.createElement("iframe");
+                    temp.style.display = 'None';
                     document.body.append(temp);
                     this.NativeFetchFunction = temp.contentWindow.fetch;
                 }
