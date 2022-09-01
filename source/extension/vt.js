@@ -819,6 +819,7 @@
             window.videoTogetherFlyPannel.InLobby();
             let state = this.GetRoomState("");
             this.sendMessageToTop(MessageType.SetTabStorage, state);
+            this.SaveStateToSessionStorageWhenSameOrigin("");
         }
 
         async ScheduledTask() {
@@ -866,6 +867,7 @@
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
                         }
+                        this.SaveStateToSessionStorageWhenSameOrigin("");
                         let video = this.GetVideoDom();
                         if (video == undefined) {
                             await this.UpdateRoom(this.roomName,
@@ -905,6 +907,7 @@
                         } else {
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
+                            this.SaveStateToSessionStorageWhenSameOrigin("");
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
@@ -997,15 +1000,20 @@
 
         SaveStateToSessionStorageWhenSameOrigin(link) {
             try {
-                let url = new URL(link);
-                let currentUrl = new URL(window.location);
-                if (url.origin == currentUrl.origin) {
+                let sameOrigin = false;
+                if (link != "") {
+                    let url = new URL(link);
+                    let currentUrl = new URL(window.location);
+                    sameOrigin = (url.origin == currentUrl.origin);
+                }
+
+                if (link == "" || sameOrigin) {
                     window.sessionStorage.setItem("VideoTogetherUrl", link);
                     window.sessionStorage.setItem("VideoTogetherRoomName", this.roomName);
                     window.sessionStorage.setItem("VideoTogetherPassword", this.password);
                     window.sessionStorage.setItem("VideoTogetherRole", this.role);
                     window.sessionStorage.setItem("VideoTogetherTimestamp", Date.now() / 1000);
-                    return true;
+                    return sameOrigin;
                 } else {
                     return false;
                 }
