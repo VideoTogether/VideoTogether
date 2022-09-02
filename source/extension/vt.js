@@ -341,9 +341,9 @@
 
             if (this.isMain) {
                 try {
-                    setTimeout(() => {
+                    try {
                         this.RecoveryState();
-                    }, 2000);
+                    } catch { };
                     this.EnableDraggable();
 
                     setTimeout(() => {
