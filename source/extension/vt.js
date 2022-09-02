@@ -341,9 +341,9 @@
 
             if (this.isMain) {
                 try {
-                    setTimeout(() => {
+                    try {
                         this.RecoveryState();
-                    }, 4000);
+                    } catch { }
                     this.EnableDraggable();
 
                     setTimeout(() => {
@@ -640,7 +640,10 @@
                 case MessageType.SyncStorageValue: {
                     window.VideoTogetherStorage = data;
                     try {
-                        this.RecoveryState()
+                        if (!this.RecoveryStateFromTab) {
+                            this.RecoveryStateFromTab = true;
+                            this.RecoveryState()
+                        }
                     } catch (e) { };
 
                     if (!window.videoTogetherFlyPannel.disableDefaultSize && !window.VideoTogetherSettingEnabled) {
@@ -760,10 +763,6 @@
         }
 
         RecoveryState() {
-            if (this.recovered) {
-                return;
-            }
-            this.recovered = true;
             function RecoveryStateFrom(getFunc) {
                 let vtRole = getFunc("VideoTogetherRole");
                 let vtUrl = getFunc("VideoTogetherUrl");
@@ -919,7 +918,6 @@
                         } else {
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
-                            this.SaveStateToSessionStorageWhenSameOrigin("");
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
