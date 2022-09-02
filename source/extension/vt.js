@@ -791,7 +791,7 @@
             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                 try {
                     RecoveryStateFrom.bind(this)(key => window.VideoTogetherStorage.VideoTogetherTabStorage[key]);
-                } catch (e) { console.error(e) };
+                } catch { };
                 return;
             }
             let localTimestamp = window.sessionStorage.getItem("VideoTogetherTimestamp");
