@@ -87,18 +87,30 @@
         }
 
         Minimize() {
+            this.SaveIsMinimized(true);
             this.disableDefaultSize = true;
             document.getElementById("videoTogetherFlyPannel").style.display = "none";
             document.getElementById("videoTogetherSamllIcon").style.display = "block"
         }
 
         Maximize() {
+            this.SaveIsMinimized(false);
             this.disableDefaultSize = true;
             document.getElementById("videoTogetherFlyPannel").style.display = "block";
             document.getElementById("videoTogetherSamllIcon").style.display = "none"
         }
 
+        SaveIsMinimized(minimized) {
+            localStorage.setItem("VideoTogetherMinimizedHere", minimized ? 1 : 0)
+        }
+
         Init() {
+            let VideoTogetherMinimizedHere = localStorage.getItem("VideoTogetherMinimizedHere");
+            if (VideoTogetherMinimizedHere == 0) {
+                this.Maximize();
+            } else if (VideoTogetherMinimizedHere == 1) {
+                this.Minimize();
+            }
             const data = this.GetSavedRoomInfo()
             if (data) {
                 if (data.roomName) {

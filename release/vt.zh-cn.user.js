@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1661857620
+// @version      1662122417
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -387,18 +387,30 @@
         }
 
         Minimize() {
+            this.SaveIsMinimized(true);
             this.disableDefaultSize = true;
             document.getElementById("videoTogetherFlyPannel").style.display = "none";
             document.getElementById("videoTogetherSamllIcon").style.display = "block"
         }
 
         Maximize() {
+            this.SaveIsMinimized(false);
             this.disableDefaultSize = true;
             document.getElementById("videoTogetherFlyPannel").style.display = "block";
             document.getElementById("videoTogetherSamllIcon").style.display = "none"
         }
 
+        SaveIsMinimized(minimized) {
+            localStorage.setItem("VideoTogetherMinimizedHere", minimized ? 1 : 0)
+        }
+
         Init() {
+            let VideoTogetherMinimizedHere = localStorage.getItem("VideoTogetherMinimizedHere");
+            if (VideoTogetherMinimizedHere == 0) {
+                this.Maximize();
+            } else if (VideoTogetherMinimizedHere == 1) {
+                this.Minimize();
+            }
             const data = this.GetSavedRoomInfo()
             if (data) {
                 if (data.roomName) {
@@ -597,7 +609,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1661857620';
+            this.version = '1662122417';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1119,6 +1131,7 @@
             window.videoTogetherFlyPannel.InLobby();
             let state = this.GetRoomState("");
             this.sendMessageToTop(MessageType.SetTabStorage, state);
+            this.SaveStateToSessionStorageWhenSameOrigin("");
         }
 
         async ScheduledTask() {
@@ -1166,6 +1179,7 @@
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
                         }
+                        this.SaveStateToSessionStorageWhenSameOrigin("");
                         let video = this.GetVideoDom();
                         if (video == undefined) {
                             await this.UpdateRoom(this.roomName,
@@ -1205,6 +1219,7 @@
                         } else {
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
+                            this.SaveStateToSessionStorageWhenSameOrigin("");
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
@@ -1297,15 +1312,20 @@
 
         SaveStateToSessionStorageWhenSameOrigin(link) {
             try {
-                let url = new URL(link);
-                let currentUrl = new URL(window.location);
-                if (url.origin == currentUrl.origin) {
+                let sameOrigin = false;
+                if (link != "") {
+                    let url = new URL(link);
+                    let currentUrl = new URL(window.location);
+                    sameOrigin = (url.origin == currentUrl.origin);
+                }
+
+                if (link == "" || sameOrigin) {
                     window.sessionStorage.setItem("VideoTogetherUrl", link);
                     window.sessionStorage.setItem("VideoTogetherRoomName", this.roomName);
                     window.sessionStorage.setItem("VideoTogetherPassword", this.password);
                     window.sessionStorage.setItem("VideoTogetherRole", this.role);
                     window.sessionStorage.setItem("VideoTogetherTimestamp", Date.now() / 1000);
-                    return true;
+                    return sameOrigin;
                 } else {
                     return false;
                 }
