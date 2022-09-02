@@ -341,9 +341,9 @@
 
             if (this.isMain) {
                 try {
-                    try {
+                    setTimeout(() => {
                         this.RecoveryState();
-                    } catch { };
+                    }, 4000);
                     this.EnableDraggable();
 
                     setTimeout(() => {
@@ -760,6 +760,10 @@
         }
 
         RecoveryState() {
+            if (this.recovered) {
+                return;
+            }
+            this.recovered = true;
             function RecoveryStateFrom(getFunc) {
                 let vtRole = getFunc("VideoTogetherRole");
                 let vtUrl = getFunc("VideoTogetherUrl");
@@ -787,7 +791,7 @@
             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                 try {
                     RecoveryStateFrom.bind(this)(key => window.VideoTogetherStorage.VideoTogetherTabStorage[key]);
-                } catch { };
+                } catch (e) { console.error(e) };
                 return;
             }
             let localTimestamp = window.sessionStorage.getItem("VideoTogetherTimestamp");
