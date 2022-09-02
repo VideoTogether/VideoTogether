@@ -760,10 +760,6 @@
         }
 
         RecoveryState() {
-            if (this.recovered) {
-                return;
-            }
-            this.recovered = true;
             function RecoveryStateFrom(getFunc) {
                 let vtRole = getFunc("VideoTogetherRole");
                 let vtUrl = getFunc("VideoTogetherUrl");

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1662126843
+// @version      1662128429
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -609,7 +609,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1662126843';
+            this.version = '1662128429';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1060,10 +1060,6 @@
         }
 
         RecoveryState() {
-            if (this.recovered) {
-                return;
-            }
-            this.recovered = true;
             function RecoveryStateFrom(getFunc) {
                 let vtRole = getFunc("VideoTogetherRole");
                 let vtUrl = getFunc("VideoTogetherUrl");
@@ -1091,7 +1087,7 @@
             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                 try {
                     RecoveryStateFrom.bind(this)(key => window.VideoTogetherStorage.VideoTogetherTabStorage[key]);
-                } catch (e) { console.error(e) };
+                } catch { };
                 return;
             }
             let localTimestamp = window.sessionStorage.getItem("VideoTogetherTimestamp");
