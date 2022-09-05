@@ -24,9 +24,9 @@
                     if (e.data.type == MessageType.LoadStorageData) {
                         if (!this.disableDefaultSize) {
                             if (e.data.data.MinimiseDefault) {
-                                this.Minimize();
+                                this.Minimize(true);
                             } else {
-                                this.Maximize();
+                                this.Maximize(true);
                             }
                             this.disableDefaultSize = false;
                         }
@@ -36,35 +36,43 @@
                         window.VideoTogetherStorage = e.data.data;
                     }
                 });
-                let wrapper = document.createElement("div");
+                let shadowWrapper = document.createElement("div")
+                let wrapper = shadowWrapper.attachShadow({ mode: "open" });
+                this.shadowWrapper = shadowWrapper;
+                this.wrapper = wrapper;
                 wrapper.innerHTML = `{{{ {"user": "./html/pannel.html","order":100} }}}`;
-                (document.body || document.documentElement).appendChild(wrapper);
+                (document.body || document.documentElement).appendChild(shadowWrapper);
 
-                document.getElementById("videoTogetherMinimize").onclick = this.Minimize.bind(this);
-                document.getElementById("videoTogetherMaximize").onclick = this.Maximize.bind(this);
+                wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
+                wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
 
-                this.createRoomButton = document.querySelector('#videoTogetherCreateButton');
-                this.joinRoomButton = document.querySelector("#videoTogetherJoinButton");
-                this.exitButton = document.querySelector("#videoTogetherExitButton");
-                this.voiceButton = document.querySelector("#videoTogetherVoiceButton");
+                this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
+                this.joinRoomButton = wrapper.querySelector("#videoTogetherJoinButton");
+                this.exitButton = wrapper.querySelector("#videoTogetherExitButton");
+                this.voiceButton = wrapper.querySelector("#videoTogetherVoiceButton");
                 this.voiceButton.onclick = this.JoinVoiceRoom.bind(this);
-                this.helpButton = document.querySelector("#videoTogetherHelpButton");
+                this.helpButton = wrapper.querySelector("#videoTogetherHelpButton");
 
                 this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
                 this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
                 this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
                 this.exitButton.onclick = (() => {
                     try {
-                        document.querySelector("#videoTogetherVoiceIframe").remove();
+                        wrapper.querySelector("#videoTogetherVoiceIframe").remove();
                     } catch (e) { console.error(e); }
                     window.videoTogetherExtension.exitRoom();
                 });
-                this.inputRoomName = document.querySelector('#videoTogetherRoomNameInput');
-                this.inputRoomPassword = document.querySelector("#videoTogetherRoomPasswordInput");
-                this.inputRoomNameLabel = document.querySelector('#videoTogetherRoomNameLabel');
-                this.inputRoomPasswordLabel = document.querySelector("#videoTogetherRoomPasswordLabel");
-                this.videoTogetherVideoVolumeDown = document.querySelector("#videoTogetherVideoVolumeDown");
-                this.videoTogetherVideoVolumeUp = document.querySelector("#videoTogetherVideoVolumeUp");
+                this.videoTogetherRoleText = wrapper.querySelector("#videoTogetherRoleText")
+                this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
+                this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
+                this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPasswordInput");
+                this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
+                this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
+                this.videoTogetherVideoVolumeDown = wrapper.querySelector("#videoTogetherVideoVolumeDown");
+                this.videoTogetherVideoVolumeUp = wrapper.querySelector("#videoTogetherVideoVolumeUp");
+                this.videoTogetherHeader = wrapper.querySelector("#videoTogetherHeader");
+                this.videoTogetherFlyPannel = wrapper.getElementById("videoTogetherFlyPannel");
+                this.videoTogetherSamllIcon = wrapper.getElementById("videoTogetherSamllIcon");
                 this.videoTogetherVideoVolumeDown.onclick = () => {
                     this.volume -= 0.1;
                     this.volume = Math.max(0, this.volume);
@@ -76,9 +84,12 @@
                     window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
                 }
                 this.volume = 1;
-                this.statusText = document.querySelector("#videoTogetherStatusText");
+                this.statusText = wrapper.querySelector("#videoTogetherStatusText");
                 this.InLobby(true);
                 this.Init();
+                setInterval(() => {
+                    this.ShowPannel();
+                }, 1000);
             }
 
             try {
@@ -86,18 +97,28 @@
             } catch { }
         }
 
-        Minimize() {
-            this.SaveIsMinimized(true);
-            this.disableDefaultSize = true;
-            document.getElementById("videoTogetherFlyPannel").style.display = "none";
-            document.getElementById("videoTogetherSamllIcon").style.display = "block"
+        ShowPannel() {
+            if (!document.documentElement.contains(this.shadowWrapper)) {
+                (document.body || document.documentElement).appendChild(this.shadowWrapper);
+            }
         }
 
-        Maximize() {
-            this.SaveIsMinimized(false);
+        Minimize(isDefault = false) {
+            if (!isDefault) {
+                this.SaveIsMinimized(true);
+            }
             this.disableDefaultSize = true;
-            document.getElementById("videoTogetherFlyPannel").style.display = "block";
-            document.getElementById("videoTogetherSamllIcon").style.display = "none"
+            this.videoTogetherFlyPannel.style.display = "none";
+            this.videoTogetherSamllIcon.style.display = "block"
+        }
+
+        Maximize(isDefault = false) {
+            if (!isDefault) {
+                this.SaveIsMinimized(false);
+            }
+            this.disableDefaultSize = true;
+            this.videoTogetherFlyPannel.style.display = "block";
+            this.videoTogetherSamllIcon.style.display = "none"
         }
 
         SaveIsMinimized(minimized) {
@@ -107,9 +128,9 @@
         Init() {
             let VideoTogetherMinimizedHere = localStorage.getItem("VideoTogetherMinimizedHere");
             if (VideoTogetherMinimizedHere == 0) {
-                this.Maximize();
+                this.Maximize(true);
             } else if (VideoTogetherMinimizedHere == 1) {
-                this.Minimize();
+                this.Minimize(true);
             }
             const data = this.GetSavedRoomInfo()
             if (data) {
@@ -366,16 +387,19 @@
         }
 
         setRole(role) {
+            let setRoleText = text => {
+                window.videoTogetherFlyPannel.videoTogetherRoleText.innerHTML = text;
+            }
             this.role = role
             switch (role) {
                 case this.RoleEnum.Master:
-                    document.querySelector("#videoTogetherRoleText").innerHTML = "{$host_role$}";
+                    setRoleText("{$host_role$}");
                     break;
                 case this.RoleEnum.Member:
-                    document.querySelector("#videoTogetherRoleText").innerHTML = "{$memeber_role$}";
+                    setRoleText("{$memeber_role$}");
                     break;
                 default:
-                    document.querySelector("#videoTogetherRoleText").innerHTML = "";
+                    setRoleText("");
                     break;
             }
         }
@@ -648,9 +672,9 @@
 
                     if (!window.videoTogetherFlyPannel.disableDefaultSize && !window.VideoTogetherSettingEnabled) {
                         if (data.MinimiseDefault) {
-                            window.videoTogetherFlyPannel.Minimize();
+                            window.videoTogetherFlyPannel.Minimize(true);
                         } else {
-                            window.videoTogetherFlyPannel.Maximize();
+                            window.videoTogetherFlyPannel.Maximize(true);
                         }
                     }
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
@@ -658,7 +682,7 @@
                     }
                     if (window.VideoTogetherSettingEnabled == undefined) {
                         try {
-                            document.getElementById('videoTogetherSetting').href = "https://setting.2gether.video/v2.html";
+                            window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
                         } catch (e) { }
                     }
                     window.VideoTogetherSettingEnabled = true;
@@ -1179,8 +1203,8 @@
         EnableDraggable() {
             function filter(e) {
                 let target = undefined;
-                if (document.querySelector("#videoTogetherHeader").contains(e.target)) {
-                    target = document.querySelector("#videoTogetherFlyPannel");
+                if (window.videoTogetherFlyPannel.videoTogetherHeader.contains(e.target)) {
+                    target = window.videoTogetherFlyPannel.videoTogetherFlyPannel;
                 } else {
                     return;
                 }
@@ -1234,15 +1258,17 @@
                 target.onmouseup = endDrag;
                 target.ontouchend = endDrag;
             }
-            document.onmousedown = filter;
-            document.ontouchstart = filter;
+            window.videoTogetherFlyPannel.videoTogetherHeader.onmousedown = filter;
+            window.videoTogetherFlyPannel.videoTogetherHeader.ontouchstart = filter;
         }
     }
 
     // TODO merge Pannel and Extension class
     if (window.videoTogetherFlyPannel === undefined) {
         window.videoTogetherFlyPannel = null;
-        window.videoTogetherFlyPannel = new VideoTogetherFlyPannel();
+        try {
+            window.videoTogetherFlyPannel = new VideoTogetherFlyPannel();
+        } catch (e) { console.error(e) }
     }
     if (window.videoTogetherExtension === undefined) {
         window.videoTogetherExtension = null;
