@@ -943,6 +943,9 @@
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
                         }
+                        if(this.PlayAdNow()){
+                            throw new Error("{$ad_playing$}");
+                        }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
                             throw new Error("{$no_video_in_this_page$}");
@@ -955,6 +958,22 @@
             } catch (e) {
                 this.UpdateStatusText(e, "red");
             }
+        }
+
+        PlayAdNow() {
+            try {
+                // iqiyi
+                if (window.location.hostname.endsWith('iqiyi.com')) {
+                    let cdTimes = document.querySelectorAll('.cd-time');
+                    for (let i = 0; i < cdTimes.length; i++) {
+                        if (cdTimes[i].offsetParent != null) {
+                            return true;
+                        }
+                    }
+                }
+            } catch { }
+
+            return false;
         }
 
         GetVideoDom() {

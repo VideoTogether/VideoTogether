@@ -10,11 +10,12 @@
     "exit_room_button": "Exit",
     "host_role": "Host",
     "memeber_role": "Member",
-    "no_video_in_this_page":"No video in this page",
-    "sync_success":"Sync",
-    "voice_call_experimental_alert":"Voice Call is experimental now",
-    "timeout":"timeout",
-    "need_to_play_manually":"Need to play manually",
-    "no_video":"No video",
-    "locale":"en-us"
+    "no_video_in_this_page": "No video in this page",
+    "sync_success": "Sync",
+    "voice_call_experimental_alert": "Voice Call is experimental now",
+    "timeout": "timeout",
+    "need_to_play_manually": "Need to play manually",
+    "no_video": "No video",
+    "locale": "en-us",
+    "ad_playing": "Playing AD"
 }

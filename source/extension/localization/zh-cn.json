@@ -10,11 +10,12 @@
     "exit_room_button": "退 出",
     "host_role": "房主",
     "memeber_role": "成员",
-    "no_video_in_this_page":"页面没有视频",
-    "sync_success":"同步成功",
-    "voice_call_experimental_alert":"目前语音通话仍然只是实验性功能，有任何问题都欢迎点击帮助按钮反馈。为了隐私考虑，推荐使用超过7位的房间名",
-    "timeout":"超时",
-    "need_to_play_manually":"请手动点击播放",
-    "no_video":"没有视频",
-    "locale":"zh-cn"
+    "no_video_in_this_page": "页面没有视频",
+    "sync_success": "同步成功",
+    "voice_call_experimental_alert": "目前语音通话仍然只是实验性功能，有任何问题都欢迎点击帮助按钮反馈。为了隐私考虑，推荐使用超过7位的房间名",
+    "timeout": "超时",
+    "need_to_play_manually": "请手动点击播放",
+    "no_video": "没有视频",
+    "locale": "zh-cn",
+    "ad_playing": "广告中"
 }
