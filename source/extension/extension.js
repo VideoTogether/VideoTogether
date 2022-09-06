@@ -33,11 +33,6 @@
         }
     } catch (e) { };
 
-    try {
-        if (navigator.userAgent.indexOf("Firefox") > 0) {
-            alert("Firefox is not supported by VideoTogether")
-        }
-    } catch (e) { };
     let version = '{{timestamp}}'
     let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
     if (type == "Chrome") {
