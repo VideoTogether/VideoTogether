@@ -116,6 +116,27 @@ def listPublicRooms():
     return jsonify(rooms)
 
 
+def getClientVersion(request):
+    try:
+        loaddingVersion = 'unknown'
+        if "loaddingVersion" in request.args:
+            loaddingVersion = request.args["loaddingVersion"]
+        if loaddingVersion not in loaddingVersionDatabase:
+            loaddingVersionDatabase[loaddingVersion] = 1
+        else:
+            loaddingVersionDatabase[loaddingVersion] += 1
+
+        version = 'unknown'
+        if "version" in request.args:
+            version = request.args["version"]
+        if version not in versionDatabase:
+            versionDatabase[version] = 1
+        else:
+            versionDatabase[version] += 1
+    except:
+        pass
+
+
 @app.route('/room/get', methods=["get"])
 def getRoom():
     name = request.args["name"]
@@ -131,7 +152,7 @@ def getRoom():
             tempUserDatabase[tempUserId].lastSeen = time.time()
         if name in roomUserDatabase:
             roomUserDatabase[name].add(tempUserId)
-
+    getClientVersion(request)
     if not dbSwitchToRedis:
         if name not in database:
             return generateErrorResponse("房间不存在")
@@ -216,23 +237,7 @@ def updateRoom():
     room.protected = False
     if "protected" in request.args:
         room.protected = request.args["protected"] == 'true'
-
-    loaddingVersion = 'unknown'
-    if "loaddingVersion" in request.args:
-        loaddingVersion = request.args["loaddingVersion"]
-    if loaddingVersion not in loaddingVersionDatabase:
-        loaddingVersionDatabase[loaddingVersion] = 1
-    else:
-        loaddingVersionDatabase[loaddingVersion] += 1
-
-    version = 'unknown'
-    if "version" in request.args:
-        version = request.args["version"]
-    if version not in versionDatabase:
-        versionDatabase[version] = 1
-    else:
-        versionDatabase[version] += 1
-
+    getClientVersion(request)
     room.videoTitle = ""
     if "videoTitle" in request.args:
         room.videoTitle = request.args["videoTitle"]
