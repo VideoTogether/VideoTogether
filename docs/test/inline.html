@@ -1,0 +1,28 @@
+<!-- copied from https://www.jb51.net/web/764313.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- <script src="http://192.168.2.164:7000/release/extension.debug.user.js?x=1"></script> -->
+    <script src="http://127.0.0.1:7000/release/extension.website_debug.user.js?x=1"></script>
+
+    <meta charset="utf-8">
+    <title>播放本地的视频文件</title>
+</head>
+<body>
+    <h3>
+        <center>视频播放测试<center>
+    </h3>
+    <hr color="#666666">
+    <input type="file" id="file" onchange="onInputFileChange()">
+    <br />
+    <video id="video_id" width="520" height="360" controls autoplay loop playsinline>你的浏览器不能支持HTML5视频</video>
+    <script>
+        function onInputFileChange() {
+            var file = document.getElementById('file').files[0];
+            var url = URL.createObjectURL(file);
+            console.log(url);
+            document.getElementById("video_id").src = url;
+        }
+    </script>
+</body>
+</html>

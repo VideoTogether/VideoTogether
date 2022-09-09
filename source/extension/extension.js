@@ -34,7 +34,7 @@
     } catch (e) { };
 
     let version = '{{timestamp}}'
-    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
+    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
     if (type == "Chrome") {
         window.GM = {};
         GM.setValue = async (key, value) => {
@@ -300,6 +300,12 @@
             break;
         case "userscript_beta":
             script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/main/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
+            break;
+        case "website":
+            script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
+            break;
+        case "website_debug":
+            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
             break;
     }
 

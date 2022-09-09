@@ -34,7 +34,7 @@
     } catch (e) { };
 
     let version = '1662724232'
-    let type = 'Chrome'
+    let type = 'website_debug'
     if (type == "Chrome") {
         window.GM = {};
         GM.setValue = async (key, value) => {

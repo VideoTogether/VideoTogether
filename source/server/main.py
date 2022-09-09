@@ -92,6 +92,10 @@ def RoomDecoder(obj):
 database = dict()
 roomUserDatabase = dict()
 tempUserDatabase = dict()
+
+loaddingVersionDatabase = dict()
+versionDatabase = dict()
+
 pool = None
 
 
@@ -212,6 +216,23 @@ def updateRoom():
     room.protected = False
     if "protected" in request.args:
         room.protected = request.args["protected"] == 'true'
+
+    loaddingVersion = 'unknown'
+    if "loaddingVersion" in request.args:
+        loaddingVersion = request.args["loaddingVersion"]
+    if loaddingVersion not in loaddingVersionDatabase:
+        loaddingVersionDatabase[loaddingVersion] = 1
+    else:
+        loaddingVersionDatabase[loaddingVersion] += 1
+
+    version = 'unknown'
+    if "version" in request.args:
+        version = request.args["version"]
+    if version not in versionDatabase:
+        versionDatabase[version] = 1
+    else:
+        versionDatabase[version] += 1
+
     room.videoTitle = ""
     if "videoTitle" in request.args:
         room.videoTitle = request.args["videoTitle"]
@@ -232,7 +253,7 @@ def updateRoom():
 @app.route('/statistics', methods=["get"])
 def getStatistics():
     if not dbSwitchToRedis:
-        return jsonify({"roomCount": len(database), "userCount": len(tempUserDatabase)})
+        return jsonify({"roomCount": len(database), "userCount": len(tempUserDatabase), 'version': versionDatabase, 'loaddingVersion': loaddingVersionDatabase})
     r = redisConnect(pool)
     return jsonify({"roomCount": r.hlen(namespace)})
 
