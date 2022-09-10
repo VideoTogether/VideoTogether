@@ -230,7 +230,7 @@
 
         HelpButtonOnClick() {
             this.Maximize();
-            url = 'https://2gether.video/guide/qa.html';
+            let url = 'https://2gether.video/guide/qa.html';
             if (vtRuntime == "website") {
                 url = url + "?from_website=1"
             }
