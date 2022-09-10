@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1662724232
+// @version      1662814418
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -530,7 +530,11 @@
 
         HelpButtonOnClick() {
             this.Maximize();
-            window.open('https://2gether.video/guide/qa.html', '_blank');
+            url = 'https://2gether.video/guide/qa.html';
+            if (vtRuntime == "website") {
+                url = url + "?from_website=1"
+            }
+            window.open(url, '_blank');
         }
 
         UpdateStatusText(text, color) {
@@ -632,7 +636,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1662724232';
+            this.version = '1662814418';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

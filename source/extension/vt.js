@@ -230,7 +230,11 @@
 
         HelpButtonOnClick() {
             this.Maximize();
-            window.open('https://2gether.video/guide/qa.html', '_blank');
+            url = 'https://2gether.video/guide/qa.html';
+            if (vtRuntime == "website") {
+                url = url + "?from_website=1"
+            }
+            window.open(url, '_blank');
         }
 
         UpdateStatusText(text, color) {
