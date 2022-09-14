@@ -232,7 +232,7 @@
             this.Maximize();
             let url = 'https://2gether.video/guide/qa.html';
             if (vtRuntime == "website") {
-                url = url + "?from_website=1"
+                url = "https://2gether.video/guide/website_qa.html"
             }
             window.open(url, '_blank');
         }
