@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1663153213
+// @version      1663161351
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -636,7 +636,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1663153213';
+            this.version = '1663161351';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1482,6 +1482,12 @@
         }
 
         async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration) {
+            try {
+                if (window.location.pathname == "/page") {
+                    let url = new URL(atob(new URL(window.location).searchParams.get("url")));
+                    window.location = url;
+                }
+            } catch { }
             let apiUrl = new URL(this.video_together_host + "/room/update");
             apiUrl.searchParams.set("name", name);
             apiUrl.searchParams.set("password", password);

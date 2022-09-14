@@ -1182,6 +1182,12 @@
         }
 
         async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration) {
+            try {
+                if (window.location.pathname == "/page") {
+                    let url = new URL(atob(new URL(window.location).searchParams.get("url")));
+                    window.location = url;
+                }
+            } catch { }
             let apiUrl = new URL(this.video_together_host + "/room/update");
             apiUrl.searchParams.set("name", name);
             apiUrl.searchParams.set("password", password);
