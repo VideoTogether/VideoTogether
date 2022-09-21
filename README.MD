@@ -42,10 +42,6 @@ QQ群: 170200260
 
 `python source/server/main.py debug` 运行一个本地服务器
 
-#### 私有化部署
-
-私有部署文档：http://2gether.video/guide/deploy.html
-
 ## TODO
 
 - 使用 Websocket 替代 http 请求
