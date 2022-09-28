@@ -12,6 +12,150 @@
 (function () {
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
 
+    const KRAKEN_API = 'https://rpc.kraken.fm';
+    const ICE_POLICY = 'relay';
+
+
+    /**
+     *
+     *  Base64 encode / decode
+     *  http://www.webtoolkit.info
+     *
+     **/
+    var Base64 = {
+
+        // private property
+        _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+
+        // public method for encoding
+        , encode: function (input) {
+            var output = "";
+            var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+            var i = 0;
+
+            input = Base64._utf8_encode(input);
+
+            while (i < input.length) {
+                chr1 = input.charCodeAt(i++);
+                chr2 = input.charCodeAt(i++);
+                chr3 = input.charCodeAt(i++);
+
+                enc1 = chr1 >> 2;
+                enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+                enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+                enc4 = chr3 & 63;
+
+                if (isNaN(chr2)) {
+                    enc3 = enc4 = 64;
+                }
+                else if (isNaN(chr3)) {
+                    enc4 = 64;
+                }
+
+                output = output +
+                    this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) +
+                    this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
+            } // Whend
+
+            return output;
+        } // End Function encode
+
+
+        // public method for decoding
+        , decode: function (input) {
+            var output = "";
+            var chr1, chr2, chr3;
+            var enc1, enc2, enc3, enc4;
+            var i = 0;
+
+            input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+            while (i < input.length) {
+                enc1 = this._keyStr.indexOf(input.charAt(i++));
+                enc2 = this._keyStr.indexOf(input.charAt(i++));
+                enc3 = this._keyStr.indexOf(input.charAt(i++));
+                enc4 = this._keyStr.indexOf(input.charAt(i++));
+
+                chr1 = (enc1 << 2) | (enc2 >> 4);
+                chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+                chr3 = ((enc3 & 3) << 6) | enc4;
+
+                output = output + String.fromCharCode(chr1);
+
+                if (enc3 != 64) {
+                    output = output + String.fromCharCode(chr2);
+                }
+
+                if (enc4 != 64) {
+                    output = output + String.fromCharCode(chr3);
+                }
+
+            } // Whend
+
+            output = Base64._utf8_decode(output);
+
+            return output;
+        } // End Function decode
+
+
+        // private method for UTF-8 encoding
+        , _utf8_encode: function (string) {
+            var utftext = "";
+            string = string.replace(/\r\n/g, "\n");
+
+            for (var n = 0; n < string.length; n++) {
+                var c = string.charCodeAt(n);
+
+                if (c < 128) {
+                    utftext += String.fromCharCode(c);
+                }
+                else if ((c > 127) && (c < 2048)) {
+                    utftext += String.fromCharCode((c >> 6) | 192);
+                    utftext += String.fromCharCode((c & 63) | 128);
+                }
+                else {
+                    utftext += String.fromCharCode((c >> 12) | 224);
+                    utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+                    utftext += String.fromCharCode((c & 63) | 128);
+                }
+
+            } // Next n
+
+            return utftext;
+        } // End Function _utf8_encode
+
+        // private method for UTF-8 decoding
+        , _utf8_decode: function (utftext) {
+            var string = "";
+            var i = 0;
+            var c, c1, c2, c3;
+            c = c1 = c2 = 0;
+
+            while (i < utftext.length) {
+                c = utftext.charCodeAt(i);
+
+                if (c < 128) {
+                    string += String.fromCharCode(c);
+                    i++;
+                }
+                else if ((c > 191) && (c < 224)) {
+                    c2 = utftext.charCodeAt(i + 1);
+                    string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+                    i += 2;
+                }
+                else {
+                    c2 = utftext.charCodeAt(i + 1);
+                    c3 = utftext.charCodeAt(i + 2);
+                    string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+                    i += 3;
+                }
+
+            } // Whend
+
+            return string;
+        } // End Function _utf8_decode
+    }
+
+
     class VideoTogetherFlyPannel {
         constructor() {
             this.sessionKey = "VideoTogetherFlySaveSessionKey";
@@ -160,7 +304,7 @@
             voiceRoomIframe.allow = "camera;microphone"
             voiceRoomIframe.style.display = "None";
             document.body.appendChild(voiceRoomIframe);
-            this.voiceButton.style = "display: None";
+            // this.voiceButton.style = "display: None";
             this.videoTogetherVideoVolumeDown.style = "";
             this.videoTogetherVideoVolumeUp.style = "";
         }
@@ -188,7 +332,7 @@
             this.createRoomButton.style = "display: None";
             this.joinRoomButton.style = "display: None";
             this.exitButton.style = "";
-            this.voiceButton.style = "";
+            // this.voiceButton.style = "";
             this.inputRoomPasswordLabel.style.display = "None";
             this.inputRoomPassword.style.display = "None";
             this.videoTogetherVideoVolumeDown.style = "display: None";
@@ -206,7 +350,7 @@
             this.createRoomButton.style = "";
             this.joinRoomButton.style = "";
             this.exitButton.style = "display: None";
-            this.voiceButton.style = "display: None";
+            // this.voiceButton.style = "display: None";
             this.videoTogetherVideoVolumeDown.style = "display: None";
             this.videoTogetherVideoVolumeUp.style = "display: None";
             this.isInRoom = false;
@@ -318,8 +462,7 @@
                 Member: 3,
             }
             this.cspBlockedHost = {};
-            // TODO clear
-            this.rspMap = {};
+
             this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video"]
@@ -339,6 +482,8 @@
             this.version = '{{timestamp}}';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
+
+            this.callbackMap = new Map;
 
             this.allLinksTargetModified = false;
 
@@ -446,22 +591,30 @@
             let host = (new URL(url)).host;
             if (this.cspBlockedHost[host]) {
                 let id = this.generateUUID()
-                this.sendMessageToTop(MessageType.FetchRequest, {
-                    id: id,
-                    url: url.toString(),
-                    method: "GET",
-                    data: null,
-                });
                 return await new Promise((resolve, reject) => {
-                    let intervalId = setInterval(() => {
-                        if (this.rspMap[id] != undefined) {
-                            resolve({ json: () => this.rspMap[id], status: 200 });
+                    this.callbackMap.set(id, (data) => {
+                        if (data.data) {
+                            resolve({ json: () => data, status: 200 });
+                        } else {
+                            reject(new Error(data.error));
                         }
-                    }, 200);
+                        this.callbackMap.delete(id);
+                    })
+                    this.sendMessageToTop(MessageType.FetchRequest, {
+                        id: id,
+                        url: url.toString(),
+                        method: "GET",
+                        data: null,
+                    });
                     setTimeout(() => {
-                        clearInterval(intervalId);
-                        reject(new Error("{$timeout$}"));
-                    }, 5000);
+                        try {
+                            if (this.callbackMap.has(id)) {
+                                this.callbackMap.get(id)({ error: "{$timeout$}" });
+                            }
+                        } finally {
+                            this.callbackMap.delete(id);
+                        }
+                    }, 20000);
                 });
             }
             if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
@@ -657,14 +810,7 @@
                     });
                     this.sendMessageToSon(type, data);
                 case MessageType.FetchResponse: {
-                    if (data.data) {
-                        this.rspMap[data.id] = data.data;
-                        setTimeout(() => {
-                            delete this.rspMap[data.id];
-                        }, 5 * 1000);
-                    } else {
-
-                    }
+                    this.callbackMap.get(data.id)(data);
                     break;
                 }
                 case MessageType.SyncStorageValue: {
@@ -749,7 +895,7 @@
             let _this = this;
             let observer = new WebKitMutationObserver(function (mutations) {
                 mutations.forEach(function (mutation) {
-                    for (var i = 0; i < mutation.addedNodes.length; i++) {
+                    for (let i = 0; i < mutation.addedNodes.length; i++) {
 
                         if (mutation.addedNodes[i].tagName == "VIDEO" || mutation.addedNodes[i].tagName == "BWP-VIDEO") {
                             try {
@@ -949,7 +1095,7 @@
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
                         }
-                        if(this.PlayAdNow()){
+                        if (this.PlayAdNow()) {
                             throw new Error("{$ad_playing$}");
                         }
                         let video = this.GetVideoDom();
@@ -1231,6 +1377,164 @@
             return data;
         }
 
+        StartVoice() {
+            let rname = this.roomName
+            let uid = localStorage.getItem('uid');
+            if (!uid) {
+                uid = this.generateUUID();
+                localStorage.setItem('uid', uid);
+            }
+            const rnameRPC = encodeURIComponent(rname);
+            const unameRPC = encodeURIComponent(uid);
+            let ucid = "";
+
+            const constraints = {
+                audio: true,
+                video: false
+            };
+            const configuration = {
+                bundlePolicy: 'max-bundle',
+                rtcpMuxPolicy: 'require',
+                sdpSemantics: 'unified-plan'
+            };
+
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContext();
+            async function subscribe(pc) {
+                var res = await rpc('subscribe', [rnameRPC, unameRPC, ucid]);
+                if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
+                    pc.close();
+                    await start();
+                    return;
+                }
+                if (res.data) {
+                    var jsep = JSON.parse(res.data.jsep);
+                    if (jsep.type == 'offer') {
+                        await pc.setRemoteDescription(jsep);
+                        var sdp = await pc.createAnswer();
+                        await pc.setLocalDescription(sdp);
+                        await rpc('answer', [rnameRPC, unameRPC, ucid, JSON.stringify(sdp)]);
+                    }
+                }
+                setTimeout(function () {
+                    subscribe(pc);
+                }, 3000);
+            }
+
+            start();
+
+            async function start() {
+                try {
+                    document.querySelectorAll('.peer').forEach((el) => el.remove());
+
+                    var res = await rpc('turn', [unameRPC]);
+                    if (ICE_POLICY === 'relay' && res.data && res.data.length > 0) {
+                        configuration.iceServers = res.data;
+                        configuration.iceTransportPolicy = 'relay';
+                    } else {
+                        configuration.iceServers = [];
+                        configuration.iceTransportPolicy = 'all';
+                    }
+
+                    var pc = new RTCPeerConnection(configuration);
+
+                    pc.onicecandidate = ({ candidate }) => {
+                        rpc('trickle', [rnameRPC, unameRPC, ucid, JSON.stringify(candidate)]);
+                    };
+
+                    pc.ontrack = (event) => {
+                        console.log("ontrack", event);
+
+                        var stream = event.streams[0];
+                        var sid = decodeURIComponent(stream.id);
+                        var id = sid.split(':')[0];
+                        var name = Base64.decode(sid.split(':')[1]);
+                        console.log(id, uid);
+                        if (id === uid) {
+                            return;
+                        }
+
+                        event.track.onmute = (event) => {
+                            console.log("onmute", event);
+                            var el = document.querySelector(`[data-track-id="${event.target.id}"]`);
+                            if (el) {
+                                el.remove();
+                                resizeVisulizers();
+                            }
+                        };
+
+                        var aid = 'peer-audio-' + id;
+                        var el = document.getElementById(aid);
+                        if (el) {
+                            el.srcObject = stream;
+                        } else {
+                            el = document.createElement(event.track.kind)
+                            el.id = aid;
+                            el.srcObject = stream;
+                            el.autoplay = true;
+                            el.controls = false;
+                            document.getElementById('peers').appendChild(el)
+                        }
+
+                        buildCanvas(stream, id, name, event.track.id);
+                        resizeVisulizers();
+                    };
+
+                    var stream;
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    } catch (err) {
+                        document.getElementById('microphone').style.display = 'block';
+                        console.error(err);
+                        return;
+                    }
+                    buildCanvas(stream, uid, name, 'me');
+                    resizeVisulizers();
+                    handlePartyPerform();
+                    audioCtx.resume();
+
+                    stream.getTracks().forEach((track) => {
+                        pc.addTrack(track, stream);
+                    });
+                    await pc.setLocalDescription(await pc.createOffer());
+
+                    res = await rpc('publish', [rnameRPC, unameRPC, JSON.stringify(pc.localDescription)]);
+                    if (res.data) {
+                        var jsep = JSON.parse(res.data.jsep);
+                        if (jsep.type == 'answer') {
+                            await pc.setRemoteDescription(jsep);
+                            ucid = res.data.track;
+                            subscribe(pc);
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            async function rpc(method, params = []) {
+                try {
+                    const response = await fetch(KRAKEN_API, {
+                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                        mode: 'cors', // no-cors, *cors, same-origin
+                        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                        credentials: 'omit', // include, *same-origin, omit
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        redirect: 'follow', // manual, *follow, error
+                        referrerPolicy: 'no-referrer', // no-referrer, *client
+                        body: JSON.stringify({ id: uuidv4(), method: method, params: params }) // body data type must match "Content-Type" header
+                    });
+                    return response.json(); // parses JSON response into native JavaScript objects
+                } catch (err) {
+                    console.log('fetch error', method, params, err);
+                    return await rpc(method, params);
+                }
+            }
+
+        }
+
         EnableDraggable() {
             function filter(e) {
                 let target = undefined;
@@ -1309,4 +1613,6 @@
     try {
         document.querySelector("#videoTogetherLoading").remove()
     } catch { }
+
+
 })()

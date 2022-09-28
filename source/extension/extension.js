@@ -125,18 +125,14 @@
     }
 
     async function AppendKey(key) {
-        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
-        try {
-            let keys = new Set(JSON.parse(keysStr));
-            keys.add(key);
-            await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
-        } catch (e) {
-            await GM.setValue("VideoTogetherKeys", "[]");
-        }
+        let keysStr = await GM.getValue("VideoTogetherKeys");
+        let keys = new Set(JSON.parse(keysStr));
+        keys.add(key);
+        await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
     }
 
     async function GetKeys() {
-        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
+        let keysStr = await GM.getValue("VideoTogetherKeys");
         try {
             let keys = new Set(JSON.parse(keysStr));
             return Array.from(keys);
