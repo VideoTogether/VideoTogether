@@ -39,7 +39,13 @@
                     }
                 });
                 let shadowWrapper = document.createElement("div")
-                let wrapper = shadowWrapper.attachShadow({ mode: "open" });
+                let wrapper
+                try {
+                    wrapper = shadowWrapper.attachShadow({ mode: "open" });
+                } catch (e) {
+                    wrapper = shadowWrapper._attachShadow({ mode: "open" });
+                }
+
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
                 wrapper.innerHTML = `{{{ {"": "./html/pannel.html","order":100} }}}`;
@@ -949,7 +955,7 @@
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
                         }
-                        if(this.PlayAdNow()){
+                        if (this.PlayAdNow()) {
                             throw new Error("{$ad_playing$}");
                         }
                         let video = this.GetVideoDom();

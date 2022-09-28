@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1663161351
+// @version      1664372256
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -39,7 +39,13 @@
                     }
                 });
                 let shadowWrapper = document.createElement("div")
-                let wrapper = shadowWrapper.attachShadow({ mode: "open" });
+                let wrapper
+                try {
+                    wrapper = shadowWrapper.attachShadow({ mode: "open" });
+                } catch (e) {
+                    wrapper = shadowWrapper._attachShadow({ mode: "open" });
+                }
+
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
                 wrapper.innerHTML = `<div id="videoTogetherFlyPannel">
@@ -636,7 +642,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = this.generateUUID();
-            this.version = '1663161351';
+            this.version = '1664372256';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1249,7 +1255,7 @@
                             let state = this.GetRoomState("");
                             this.sendMessageToTop(MessageType.SetTabStorage, state);
                         }
-                        if(this.PlayAdNow()){
+                        if (this.PlayAdNow()) {
                             throw new Error("广告中");
                         }
                         let video = this.GetVideoDom();
