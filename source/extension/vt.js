@@ -15,6 +15,256 @@
     const KRAKEN_API = 'https://rpc.kraken.fm';
     const ICE_POLICY = 'relay';
 
+    /**
+     * @returns {Element}
+     */
+    function select(query) {
+        e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
+        if (!e._hide) e._hide = () => hide(e);
+        if (!e._show) e._show = () => show(e);
+        return e;
+    }
+
+    function hide(e) {
+        if (e) e.style.display = 'none';
+    }
+
+    function show(e) {
+        if (e) e.style.display = null;
+    }
+
+    const VoiceStatus = {
+        WAIT: 0,
+        STOP: 1,
+        START: 2,
+        MUTED: 3
+    }
+    const Voice = {
+        status: VoiceStatus.WAIT,
+        _conn: null,
+        set conn(conn) {
+            this._conn = conn;
+        },
+        /**
+         * @return {RTCPeerConnection}
+         */
+        get conn() {
+            return this._conn
+        },
+        join: async function (name, rname) {
+            let uid = generateUUID();
+            const rnameRPC = encodeURIComponent(rname);
+            const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
+            let ucid = "";
+            console.log(rnameRPC, uid);
+            const configuration = {
+                bundlePolicy: 'max-bundle',
+                rtcpMuxPolicy: 'require',
+                sdpSemantics: 'unified-plan'
+            };
+
+            async function subscribe(pc) {
+                var res = await rpc('subscribe', [rnameRPC, unameRPC, ucid]);
+                if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
+                    console.log("close !!!!!!!!!!!!")
+                    pc.close();
+                    await start();
+                    return;
+                }
+                if (res.data) {
+                    var jsep = JSON.parse(res.data.jsep);
+                    if (jsep.type == 'offer') {
+                        await pc.setRemoteDescription(jsep);
+                        var sdp = await pc.createAnswer();
+                        await pc.setLocalDescription(sdp);
+                        await rpc('answer', [rnameRPC, unameRPC, ucid, JSON.stringify(sdp)]);
+                    }
+                }
+                setTimeout(function () {
+                    if (Voice.conn != null) {
+                        subscribe(pc);
+                        console.log("!!!!!!!!!!!!");
+                    }else{
+                        console.log("????");
+                    }
+                }, 3000);
+            }
+
+
+
+            await start();
+            Voice.status = VoiceStatus.STOP;
+            async function start() {
+
+                let res = await rpc('turn', [unameRPC]);
+                if (res.data && res.data.length > 0) {
+                    configuration.iceServers = res.data;
+                    configuration.iceTransportPolicy = 'relay';
+                }
+
+                Voice.conn = new RTCPeerConnection(configuration);
+
+                Voice.conn.onicecandidate = ({ candidate }) => {
+                    rpc('trickle', [rnameRPC, unameRPC, ucid, JSON.stringify(candidate)]);
+                };
+
+                Voice.conn.ontrack = (event) => {
+                    console.log("ontrack", event);
+
+                    let stream = event.streams[0];
+                    let sid = decodeURIComponent(stream.id);
+                    let id = sid.split(':')[0];
+                    // var name = Base64.decode(sid.split(':')[1]);
+                    console.log(id, uid);
+                    if (id === uid) {
+                        return;
+                    }
+                    console.log("1!!!!",id, uid);
+                    event.track.onmute = (event) => {
+                        console.log("onmute", event);
+                    };
+
+                    let aid = 'peer-audio-' + id;
+                    let el = document.getElementById(aid);
+                    if (el) {
+                        el.srcObject = stream;
+                    } else {
+                        el = document.createElement(event.track.kind)
+                        el.id = aid;
+                        el.srcObject = stream;
+                        el.autoplay = true;
+                        el.controls = false;
+                        select('#peer').appendChild(el);
+                    }
+                };
+
+                let silence = () => {
+                    let ctx = new AudioContext(), oscillator = ctx.createOscillator();
+                    let dst = oscillator.connect(ctx.createMediaStreamDestination());
+                    oscillator.start();
+                    return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false });
+                }
+                
+                Voice.conn.addTrack(silence());
+
+                console.log(silence());
+                await Voice.conn.setLocalDescription(await Voice.conn.createOffer());
+                res = await rpc('publish', [rnameRPC, unameRPC, JSON.stringify(Voice.conn.localDescription)]);
+                if (res.data) {
+                    var jsep = JSON.parse(res.data.jsep);
+                    if (jsep.type == 'answer') {
+                        await Voice.conn.setRemoteDescription(jsep);
+                        ucid = res.data.track;
+                        await subscribe(Voice.conn);
+                    }
+                }
+            }
+
+            async function rpc(method, params = []) {
+                try {
+                    const response = await fetch(KRAKEN_API, {
+                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                        mode: 'cors', // no-cors, *cors, same-origin
+                        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                        credentials: 'omit', // include, *same-origin, omit
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        redirect: 'follow', // manual, *follow, error
+                        referrerPolicy: 'no-referrer', // no-referrer, *client
+                        body: JSON.stringify({ id: generateUUID(), method: method, params: params }) // body data type must match "Content-Type" header
+                    });
+                    return response.json(); // parses JSON response into native JavaScript objects
+                } catch (err) {
+                    console.log('fetch error', method, params, err);
+                    await new Promise(r => setTimeout(r, 1000));
+                    return await rpc(method, params);
+                }
+            }
+        },
+        stop: () => {
+
+        },
+
+        start: () => {
+
+        },
+        mute: () => {
+
+        },
+        resume: () => {
+
+        }
+    }
+
+    let micStream = null;
+
+    async function stopVoice() {
+        Voice.status = VoiceStatus.STOP;
+        console.log("stop voice");
+        if (micStream != null) {
+            micStream.getTracks().forEach(function (track) {
+                track.stop();
+            });
+        }
+        [...select('#peer').querySelectorAll("*")].forEach(e=>e.remove());
+        Voice.conn.close();
+        Voice.conn = null;
+        micStream = null;
+    }
+
+    function muteVoice() {
+        Voice.status = VoiceStatus.MUTED;
+        micStream.getTracks().forEach(function (track) {
+            track.enabled = false;
+        });
+    }
+
+    function resumeVoice() {
+        Voice.status = VoiceStatus.START;
+        micStream.getTracks().forEach(function (track) {
+            track.enabled = true;
+        });
+    }
+
+    async function startVoice() {
+        stopVoice();
+
+        let rname = window.videoTogetherExtension.roomName;
+
+        const constraints = {
+            audio: {
+                echoCancellation: false,
+                noiseSuppression: false
+            },
+            video: false
+        };
+
+        const audioCtx = new AudioContext();
+        try {
+            micStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
+
+        audioCtx.resume();
+
+        micStream.getTracks().forEach((track) => {
+            Voice.conn.addTrack(track, micStream);
+        });
+
+    }
+
+
+    function generateUUID() {
+        if (crypto.randomUUID != undefined) {
+            return crypto.randomUUID();
+        }
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
 
     /**
      *
@@ -22,7 +272,7 @@
      *  http://www.webtoolkit.info
      *
      **/
-    var Base64 = {
+    const Base64 = {
 
         // private property
         _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
@@ -200,8 +450,26 @@
                 this.helpButton = wrapper.querySelector("#videoTogetherHelpButton");
                 this.videoTogetherAudio = wrapper.querySelector("#videoTogetherAudio");
                 this.videoTogetherMic = wrapper.querySelector("#videoTogetherMic");
-                this.videoTogetherMic.onclick = ()=>{
-                    window.videoTogetherExtension.StartVoice();
+
+                this.videoTogetherMic.onclick = async () => {
+                    let disabledMic = select("#disabledMic");
+                    switch (Voice.status) {
+                        case VoiceStatus.STOP: {
+                            await startVoice();
+                            hide(disabledMic);
+                            break;
+                        }
+                        case VoiceStatus.START: {
+                            muteVoice();
+                            show(disabledMic);
+                            break;
+                        }
+                        case VoiceStatus.MUTED: {
+                            resumeVoice();
+                            hide(disabledMic);
+                            break;
+                        }
+                    }
                 }
 
                 this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
@@ -259,8 +527,8 @@
                 this.SaveIsMinimized(true);
             }
             this.disableDefaultSize = true;
-            this.videoTogetherFlyPannel.style.display = "none";
-            this.videoTogetherSamllIcon.style.display = "block"
+            hide(this.videoTogetherFlyPannel);
+            show(this.videoTogetherSamllIcon);
         }
 
         Maximize(isDefault = false) {
@@ -268,8 +536,8 @@
                 this.SaveIsMinimized(false);
             }
             this.disableDefaultSize = true;
-            this.videoTogetherFlyPannel.style.display = "block";
-            this.videoTogetherSamllIcon.style.display = "none"
+            show(this.videoTogetherFlyPannel);
+            hide(this.videoTogetherSamllIcon);
         }
 
         SaveIsMinimized(minimized) {
@@ -307,9 +575,9 @@
             voiceRoomIframe.src = url;
             voiceRoomIframe.id = "videoTogetherVoiceIframe"
             voiceRoomIframe.allow = "camera;microphone"
-            voiceRoomIframe.style.display = "None";
+            hide(voiceRoomIframe);
             document.body.appendChild(voiceRoomIframe);
-            // this.voiceButton.style = "display: None";
+            // this.voiceButton)
             this.videoTogetherVideoVolumeDown.style = "";
             this.videoTogetherVideoVolumeUp.style = "";
         }
@@ -334,16 +602,18 @@
         InRoom() {
             this.Maximize();
             this.inputRoomName.disabled = true;
-            this.createRoomButton.style = "display: None";
-            this.joinRoomButton.style = "display: None";
+            hide(this.createRoomButton)
+            hide(this.joinRoomButton)
             this.exitButton.style = "";
             this.videoTogetherMic.style = "";
             this.videoTogetherAudio.style = "";
-            this.inputRoomPasswordLabel.style.display = "None";
-            this.inputRoomPassword.style.display = "None";
-            this.videoTogetherVideoVolumeDown.style = "display: None";
-            this.videoTogetherVideoVolumeUp.style = "display: None";
+            hide(this.inputRoomPasswordLabel);
+            hide(this.inputRoomPassword);
+            hide(this.videoTogetherVideoVolumeDown)
+            hide(this.videoTogetherVideoVolumeUp)
             this.isInRoom = true;
+
+            Voice.join(generateUUID(),window.videoTogetherExtension.roomName);
         }
 
         InLobby(init = false) {
@@ -355,12 +625,12 @@
             this.inputRoomPassword.style.display = "inline-block";
             this.createRoomButton.style = "";
             this.joinRoomButton.style = "";
-            this.exitButton.style = "display: None";
-            this.videoTogetherMic.style = "display: None";
-            this.videoTogetherAudio.style = "display: None";
+            hide(this.exitButton)
+            hide(this.videoTogetherMic)
+            hide(this.videoTogetherAudio)
 
-            this.videoTogetherVideoVolumeDown.style = "display: None";
-            this.videoTogetherVideoVolumeUp.style = "display: None";
+            hide(this.videoTogetherVideoVolumeDown)
+            hide(this.videoTogetherVideoVolumeUp)
             this.isInRoom = false;
         }
 
@@ -486,7 +756,7 @@
             this.timeOffset = 0;
 
             this.activatedVideo = undefined;
-            this.tempUser = this.generateUUID();
+            this.tempUser = generateUUID();
             this.version = '{{timestamp}}';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
@@ -563,22 +833,13 @@
             }
         }
 
-        generateUUID() {
-            if (crypto.randomUUID != undefined) {
-                return crypto.randomUUID();
-            }
-            return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-            );
-        }
-
         PostMessage(window, data) {
             if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
                 window.postMessage(data, "*");
             } else {
                 if (!this.NativePostMessageFunction) {
                     let temp = document.createElement("iframe");
-                    temp.style.display = 'None';
+                    hide(temp);
                     document.body.append(temp);
                     this.NativePostMessageFunction = temp.contentWindow.postMessage;
                 }
@@ -598,7 +859,7 @@
             url = url.toString();
             let host = (new URL(url)).host;
             if (this.cspBlockedHost[host]) {
-                let id = this.generateUUID()
+                let id = generateUUID()
                 return await new Promise((resolve, reject) => {
                     this.callbackMap.set(id, (data) => {
                         if (data.data) {
@@ -630,7 +891,7 @@
             } else {
                 if (!this.NativeFetchFunction) {
                     let temp = document.createElement("iframe");
-                    temp.style.display = 'None';
+                    hide(temp);
                     document.body.append(temp);
                     this.NativeFetchFunction = temp.contentWindow.fetch;
                 }
@@ -838,7 +1099,7 @@
                         }
                     }
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
-                        this.sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: this.generateUUID() });
+                        this.sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
                     if (window.VideoTogetherSettingEnabled == undefined) {
                         try {
@@ -875,7 +1136,7 @@
 
         setActivatedVideoDom(videoDom) {
             if (videoDom.VideoTogetherVideoId == undefined) {
-                videoDom.VideoTogetherVideoId = this.generateUUID();
+                videoDom.VideoTogetherVideoId = generateUUID();
             }
             this.sendMessageToTop(MessageType.ActivatedVideo, new VideoModel(videoDom.VideoTogetherVideoId, videoDom.duration, Date.now() / 1000, Date.now() / 1000));
         }
@@ -994,7 +1255,7 @@
 
         async JoinRoom(name, password) {
             try {
-                this.tempUser = this.generateUUID();
+                this.tempUser = generateUUID();
                 let data = await this.RunWithRetry(async () => await this.GetRoom(name, password), 2);
                 this.roomName = name;
                 this.password = password;
@@ -1006,6 +1267,7 @@
         }
 
         exitRoom() {
+            stopVoice();
             this.duration = undefined;
             window.videoTogetherFlyPannel.inputRoomName.value = "";
             window.videoTogetherFlyPannel.inputRoomPassword.value = "";
@@ -1022,7 +1284,7 @@
             try {
                 await this.ForEachVideo(video => {
                     if (video.VideoTogetherVideoId == undefined) {
-                        video.VideoTogetherVideoId = _this.generateUUID();
+                        video.VideoTogetherVideoId = generateUUID();
                     }
                     if (video instanceof VideoWrapper) {
                         // ad hoc
@@ -1325,7 +1587,7 @@
 
         async CreateRoom(name, password) {
             try {
-                this.tempUser = this.generateUUID();
+                this.tempUser = generateUUID();
                 let url = this.linkWithoutState(window.location);
                 let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0), 2);
                 this.setRole(this.RoleEnum.Master);
@@ -1383,167 +1645,6 @@
             let data = await this.CheckResponse(response);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
-        }
-
-        StartVoice() {
-            let _this = this;
-            let rname = this.roomName
-            let uid = localStorage.getItem('uid');
-            if (!uid) {
-                uid = this.generateUUID();
-                localStorage.setItem('uid', uid);
-            }
-            const rnameRPC = encodeURIComponent(rname);
-            const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(_this.generateUUID()));
-            let ucid = "";
-            console.log(rnameRPC, unameRPC);
-            const constraints = {
-                audio: {
-                    echoCancellation: false,
-                    noiseSuppression: false
-                },
-                video: false
-            };
-            const configuration = {
-                bundlePolicy: 'max-bundle',
-                rtcpMuxPolicy: 'require',
-                sdpSemantics: 'unified-plan'
-            };
-
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const audioCtx = new AudioContext();
-            async function subscribe(pc) {
-                var res = await rpc('subscribe', [rnameRPC, unameRPC, ucid]);
-                if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
-                    pc.close();
-                    await start();
-                    return;
-                }
-                if (res.data) {
-                    var jsep = JSON.parse(res.data.jsep);
-                    if (jsep.type == 'offer') {
-                        await pc.setRemoteDescription(jsep);
-                        var sdp = await pc.createAnswer();
-                        await pc.setLocalDescription(sdp);
-                        await rpc('answer', [rnameRPC, unameRPC, ucid, JSON.stringify(sdp)]);
-                    }
-                }
-                setTimeout(function () {
-                    subscribe(pc);
-                }, 3000);
-            }
-
-            start();
-
-            async function start() {
-                try {
-                    document.querySelectorAll('.peer').forEach((el) => el.remove());
-
-                    var res = await rpc('turn', [unameRPC]);
-                    if (ICE_POLICY === 'relay' && res.data && res.data.length > 0) {
-                        configuration.iceServers = res.data;
-                        configuration.iceTransportPolicy = 'relay';
-                    } else {
-                        configuration.iceServers = [];
-                        configuration.iceTransportPolicy = 'all';
-                    }
-
-                    var pc = new RTCPeerConnection(configuration);
-
-                    pc.onicecandidate = ({ candidate }) => {
-                        rpc('trickle', [rnameRPC, unameRPC, ucid, JSON.stringify(candidate)]);
-                    };
-
-                    pc.ontrack = (event) => {
-                        console.log("ontrack", event);
-
-                        var stream = event.streams[0];
-                        var sid = decodeURIComponent(stream.id);
-                        var id = sid.split(':')[0];
-                        // var name = Base64.decode(sid.split(':')[1]);
-                        console.log(id, uid);
-                        if (id === uid) {
-                            return;
-                        }
-
-                        event.track.onmute = (event) => {
-                            console.log("onmute", event);
-                            var el = document.querySelector(`[data-track-id="${event.target.id}"]`);
-                            if (el) {
-                                el.remove();
-                                resizeVisulizers();
-                            }
-                        };
-
-                        var aid = 'peer-audio-' + id;
-                        var el = document.getElementById(aid);
-                        if (el) {
-                            el.srcObject = stream;
-                        } else {
-                            el = document.createElement(event.track.kind)
-                            el.id = aid;
-                            el.srcObject = stream;
-                            el.autoplay = true;
-                            el.controls = false;
-                            // document.getElementById('peers').appendChild(el)
-                        }
-
-                        // buildCanvas(stream, id, name, event.track.id);
-                        // resizeVisulizers();
-                    };
-
-                    var stream;
-                    try {
-                        stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    } catch (err) {
-                        document.getElementById('microphone').style.display = 'block';
-                        console.error(err);
-                        return;
-                    }
-
-                    audioCtx.resume();
-
-                    stream.getTracks().forEach((track) => {
-                        pc.addTrack(track, stream);
-                    });
-                    await pc.setLocalDescription(await pc.createOffer());
-
-                    res = await rpc('publish', [rnameRPC, unameRPC, JSON.stringify(pc.localDescription)]);
-                    if (res.data) {
-                        var jsep = JSON.parse(res.data.jsep);
-                        if (jsep.type == 'answer') {
-                            await pc.setRemoteDescription(jsep);
-                            ucid = res.data.track;
-                            subscribe(pc);
-                        }
-                    }
-                } catch (err) {
-                    console.error(err);
-                }
-            }
-
-            async function rpc(method, params = []) {
-                try {
-                    const response = await fetch(KRAKEN_API, {
-                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-                        mode: 'cors', // no-cors, *cors, same-origin
-                        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-                        credentials: 'omit', // include, *same-origin, omit
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        redirect: 'follow', // manual, *follow, error
-                        referrerPolicy: 'no-referrer', // no-referrer, *client
-                        body: JSON.stringify({ id: _this.generateUUID(), method: method, params: params }) // body data type must match "Content-Type" header
-                    });
-                    return response.json(); // parses JSON response into native JavaScript objects
-                } catch (err) {
-                    console.log('fetch error', method, params, err);
-                    await new Promise(r => setTimeout(r, 1000));
-                    return await rpc(method, params);
-                }
-            }
-
         }
 
         EnableDraggable() {
