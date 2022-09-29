@@ -1399,8 +1399,8 @@
             console.log(rnameRPC, unameRPC);
             const constraints = {
                 audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true
+                    echoCancellation: false,
+                    noiseSuppression: false
                 },
                 video: false
             };
