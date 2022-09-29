@@ -198,6 +198,11 @@
                 this.voiceButton = wrapper.querySelector("#videoTogetherVoiceButton");
                 this.voiceButton.onclick = this.JoinVoiceRoom.bind(this);
                 this.helpButton = wrapper.querySelector("#videoTogetherHelpButton");
+                this.videoTogetherAudio = wrapper.querySelector("#videoTogetherAudio");
+                this.videoTogetherMic = wrapper.querySelector("#videoTogetherMic");
+                this.videoTogetherMic.onclick = ()=>{
+                    window.videoTogetherExtension.StartVoice();
+                }
 
                 this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
                 this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
@@ -332,7 +337,8 @@
             this.createRoomButton.style = "display: None";
             this.joinRoomButton.style = "display: None";
             this.exitButton.style = "";
-            // this.voiceButton.style = "";
+            this.videoTogetherMic.style = "";
+            this.videoTogetherAudio.style = "";
             this.inputRoomPasswordLabel.style.display = "None";
             this.inputRoomPassword.style.display = "None";
             this.videoTogetherVideoVolumeDown.style = "display: None";
@@ -350,7 +356,9 @@
             this.createRoomButton.style = "";
             this.joinRoomButton.style = "";
             this.exitButton.style = "display: None";
-            // this.voiceButton.style = "display: None";
+            this.videoTogetherMic.style = "display: None";
+            this.videoTogetherAudio.style = "display: None";
+
             this.videoTogetherVideoVolumeDown.style = "display: None";
             this.videoTogetherVideoVolumeUp.style = "display: None";
             this.isInRoom = false;
@@ -1378,6 +1386,7 @@
         }
 
         StartVoice() {
+            let _this = this;
             let rname = this.roomName
             let uid = localStorage.getItem('uid');
             if (!uid) {
@@ -1385,11 +1394,14 @@
                 localStorage.setItem('uid', uid);
             }
             const rnameRPC = encodeURIComponent(rname);
-            const unameRPC = encodeURIComponent(uid);
+            const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(_this.generateUUID()));
             let ucid = "";
-
+            console.log(rnameRPC, unameRPC);
             const constraints = {
-                audio: true,
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true
+                },
                 video: false
             };
             const configuration = {
@@ -1448,7 +1460,7 @@
                         var stream = event.streams[0];
                         var sid = decodeURIComponent(stream.id);
                         var id = sid.split(':')[0];
-                        var name = Base64.decode(sid.split(':')[1]);
+                        // var name = Base64.decode(sid.split(':')[1]);
                         console.log(id, uid);
                         if (id === uid) {
                             return;
@@ -1473,11 +1485,11 @@
                             el.srcObject = stream;
                             el.autoplay = true;
                             el.controls = false;
-                            document.getElementById('peers').appendChild(el)
+                            // document.getElementById('peers').appendChild(el)
                         }
 
-                        buildCanvas(stream, id, name, event.track.id);
-                        resizeVisulizers();
+                        // buildCanvas(stream, id, name, event.track.id);
+                        // resizeVisulizers();
                     };
 
                     var stream;
@@ -1488,9 +1500,7 @@
                         console.error(err);
                         return;
                     }
-                    buildCanvas(stream, uid, name, 'me');
-                    resizeVisulizers();
-                    handlePartyPerform();
+
                     audioCtx.resume();
 
                     stream.getTracks().forEach((track) => {
@@ -1524,11 +1534,12 @@
                         },
                         redirect: 'follow', // manual, *follow, error
                         referrerPolicy: 'no-referrer', // no-referrer, *client
-                        body: JSON.stringify({ id: uuidv4(), method: method, params: params }) // body data type must match "Content-Type" header
+                        body: JSON.stringify({ id: _this.generateUUID(), method: method, params: params }) // body data type must match "Content-Type" header
                     });
                     return response.json(); // parses JSON response into native JavaScript objects
                 } catch (err) {
                     console.log('fetch error', method, params, err);
+                    await new Promise(r => setTimeout(r, 1000));
                     return await rpc(method, params);
                 }
             }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1662724232
+// @version      1664415119
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1662724232'
+    let version = '1664415119'
     let type = 'website'
     if (type == "Chrome") {
         window.GM = {};
@@ -125,18 +125,14 @@
     }
 
     async function AppendKey(key) {
-        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
-        try {
-            let keys = new Set(JSON.parse(keysStr));
-            keys.add(key);
-            await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
-        } catch (e) {
-            await GM.setValue("VideoTogetherKeys", "[]");
-        }
+        let keysStr = await GM.getValue("VideoTogetherKeys");
+        let keys = new Set(JSON.parse(keysStr));
+        keys.add(key);
+        await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
     }
 
     async function GetKeys() {
-        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
+        let keysStr = await GM.getValue("VideoTogetherKeys");
         try {
             let keys = new Set(JSON.parse(keysStr));
             return Array.from(keys);

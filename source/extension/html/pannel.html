@@ -31,6 +31,7 @@
       </span>
     </button>
   </div>
+
   <div class="vt-modal-content">
     <div class="vt-modal-body">
       <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
@@ -44,6 +45,9 @@
         <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="{$password_input_placeholder$}">
       </div>
     </div>
+    <!-- <div>
+      <p>123</p>
+    </div> -->
     <div class="vt-modal-footer">
       <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
         <span>{$create_room_button$}</span>
@@ -58,7 +62,7 @@
         <span>{$voice_call_button$}</span>
       </button>
 
-      <button id="videoTogetherMic" type="button" aria-label="Close" class="vt-modal-audio vt-modal-title-button">
+      <button id="videoTogetherAudio" style="display: none;" type="button" aria-label="Close" class="vt-modal-audio vt-modal-title-button">
         <span class="vt-modal-close-x">
           <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
             <svg width="24px" height="24px" viewBox= "0 0 489.6 489.6" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -91,7 +95,7 @@
         </span>
       </button> -->
   
-      <button id="videoTogetherMic" type="button" aria-label="Close" class="vt-modal-mic vt-modal-title-button">
+      <button id="videoTogetherMic" style="display: none;" type="button" aria-label="Close" class="vt-modal-mic vt-modal-title-button">
         <span class="vt-modal-close-x">
           <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
             <svg width="24px" height="24px" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">

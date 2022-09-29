@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1662465737
+// @version      1664415119
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1662465737'
+    let version = '1664415119'
     let type = 'userscript_beta'
     if (type == "Chrome") {
         window.GM = {};
@@ -125,18 +125,14 @@
     }
 
     async function AppendKey(key) {
-        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
-        try {
-            let keys = new Set(JSON.parse(keysStr));
-            keys.add(key);
-            await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
-        } catch (e) {
-            await GM.setValue("VideoTogetherKeys", "[]");
-        }
+        let keysStr = await GM.getValue("VideoTogetherKeys");
+        let keys = new Set(JSON.parse(keysStr));
+        keys.add(key);
+        await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
     }
 
     async function GetKeys() {
-        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
+        let keysStr = await GM.getValue("VideoTogetherKeys");
         try {
             let keys = new Set(JSON.parse(keysStr));
             return Array.from(keys);
@@ -343,6 +339,12 @@
             break;
         case "userscript_beta":
             script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/main/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
+            break;
+        case "website":
+            script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
+            break;
+        case "website_debug":
+            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
             break;
     }
 
