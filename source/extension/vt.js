@@ -13,15 +13,12 @@
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
 
     const KRAKEN_API = 'https://rpc.kraken.fm';
-    const ICE_POLICY = 'relay';
 
     /**
      * @returns {Element}
      */
     function select(query) {
         e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
-        if (!e._hide) e._hide = () => hide(e);
-        if (!e._show) e._show = () => show(e);
         return e;
     }
 
@@ -34,13 +31,45 @@
     }
 
     const VoiceStatus = {
-        WAIT: 0,
         STOP: 1,
-        START: 2,
-        MUTED: 3
+        MUTED: 2,
+        UNMUTED: 3,
+        ERROR: 4
     }
+
     const Voice = {
-        status: VoiceStatus.WAIT,
+        _status: VoiceStatus.STOP,
+        set status(s) {
+            this._status = s;
+            let disabledMic = select("#disabledMic");
+            let micBtn = select('#micBtn');
+            let audioBtn = select('#audioBtn');
+            let callBtn = select("#callBtn");
+            switch (s) {
+                case VoiceStatus.STOP:
+                    hide(micBtn);
+                    hide(audioBtn);
+                    show(callBtn);
+                    break;
+                case VoiceStatus.MUTED:
+                    show(micBtn);
+                    show(audioBtn);
+                    hide(callBtn);
+                    show(disabledMic);
+                    break;
+                case VoiceStatus.UNMUTED:
+                    show(micBtn);
+                    show(audioBtn);
+                    hide(callBtn);
+                    hide(disabledMic);
+                    break;
+                default:
+                    break;
+            }
+        },
+        get status() {
+            return this._status;
+        },
         _conn: null,
         set conn(conn) {
             this._conn = conn;
@@ -51,7 +80,8 @@
         get conn() {
             return this._conn
         },
-        join: async function (name, rname) {
+        join: async function (name, rname, mutting = false) {
+            hide(select('#callBtn'));
             let uid = generateUUID();
             const rnameRPC = encodeURIComponent(rname);
             const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
@@ -83,9 +113,6 @@
                 setTimeout(function () {
                     if (Voice.conn != null) {
                         subscribe(pc);
-                        console.log("!!!!!!!!!!!!");
-                    }else{
-                        console.log("????");
                     }
                 }, 3000);
             }
@@ -93,7 +120,7 @@
 
 
             await start();
-            Voice.status = VoiceStatus.STOP;
+            Voice.status = mutting ? VoiceStatus.MUTED : VoiceStatus.UNMUTED;
             async function start() {
 
                 let res = await rpc('turn', [unameRPC]);
@@ -119,7 +146,7 @@
                     if (id === uid) {
                         return;
                     }
-                    console.log("1!!!!",id, uid);
+                    console.log("1!!!!", id, uid);
                     event.track.onmute = (event) => {
                         console.log("onmute", event);
                     };
@@ -138,16 +165,25 @@
                     }
                 };
 
-                let silence = () => {
-                    let ctx = new AudioContext(), oscillator = ctx.createOscillator();
-                    let dst = oscillator.connect(ctx.createMediaStreamDestination());
-                    oscillator.start();
-                    return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false });
+                try {
+                    const constraints = {
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false
+                        },
+                        video: false
+                    };
+                    micStream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (err) {
+                    console.error(err);
+                    return;
                 }
-                
-                Voice.conn.addTrack(silence());
 
-                console.log(silence());
+                micStream.getTracks().forEach((track) => {
+                    track.enabled = !mutting;
+                    Voice.conn.addTrack(track, micStream);
+                });
+
                 await Voice.conn.setLocalDescription(await Voice.conn.createOffer());
                 res = await rpc('publish', [rnameRPC, unameRPC, JSON.stringify(Voice.conn.localDescription)]);
                 if (res.data) {
@@ -183,79 +219,39 @@
             }
         },
         stop: () => {
-
-        },
-
-        start: () => {
-
+            if (Voice.status == VoiceStatus.STOP) return;
+            Voice.conn.getSenders().forEach(s => {
+                if (s.track) {
+                    s.track.enabled = stop();
+                }
+            });
+            [...select('#peer').querySelectorAll("*")].forEach(e => e.remove());
+            Voice.conn.close();
+            delete Voice.conn;
+            micStream = null;
+            Voice.status = VoiceStatus.STOP;
         },
         mute: () => {
-
+            console.log("mute");
+            Voice.conn.getSenders().forEach(s => {
+                if (s.track) {
+                    s.track.enabled = false;
+                }
+            });
+            Voice.status = VoiceStatus.MUTED;
         },
-        resume: () => {
-
+        unmute: () => {
+            console.log("unmute");
+            Voice.conn.getSenders().forEach(s => {
+                if (s.track) {
+                    s.track.enabled = true;
+                }
+            });
+            Voice.status = VoiceStatus.UNMUTED;
         }
     }
 
     let micStream = null;
-
-    async function stopVoice() {
-        Voice.status = VoiceStatus.STOP;
-        console.log("stop voice");
-        if (micStream != null) {
-            micStream.getTracks().forEach(function (track) {
-                track.stop();
-            });
-        }
-        [...select('#peer').querySelectorAll("*")].forEach(e=>e.remove());
-        Voice.conn.close();
-        Voice.conn = null;
-        micStream = null;
-    }
-
-    function muteVoice() {
-        Voice.status = VoiceStatus.MUTED;
-        micStream.getTracks().forEach(function (track) {
-            track.enabled = false;
-        });
-    }
-
-    function resumeVoice() {
-        Voice.status = VoiceStatus.START;
-        micStream.getTracks().forEach(function (track) {
-            track.enabled = true;
-        });
-    }
-
-    async function startVoice() {
-        stopVoice();
-
-        let rname = window.videoTogetherExtension.roomName;
-
-        const constraints = {
-            audio: {
-                echoCancellation: false,
-                noiseSuppression: false
-            },
-            video: false
-        };
-
-        const audioCtx = new AudioContext();
-        try {
-            micStream = await navigator.mediaDevices.getUserMedia(constraints);
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-
-        audioCtx.resume();
-
-        micStream.getTracks().forEach((track) => {
-            Voice.conn.addTrack(track, micStream);
-        });
-
-    }
-
 
     function generateUUID() {
         if (crypto.randomUUID != undefined) {
@@ -442,31 +438,30 @@
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
 
+                this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
                 this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
                 this.joinRoomButton = wrapper.querySelector("#videoTogetherJoinButton");
+                this.roomButtonGroup = wrapper.querySelector('#roomButtonGroup');
                 this.exitButton = wrapper.querySelector("#videoTogetherExitButton");
-                this.voiceButton = wrapper.querySelector("#videoTogetherVoiceButton");
-                this.voiceButton.onclick = this.JoinVoiceRoom.bind(this);
+                this.callBtn = wrapper.querySelector("#callBtn");
+                this.callBtn.onclick = () => Voice.join("", window.videoTogetherExtension.roomName);
                 this.helpButton = wrapper.querySelector("#videoTogetherHelpButton");
-                this.videoTogetherAudio = wrapper.querySelector("#videoTogetherAudio");
-                this.videoTogetherMic = wrapper.querySelector("#videoTogetherMic");
+                this.audioBtn = wrapper.querySelector("#audioBtn");
+                this.micBtn = wrapper.querySelector("#micBtn");
 
-                this.videoTogetherMic.onclick = async () => {
-                    let disabledMic = select("#disabledMic");
+                this.micBtn.onclick = async () => {
+                    console.log(Voice.status);
                     switch (Voice.status) {
                         case VoiceStatus.STOP: {
-                            await startVoice();
-                            hide(disabledMic);
+                            await Voice.join();
                             break;
                         }
-                        case VoiceStatus.START: {
-                            muteVoice();
-                            show(disabledMic);
+                        case VoiceStatus.UNMUTED: {
+                            Voice.mute();
                             break;
                         }
                         case VoiceStatus.MUTED: {
-                            resumeVoice();
-                            hide(disabledMic);
+                            Voice.unmute();
                             break;
                         }
                     }
@@ -602,18 +597,14 @@
         InRoom() {
             this.Maximize();
             this.inputRoomName.disabled = true;
-            hide(this.createRoomButton)
-            hide(this.joinRoomButton)
+            hide(this.lobbyBtnGroup)
+            show(this.roomButtonGroup);
             this.exitButton.style = "";
-            this.videoTogetherMic.style = "";
-            this.videoTogetherAudio.style = "";
             hide(this.inputRoomPasswordLabel);
             hide(this.inputRoomPassword);
             hide(this.videoTogetherVideoVolumeDown)
             hide(this.videoTogetherVideoVolumeUp)
             this.isInRoom = true;
-
-            Voice.join(generateUUID(),window.videoTogetherExtension.roomName);
         }
 
         InLobby(init = false) {
@@ -623,12 +614,8 @@
             this.inputRoomName.disabled = false;
             this.inputRoomPasswordLabel.style.display = "inline-block";
             this.inputRoomPassword.style.display = "inline-block";
-            this.createRoomButton.style = "";
-            this.joinRoomButton.style = "";
-            hide(this.exitButton)
-            hide(this.videoTogetherMic)
-            hide(this.videoTogetherAudio)
-
+            show(this.lobbyBtnGroup);
+            hide(this.roomButtonGroup);
             hide(this.videoTogetherVideoVolumeDown)
             hide(this.videoTogetherVideoVolumeUp)
             this.isInRoom = false;
@@ -1214,6 +1201,7 @@
                 let vtRoomName = getFunc("VideoTogetherRoomName");
                 let timestamp = parseFloat(getFunc("VideoTogetherTimestamp"));
                 let password = getFunc("VideoTogetherPassword");
+                let voice = getFunc("VideoTogetherVoice");
                 if (timestamp + 60 < Date.now() / 1000) {
                     return;
                 }
@@ -1227,6 +1215,17 @@
                         window.videoTogetherFlyPannel.inputRoomName.value = vtRoomName;
                         window.videoTogetherFlyPannel.inputRoomPassword.value = password;
                         window.videoTogetherFlyPannel.InRoom();
+                        switch (voice) {
+                            case VoiceStatus.MUTED:
+                                Voice.join("", vtRoomName, true);
+                                break;
+                            case VoiceStatus.UNMUTED:
+                                Voice.join("", vtRoomName, false);
+                                break;
+                            default:
+                                Voice.status = VoiceStatus.STOP;
+                                break;
+                        }
                     }
                 }
             }
@@ -1267,7 +1266,7 @@
         }
 
         exitRoom() {
-            stopVoice();
+            Voice.stop();
             this.duration = undefined;
             window.videoTogetherFlyPannel.inputRoomName.value = "";
             window.videoTogetherFlyPannel.inputRoomPassword.value = "";
@@ -1470,6 +1469,7 @@
                 VideoTogetherPassword: this.password,
                 VideoTogetherRole: this.role,
                 VideoTogetherTimestamp: Date.now() / 1000,
+                VideoTogetherVoice: Voice.status
             }
         }
 
