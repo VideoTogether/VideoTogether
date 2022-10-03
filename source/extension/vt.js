@@ -30,8 +30,25 @@
         if (e) e.style.display = null;
     }
 
+    function dsply(e, _show = true) {
+        _show ? show(e) : hide(e);
+    }
+
+    function initRangeSlider(slider) {
+        const min = slider.min
+        const max = slider.max
+        const value = slider.value
+
+        slider.style.background = `linear-gradient(to right, #1abc9c 0%, #1abc9c ${(value - min) / (max - min) * 100}%, #d7dcdf ${(value - min) / (max - min) * 100}%, #d7dcdf 100%)`
+
+        slider.addEventListener('input', function () {
+            this.style.background = `linear-gradient(to right, #1abc9c 0%, #1abc9c ${(this.value - this.min) / (this.max - this.min) * 100}%, #d7dcdf ${(this.value - this.min) / (this.max - this.min) * 100}%, #d7dcdf 100%)`
+        });
+    }
+
     const VoiceStatus = {
         STOP: 1,
+        CONNECTTING: 5,
         MUTED: 2,
         UNMUTED: 3,
         ERROR: 4
@@ -45,6 +62,9 @@
             let micBtn = select('#micBtn');
             let audioBtn = select('#audioBtn');
             let callBtn = select("#callBtn");
+            let callConnecting = select("#callConnecting");
+            dsply(callConnecting, s == VoiceStatus.CONNECTTING);
+            dsply(callBtn, s==VoiceStatus.STOP);
             switch (s) {
                 case VoiceStatus.STOP:
                     hide(micBtn);
@@ -80,8 +100,20 @@
         get conn() {
             return this._conn
         },
+
+        _stream: null,
+        set stream(s) {
+            this._stream = s;
+        },
+        /**
+         * @return {MediaStream}
+         */
+        get stream() {
+            return this._stream;
+        },
         join: async function (name, rname, mutting = false) {
-            hide(select('#callBtn'));
+            Voice.stop();
+            Voice.status = VoiceStatus.CONNECTTING;
             let uid = generateUUID();
             const rnameRPC = encodeURIComponent(rname);
             const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
@@ -111,7 +143,7 @@
                     }
                 }
                 setTimeout(function () {
-                    if (Voice.conn != null) {
+                    if (Voice.conn != null && pc === Voice.conn && Voice.status != VoiceStatus.STOP) {
                         subscribe(pc);
                     }
                 }, 3000);
@@ -120,7 +152,10 @@
 
 
             await start();
-            Voice.status = mutting ? VoiceStatus.MUTED : VoiceStatus.UNMUTED;
+            if (Voice.status == VoiceStatus.CONNECTTING) {
+                Voice.status = mutting ? VoiceStatus.MUTED : VoiceStatus.UNMUTED;
+            }
+
             async function start() {
 
                 let res = await rpc('turn', [unameRPC]);
@@ -173,15 +208,15 @@
                         },
                         video: false
                     };
-                    micStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 } catch (err) {
                     console.error(err);
                     return;
                 }
 
-                micStream.getTracks().forEach((track) => {
+                Voice.stream.getTracks().forEach((track) => {
                     track.enabled = !mutting;
-                    Voice.conn.addTrack(track, micStream);
+                    Voice.conn.addTrack(track, Voice.stream);
                 });
 
                 await Voice.conn.setLocalDescription(await Voice.conn.createOffer());
@@ -212,6 +247,9 @@
                     });
                     return response.json(); // parses JSON response into native JavaScript objects
                 } catch (err) {
+                    if (Voice.status == VoiceStatus.STOP) {
+                        return;
+                    }
                     console.log('fetch error', method, params, err);
                     await new Promise(r => setTimeout(r, 1000));
                     return await rpc(method, params);
@@ -219,20 +257,28 @@
             }
         },
         stop: () => {
-            if (Voice.status == VoiceStatus.STOP) return;
-            Voice.conn.getSenders().forEach(s => {
-                if (s.track) {
-                    s.track.enabled = stop();
-                }
-            });
+            try {
+                Voice.conn.getSenders().forEach(s => {
+                    if (s.track) {
+                        s.track.stop();
+                    }
+                });
+            } catch (e) { };
+
             [...select('#peer').querySelectorAll("*")].forEach(e => e.remove());
-            Voice.conn.close();
-            delete Voice.conn;
-            micStream = null;
+            try {
+                Voice.conn.close();
+                delete Voice.conn;
+            } catch { }
+            try {
+                Voice.stream.getTracks().forEach(function (track) {
+                    track.stop();
+                });
+                delete Voice.stream;
+            } catch (e) { console.log(e); }
             Voice.status = VoiceStatus.STOP;
         },
         mute: () => {
-            console.log("mute");
             Voice.conn.getSenders().forEach(s => {
                 if (s.track) {
                     s.track.enabled = false;
@@ -241,7 +287,6 @@
             Voice.status = VoiceStatus.MUTED;
         },
         unmute: () => {
-            console.log("unmute");
             Voice.conn.getSenders().forEach(s => {
                 if (s.track) {
                     s.track.enabled = true;
@@ -250,8 +295,6 @@
             Voice.status = VoiceStatus.UNMUTED;
         }
     }
-
-    let micStream = null;
 
     function generateUUID() {
         if (crypto.randomUUID != undefined) {
@@ -448,7 +491,24 @@
                 this.helpButton = wrapper.querySelector("#videoTogetherHelpButton");
                 this.audioBtn = wrapper.querySelector("#audioBtn");
                 this.micBtn = wrapper.querySelector("#micBtn");
+                this.videoVolume = wrapper.querySelector("#videoVolume");
+                this.callVolume = wrapper.querySelector("#callVolume");
+                this.videoVolume.oninput = () => {
+                    window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.videoVolume.value / 100 })
+                }
+                initRangeSlider(this.videoVolume);
+                initRangeSlider(this.callVolume);
+                this.audioBtn.onclick = () => {
+                    let hideMain = select('#mainPannel').style.display == 'none';
 
+                    dsply(select('#mainPannel'), hideMain);
+                    dsply(select('#voicePannel'), !hideMain);
+                    if(!hideMain){
+                        this.audioBtn.style.color='#1890ff';
+                    }else{
+                        this.audioBtn.style.color='#6c6c6c';
+                    }
+                }
                 this.micBtn.onclick = async () => {
                     console.log(Voice.status);
                     switch (Voice.status) {
@@ -1463,13 +1523,23 @@
             if (this.role == this.RoleEnum.Null) {
                 return {};
             }
+
+            let voice = Voice.status;
+            if (voice == VoiceStatus.CONNECTTING) {
+                try {
+                    voice = window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherVoice;
+                } catch {
+                    voice = VoiceStatus.STOP;
+                }
+            }
+
             return {
                 VideoTogetherUrl: link,
                 VideoTogetherRoomName: this.roomName,
                 VideoTogetherPassword: this.password,
                 VideoTogetherRole: this.role,
                 VideoTogetherTimestamp: Date.now() / 1000,
-                VideoTogetherVoice: Voice.status
+                VideoTogetherVoice: voice
             }
         }
 
