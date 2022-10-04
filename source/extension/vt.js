@@ -34,6 +34,57 @@
         _show ? show(e) : hide(e);
     }
 
+    const Global = {
+        NativePostMessageFunction: null
+    }
+
+    function PostMessage(window, data) {
+        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
+            window.postMessage(data, "*");
+        } else {
+            if (!Global.NativePostMessageFunction) {
+                let temp = document.createElement("iframe");
+                hide(temp);
+                document.body.append(temp);
+                Global.NativePostMessageFunction = temp.contentWindow.postMessage;
+            }
+            Global.NativePostMessageFunction.call(window, data, "*");
+        }
+    }
+
+    function sendMessageToTop(type, data) {
+        PostMessage(window.top, {
+            source: "VideoTogether",
+            type: type,
+            data: data
+        });
+    }
+
+    function sendMessageToSelf(type, data) {
+        PostMessage(window, {
+            source: "VideoTogether",
+            type: type,
+            data: data
+        });
+    }
+
+    function sendMessageToSon(type, data) {
+        let iframs = document.getElementsByTagName("iframe");
+        for (let i = 0; i < iframs.length; i++) {
+            PostMessage(iframs[i].contentWindow, {
+                source: "VideoTogether",
+                type: type,
+                data: data,
+                context: {
+                    tempUser: this.tempUser,
+                    videoTitle: this.isMain ? document.title : this.videoTitle,
+                    VideoTogetherStorage: window.VideoTogetherStorage
+                }
+            });
+            // console.info("send ", type, iframs[i].contentWindow, data)
+        }
+    }
+
     function initRangeSlider(slider) {
         const min = slider.min
         const max = slider.max
@@ -64,23 +115,17 @@
             let callBtn = select("#callBtn");
             let callConnecting = select("#callConnecting");
             dsply(callConnecting, s == VoiceStatus.CONNECTTING);
-            dsply(callBtn, s==VoiceStatus.STOP);
+            dsply(callBtn, s == VoiceStatus.STOP);
+            let inCall = (VoiceStatus.UNMUTED == s || VoiceStatus.MUTED==s);
+            dsply(micBtn, inCall);
+            dsply(audioBtn, inCall);
             switch (s) {
                 case VoiceStatus.STOP:
-                    hide(micBtn);
-                    hide(audioBtn);
-                    show(callBtn);
                     break;
                 case VoiceStatus.MUTED:
-                    show(micBtn);
-                    show(audioBtn);
-                    hide(callBtn);
                     show(disabledMic);
                     break;
                 case VoiceStatus.UNMUTED:
-                    show(micBtn);
-                    show(audioBtn);
-                    hide(callBtn);
                     hide(disabledMic);
                     break;
                 default:
@@ -293,6 +338,27 @@
                 }
             });
             Voice.status = VoiceStatus.UNMUTED;
+        },
+        updateVoiceSetting: async (cancellingNoise = false) => {
+            const constraints = {
+                audio: {
+                    echoCancellation: cancellingNoise,
+                    noiseSuppression: cancellingNoise
+                },
+                video: false
+            };
+            try {
+                prevStream = Voice.stream;
+                Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                Voice.conn.getSenders().forEach(s => {
+                    if (s.track) {
+                        console.log(s.track, Voice.stream.getTracks().find(t => t.kind == s.track.kind));
+                        s.replaceTrack(Voice.stream.getTracks().find(t => t.kind == s.track.kind));
+                    }
+                })
+                prevStream.getTracks().forEach(t => t.stop());
+                delete prevStream;
+            } catch (e) { console.log(e); };
         }
     }
 
@@ -492,21 +558,28 @@
                 this.audioBtn = wrapper.querySelector("#audioBtn");
                 this.micBtn = wrapper.querySelector("#micBtn");
                 this.videoVolume = wrapper.querySelector("#videoVolume");
-                this.callVolume = wrapper.querySelector("#callVolume");
+                this.callVolumeSlider = wrapper.querySelector("#callVolume");
+                this.voiceNc = wrapper.querySelector("#voiceNc");
                 this.videoVolume.oninput = () => {
-                    window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.videoVolume.value / 100 })
+                    sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.videoVolume.value / 100 })
+                }
+                this.callVolumeSlider.oninput = () => {
+                    window.videoTogetherExtension.voiceVolume = this.callVolumeSlider.value / 100;
+                }
+                this.voiceNc.oninput = () => {
+                    Voice.updateVoiceSetting(this.voiceNc.checked);
                 }
                 initRangeSlider(this.videoVolume);
-                initRangeSlider(this.callVolume);
+                initRangeSlider(this.callVolumeSlider);
                 this.audioBtn.onclick = () => {
                     let hideMain = select('#mainPannel').style.display == 'none';
 
                     dsply(select('#mainPannel'), hideMain);
                     dsply(select('#voicePannel'), !hideMain);
-                    if(!hideMain){
-                        this.audioBtn.style.color='#1890ff';
-                    }else{
-                        this.audioBtn.style.color='#6c6c6c';
+                    if (!hideMain) {
+                        this.audioBtn.style.color = '#1890ff';
+                    } else {
+                        this.audioBtn.style.color = '#6c6c6c';
                     }
                 }
                 this.micBtn.onclick = async () => {
@@ -542,21 +615,10 @@
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPasswordInput");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
-                this.videoTogetherVideoVolumeDown = wrapper.querySelector("#videoTogetherVideoVolumeDown");
-                this.videoTogetherVideoVolumeUp = wrapper.querySelector("#videoTogetherVideoVolumeUp");
                 this.videoTogetherHeader = wrapper.querySelector("#videoTogetherHeader");
                 this.videoTogetherFlyPannel = wrapper.getElementById("videoTogetherFlyPannel");
                 this.videoTogetherSamllIcon = wrapper.getElementById("videoTogetherSamllIcon");
-                this.videoTogetherVideoVolumeDown.onclick = () => {
-                    this.volume -= 0.1;
-                    this.volume = Math.max(0, this.volume);
-                    window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
-                }
-                this.videoTogetherVideoVolumeUp.onclick = () => {
-                    this.volume += 0.1;
-                    this.volume = Math.min(1, this.volume);
-                    window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.volume })
-                }
+
                 this.volume = 1;
                 this.statusText = wrapper.querySelector("#videoTogetherStatusText");
                 this.InLobby(true);
@@ -632,9 +694,6 @@
             voiceRoomIframe.allow = "camera;microphone"
             hide(voiceRoomIframe);
             document.body.appendChild(voiceRoomIframe);
-            // this.voiceButton)
-            this.videoTogetherVideoVolumeDown.style = "";
-            this.videoTogetherVideoVolumeUp.style = "";
         }
 
         GetSavedRoomInfo() {
@@ -662,8 +721,6 @@
             this.exitButton.style = "";
             hide(this.inputRoomPasswordLabel);
             hide(this.inputRoomPassword);
-            hide(this.videoTogetherVideoVolumeDown)
-            hide(this.videoTogetherVideoVolumeUp)
             this.isInRoom = true;
         }
 
@@ -676,8 +733,6 @@
             this.inputRoomPassword.style.display = "inline-block";
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
-            hide(this.videoTogetherVideoVolumeDown)
-            hide(this.videoTogetherVideoVolumeUp)
             this.isInRoom = false;
         }
 
@@ -811,7 +866,7 @@
             this.callbackMap = new Map;
 
             this.allLinksTargetModified = false;
-
+            this.voiceVolume = 1;
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
@@ -880,19 +935,6 @@
             }
         }
 
-        PostMessage(window, data) {
-            if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
-                window.postMessage(data, "*");
-            } else {
-                if (!this.NativePostMessageFunction) {
-                    let temp = document.createElement("iframe");
-                    hide(temp);
-                    document.body.append(temp);
-                    this.NativePostMessageFunction = temp.contentWindow.postMessage;
-                }
-                this.NativePostMessageFunction.call(window, data, "*");
-            }
-        }
 
         async Fetch(url) {
             url = new URL(url);
@@ -916,7 +958,7 @@
                         }
                         this.callbackMap.delete(id);
                     })
-                    this.sendMessageToTop(MessageType.FetchRequest, {
+                    sendMessageToTop(MessageType.FetchRequest, {
                         id: id,
                         url: url.toString(),
                         method: "GET",
@@ -943,39 +985,6 @@
                     this.NativeFetchFunction = temp.contentWindow.fetch;
                 }
                 return await this.NativeFetchFunction.call(window, url);
-            }
-        }
-
-        sendMessageToTop(type, data) {
-            this.PostMessage(window.top, {
-                source: "VideoTogether",
-                type: type,
-                data: data
-            });
-        }
-
-        sendMessageToSelf(type, data) {
-            this.PostMessage(window, {
-                source: "VideoTogether",
-                type: type,
-                data: data
-            });
-        }
-
-        sendMessageToSon(type, data) {
-            let iframs = document.getElementsByTagName("iframe");
-            for (let i = 0; i < iframs.length; i++) {
-                this.PostMessage(iframs[i].contentWindow, {
-                    source: "VideoTogether",
-                    type: type,
-                    data: data,
-                    context: {
-                        tempUser: this.tempUser,
-                        videoTitle: this.isMain ? document.title : this.videoTitle,
-                        VideoTogetherStorage: window.VideoTogetherStorage
-                    }
-                });
-                // console.info("send ", type, iframs[i].contentWindow, data)
             }
         }
 
@@ -1068,7 +1077,7 @@
 
         UpdateStatusText(text, color) {
             if (window.self != window.top) {
-                this.sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
+                sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
             } else {
                 window.videoTogetherFlyPannel.UpdateStatusText(text + "", color);
             }
@@ -1097,7 +1106,7 @@
                             }
                         }
                     })
-                    this.sendMessageToSon(type, data);
+                    sendMessageToSon(type, data);
                     break;
                 case MessageType.SyncMemberVideo:
                     this.ForEachVideo(async video => {
@@ -1109,7 +1118,7 @@
                             }
                         }
                     })
-                    this.sendMessageToSon(type, data);
+                    sendMessageToSon(type, data);
                     break;
                 case MessageType.GetRoomData:
                     this.duration = data["duration"];
@@ -1124,7 +1133,7 @@
                     this.ForEachVideo(video => {
                         video.volume = data.volume;
                     });
-                    this.sendMessageToSon(type, data);
+                    sendMessageToSon(type, data);
                 case MessageType.FetchResponse: {
                     this.callbackMap.get(data.id)(data);
                     break;
@@ -1146,7 +1155,7 @@
                         }
                     }
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
-                        this.sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
+                        sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
                     if (window.VideoTogetherSettingEnabled == undefined) {
                         try {
@@ -1185,7 +1194,7 @@
             if (videoDom.VideoTogetherVideoId == undefined) {
                 videoDom.VideoTogetherVideoId = generateUUID();
             }
-            this.sendMessageToTop(MessageType.ActivatedVideo, new VideoModel(videoDom.VideoTogetherVideoId, videoDom.duration, Date.now() / 1000, Date.now() / 1000));
+            sendMessageToTop(MessageType.ActivatedVideo, new VideoModel(videoDom.VideoTogetherVideoId, videoDom.duration, Date.now() / 1000, Date.now() / 1000));
         }
 
         addListenerMulti(el, s, fn) {
@@ -1334,12 +1343,18 @@
             this.setRole(this.RoleEnum.Null);
             window.videoTogetherFlyPannel.InLobby();
             let state = this.GetRoomState("");
-            this.sendMessageToTop(MessageType.SetTabStorage, state);
+            sendMessageToTop(MessageType.SetTabStorage, state);
             this.SaveStateToSessionStorageWhenSameOrigin("");
         }
 
         async ScheduledTask() {
-            let _this = this;
+            try {
+                if (this.isMain) {
+                    [...select('#peer').querySelectorAll("*")].forEach(e => {
+                        e.volume = this.voiceVolume;
+                    });
+                }
+            } catch { }
             try {
                 await this.ForEachVideo(video => {
                     if (video.VideoTogetherVideoId == undefined) {
@@ -1347,9 +1362,9 @@
                     }
                     if (video instanceof VideoWrapper) {
                         // ad hoc
-                        this.sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
+                        sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
                     } else {
-                        this.sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000));
+                        sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000));
                     }
                 })
                 this.videoMap.forEach((video, id, map) => {
@@ -1381,7 +1396,7 @@
                     case this.RoleEnum.Master: {
                         if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                             let state = this.GetRoomState("");
-                            this.sendMessageToTop(MessageType.SetTabStorage, state);
+                            sendMessageToTop(MessageType.SetTabStorage, state);
                         }
                         this.SaveStateToSessionStorageWhenSameOrigin("");
                         let video = this.GetVideoDom();
@@ -1395,7 +1410,7 @@
                                 1e9);
                             throw new Error("{$no_video_in_this_page$}");
                         } else {
-                            this.sendMessageToTop(MessageType.SyncMasterVideo, { video: video, password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
+                            sendMessageToTop(MessageType.SyncMasterVideo, { video: video, password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
                         }
                         break;
                     }
@@ -1405,24 +1420,24 @@
                         if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(room["url"]);
-                                this.sendMessageToTop(MessageType.SetTabStorage, state);
+                                sendMessageToTop(MessageType.SetTabStorage, state);
                                 setInterval(() => {
                                     if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == room["url"]) {
                                         this.SetTabStorageSuccessCallback = () => {
-                                            this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                            sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
                                         }
                                     }
                                 }, 200);
                             } else {
                                 if (this.SaveStateToSessionStorageWhenSameOrigin(room["url"])) {
-                                    this.sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                    sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
                                 } else {
-                                    this.sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
+                                    sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
                                 }
                             }
                         } else {
                             let state = this.GetRoomState("");
-                            this.sendMessageToTop(MessageType.SetTabStorage, state);
+                            sendMessageToTop(MessageType.SetTabStorage, state);
                         }
                         if (this.PlayAdNow()) {
                             throw new Error("{$ad_playing$}");
@@ -1431,7 +1446,7 @@
                         if (video == undefined) {
                             throw new Error("{$no_video_in_this_page$}");
                         } else {
-                            this.sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password })
+                            sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password })
                         }
                         break;
                     }
@@ -1596,7 +1611,7 @@
 
         async SyncMemberVideo(data, videoDom) {
             let room = await this.GetRoom(data.roomName, data.password);
-            this.sendMessageToTop(MessageType.GetRoomData, room);
+            sendMessageToTop(MessageType.GetRoomData, room);
 
             // useless
             this.duration = room["duration"];
@@ -1640,7 +1655,7 @@
             if (isNaN(videoDom.duration)) {
                 throw new Error("{$need_to_play_manually$}");
             }
-            this.sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" })
+            sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" })
         }
 
         async CheckResponse(response) {
@@ -1790,7 +1805,7 @@
     if (window.videoTogetherExtension === undefined) {
         window.videoTogetherExtension = null;
         window.videoTogetherExtension = new VideoTogetherExtension();
-        window.videoTogetherExtension.sendMessageToSelf(MessageType.ExtensionInitSuccess, {})
+        sendMessageToSelf(MessageType.ExtensionInitSuccess, {})
     }
     try {
         document.querySelector("#videoTogetherLoading").remove()
