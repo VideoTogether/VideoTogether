@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1664881172
+// @version      1664882386
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1664881172'
+    let version = '1664882386'
     let type = 'userscript_beta'
     if (type == "Chrome") {
         window.GM = {};

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1664881172
+// @version      1664882386
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -156,9 +156,29 @@
         get stream() {
             return this._stream;
         },
-        join: async function (name, rname, mutting = false) {
+
+        _noiseCancellationEnabled: false,
+        set noiseCancellationEnabled(n) {
+            this._noiseCancellationEnabled = n;
+            select('#voiceNc').checked = n;
+            if (this.inCall) {
+                this.updateVoiceSetting(n);
+            }
+        },
+
+        get noiseCancellationEnabled() {
+            return this._noiseCancellationEnabled;
+        },
+
+        get inCall() {
+            return this.status == VoiceStatus.MUTED || this.status == VoiceStatus.UNMUTED;
+        },
+
+        join: async function (name, rname, mutting = false, cancellingNoise = false) {
+            console.log(mutting, cancellingNoise);
             Voice.stop();
             Voice.status = VoiceStatus.CONNECTTING;
+            this.noiseCancellationEnabled = cancellingNoise;
             let uid = generateUUID();
             const rnameRPC = encodeURIComponent(rname);
             const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
@@ -248,8 +268,8 @@
                 try {
                     const constraints = {
                         audio: {
-                            echoCancellation: false,
-                            noiseSuppression: false
+                            echoCancellation: cancellingNoise,
+                            noiseSuppression: cancellingNoise
                         },
                         video: false
                     };
@@ -1192,7 +1212,7 @@
                     window.videoTogetherExtension.voiceVolume = this.callVolumeSlider.value / 100;
                 }
                 this.voiceNc.oninput = () => {
-                    Voice.updateVoiceSetting(this.voiceNc.checked);
+                    Voice.noiseCancellationEnabled = this.voiceNc.checked;
                 }
                 initRangeSlider(this.videoVolume);
                 initRangeSlider(this.callVolumeSlider);
@@ -1484,7 +1504,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateUUID();
-            this.version = '1664881172';
+            this.version = '1664882386';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1896,6 +1916,7 @@
                 let timestamp = parseFloat(getFunc("VideoTogetherTimestamp"));
                 let password = getFunc("VideoTogetherPassword");
                 let voice = getFunc("VideoTogetherVoice");
+                let ns = getFunc("VideoTogetherNoiseCancellation");
                 if (timestamp + 60 < Date.now() / 1000) {
                     return;
                 }
@@ -1911,10 +1932,10 @@
                         window.videoTogetherFlyPannel.InRoom();
                         switch (voice) {
                             case VoiceStatus.MUTED:
-                                Voice.join("", vtRoomName, true);
+                                Voice.join("", vtRoomName, true, ns);
                                 break;
                             case VoiceStatus.UNMUTED:
-                                Voice.join("", vtRoomName, false);
+                                Voice.join("", vtRoomName, false, ns);
                                 break;
                             default:
                                 Voice.status = VoiceStatus.STOP;
@@ -2179,7 +2200,8 @@
                 VideoTogetherPassword: this.password,
                 VideoTogetherRole: this.role,
                 VideoTogetherTimestamp: Date.now() / 1000,
-                VideoTogetherVoice: voice
+                VideoTogetherVoice: voice,
+                VideoTogetherNoiseCancellation: Voice.noiseCancellationEnabled
             }
         }
 
