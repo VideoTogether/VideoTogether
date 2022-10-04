@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1664883071
+// @version      1664894198
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -180,7 +180,7 @@
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
             let uid = generateUUID();
-            const rnameRPC = encodeURIComponent(rname);
+            const rnameRPC = encodeURIComponent("VideoTogether_" + rname);
             const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
             let ucid = "";
             console.log(rnameRPC, uid);
@@ -1237,6 +1237,7 @@
                     console.log(Voice.status);
                     switch (Voice.status) {
                         case VoiceStatus.STOP: {
+                            // TODO need fix
                             await Voice.join();
                             break;
                         }
@@ -1510,7 +1511,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateUUID();
-            this.version = '1664883071';
+            this.version = '1664894198';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

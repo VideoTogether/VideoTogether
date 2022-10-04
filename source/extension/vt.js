@@ -180,7 +180,7 @@
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
             let uid = generateUUID();
-            const rnameRPC = encodeURIComponent(rname);
+            const rnameRPC = encodeURIComponent("VideoTogether_" + rname);
             const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
             let ucid = "";
             console.log(rnameRPC, uid);
@@ -612,6 +612,7 @@
                     console.log(Voice.status);
                     switch (Voice.status) {
                         case VoiceStatus.STOP: {
+                            // TODO need fix
                             await Voice.join();
                             break;
                         }
