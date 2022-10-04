@@ -125,18 +125,14 @@
     }
 
     async function AppendKey(key) {
-        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
-        try {
-            let keys = new Set(JSON.parse(keysStr));
-            keys.add(key);
-            await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
-        } catch (e) {
-            await GM.setValue("VideoTogetherKeys", "[]");
-        }
+        let keysStr = await GM.getValue("VideoTogetherKeys");
+        let keys = new Set(JSON.parse(keysStr));
+        keys.add(key);
+        await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
     }
 
     async function GetKeys() {
-        let keysStr = await GM.getValue("VideoTogetherKeys", "[]");
+        let keysStr = await GM.getValue("VideoTogetherKeys");
         try {
             let keys = new Set(JSON.parse(keysStr));
             return Array.from(keys);
@@ -299,7 +295,7 @@
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "userscript_beta":
-            script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/main/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
+            script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "website":
             script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);

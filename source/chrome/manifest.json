@@ -43,6 +43,9 @@
     "icons": {
         "192": "./icon/android-icon-192x192.png"
     },
+    "action": {
+        "default_popup": "popup.html"
+    },
     "permissions": [
         "storage"
     ]

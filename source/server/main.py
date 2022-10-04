@@ -213,6 +213,7 @@ def updateRoom():
         room.duration = float(request.args["duration"])
         if not (room.duration > 0):
             # fix NaN
+            # TODO inf
             room.duration = 1e9
     room.lastUpdateServerTime = time.time()
 
