@@ -20,7 +20,7 @@ QQ群: 170200260
 使用说明：http://2gether.video/guide/introduction.html
 
 
-测试版安装：https://github.com/VideoTogether/VideoTogether/raw/main/release/extension.beta.user.js
+测试版安装：https://github.com/VideoTogether/VideoTogether/raw/voice/release/extension.beta.user.js
 
 测试版使用过程中可能会遇到各种问题，欢迎反馈测试中遇到的问题
 

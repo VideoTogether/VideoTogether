@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1664450889
+// @version      1664869557
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -13,8 +13,297 @@
     const vtRuntime = `website`;
 
     const KRAKEN_API = 'https://rpc.kraken.fm';
-    const ICE_POLICY = 'relay';
 
+    /**
+     * @returns {Element}
+     */
+    function select(query) {
+        e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
+        return e;
+    }
+
+    function hide(e) {
+        if (e) e.style.display = 'none';
+    }
+
+    function show(e) {
+        if (e) e.style.display = null;
+    }
+
+    function dsply(e, _show = true) {
+        _show ? show(e) : hide(e);
+    }
+
+    function initRangeSlider(slider) {
+        const min = slider.min
+        const max = slider.max
+        const value = slider.value
+
+        slider.style.background = `linear-gradient(to right, #1abc9c 0%, #1abc9c ${(value - min) / (max - min) * 100}%, #d7dcdf ${(value - min) / (max - min) * 100}%, #d7dcdf 100%)`
+
+        slider.addEventListener('input', function () {
+            this.style.background = `linear-gradient(to right, #1abc9c 0%, #1abc9c ${(this.value - this.min) / (this.max - this.min) * 100}%, #d7dcdf ${(this.value - this.min) / (this.max - this.min) * 100}%, #d7dcdf 100%)`
+        });
+    }
+
+    const VoiceStatus = {
+        STOP: 1,
+        CONNECTTING: 5,
+        MUTED: 2,
+        UNMUTED: 3,
+        ERROR: 4
+    }
+
+    const Voice = {
+        _status: VoiceStatus.STOP,
+        set status(s) {
+            this._status = s;
+            let disabledMic = select("#disabledMic");
+            let micBtn = select('#micBtn');
+            let audioBtn = select('#audioBtn');
+            let callBtn = select("#callBtn");
+            let callConnecting = select("#callConnecting");
+            dsply(callConnecting, s == VoiceStatus.CONNECTTING);
+            dsply(callBtn, s==VoiceStatus.STOP);
+            switch (s) {
+                case VoiceStatus.STOP:
+                    hide(micBtn);
+                    hide(audioBtn);
+                    show(callBtn);
+                    break;
+                case VoiceStatus.MUTED:
+                    show(micBtn);
+                    show(audioBtn);
+                    hide(callBtn);
+                    show(disabledMic);
+                    break;
+                case VoiceStatus.UNMUTED:
+                    show(micBtn);
+                    show(audioBtn);
+                    hide(callBtn);
+                    hide(disabledMic);
+                    break;
+                default:
+                    break;
+            }
+        },
+        get status() {
+            return this._status;
+        },
+        _conn: null,
+        set conn(conn) {
+            this._conn = conn;
+        },
+        /**
+         * @return {RTCPeerConnection}
+         */
+        get conn() {
+            return this._conn
+        },
+
+        _stream: null,
+        set stream(s) {
+            this._stream = s;
+        },
+        /**
+         * @return {MediaStream}
+         */
+        get stream() {
+            return this._stream;
+        },
+        join: async function (name, rname, mutting = false) {
+            Voice.stop();
+            Voice.status = VoiceStatus.CONNECTTING;
+            let uid = generateUUID();
+            const rnameRPC = encodeURIComponent(rname);
+            const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
+            let ucid = "";
+            console.log(rnameRPC, uid);
+            const configuration = {
+                bundlePolicy: 'max-bundle',
+                rtcpMuxPolicy: 'require',
+                sdpSemantics: 'unified-plan'
+            };
+
+            async function subscribe(pc) {
+                var res = await rpc('subscribe', [rnameRPC, unameRPC, ucid]);
+                if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
+                    console.log("close !!!!!!!!!!!!")
+                    pc.close();
+                    await start();
+                    return;
+                }
+                if (res.data) {
+                    var jsep = JSON.parse(res.data.jsep);
+                    if (jsep.type == 'offer') {
+                        await pc.setRemoteDescription(jsep);
+                        var sdp = await pc.createAnswer();
+                        await pc.setLocalDescription(sdp);
+                        await rpc('answer', [rnameRPC, unameRPC, ucid, JSON.stringify(sdp)]);
+                    }
+                }
+                setTimeout(function () {
+                    if (Voice.conn != null && pc === Voice.conn && Voice.status != VoiceStatus.STOP) {
+                        subscribe(pc);
+                    }
+                }, 3000);
+            }
+
+
+
+            await start();
+            if (Voice.status == VoiceStatus.CONNECTTING) {
+                Voice.status = mutting ? VoiceStatus.MUTED : VoiceStatus.UNMUTED;
+            }
+
+            async function start() {
+
+                let res = await rpc('turn', [unameRPC]);
+                if (res.data && res.data.length > 0) {
+                    configuration.iceServers = res.data;
+                    configuration.iceTransportPolicy = 'relay';
+                }
+
+                Voice.conn = new RTCPeerConnection(configuration);
+
+                Voice.conn.onicecandidate = ({ candidate }) => {
+                    rpc('trickle', [rnameRPC, unameRPC, ucid, JSON.stringify(candidate)]);
+                };
+
+                Voice.conn.ontrack = (event) => {
+                    console.log("ontrack", event);
+
+                    let stream = event.streams[0];
+                    let sid = decodeURIComponent(stream.id);
+                    let id = sid.split(':')[0];
+                    // var name = Base64.decode(sid.split(':')[1]);
+                    console.log(id, uid);
+                    if (id === uid) {
+                        return;
+                    }
+                    console.log("1!!!!", id, uid);
+                    event.track.onmute = (event) => {
+                        console.log("onmute", event);
+                    };
+
+                    let aid = 'peer-audio-' + id;
+                    let el = document.getElementById(aid);
+                    if (el) {
+                        el.srcObject = stream;
+                    } else {
+                        el = document.createElement(event.track.kind)
+                        el.id = aid;
+                        el.srcObject = stream;
+                        el.autoplay = true;
+                        el.controls = false;
+                        select('#peer').appendChild(el);
+                    }
+                };
+
+                try {
+                    const constraints = {
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false
+                        },
+                        video: false
+                    };
+                    Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (err) {
+                    console.error(err);
+                    return;
+                }
+
+                Voice.stream.getTracks().forEach((track) => {
+                    track.enabled = !mutting;
+                    Voice.conn.addTrack(track, Voice.stream);
+                });
+
+                await Voice.conn.setLocalDescription(await Voice.conn.createOffer());
+                res = await rpc('publish', [rnameRPC, unameRPC, JSON.stringify(Voice.conn.localDescription)]);
+                if (res.data) {
+                    var jsep = JSON.parse(res.data.jsep);
+                    if (jsep.type == 'answer') {
+                        await Voice.conn.setRemoteDescription(jsep);
+                        ucid = res.data.track;
+                        await subscribe(Voice.conn);
+                    }
+                }
+            }
+
+            async function rpc(method, params = []) {
+                try {
+                    const response = await fetch(KRAKEN_API, {
+                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                        mode: 'cors', // no-cors, *cors, same-origin
+                        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                        credentials: 'omit', // include, *same-origin, omit
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        redirect: 'follow', // manual, *follow, error
+                        referrerPolicy: 'no-referrer', // no-referrer, *client
+                        body: JSON.stringify({ id: generateUUID(), method: method, params: params }) // body data type must match "Content-Type" header
+                    });
+                    return response.json(); // parses JSON response into native JavaScript objects
+                } catch (err) {
+                    if (Voice.status == VoiceStatus.STOP) {
+                        return;
+                    }
+                    console.log('fetch error', method, params, err);
+                    await new Promise(r => setTimeout(r, 1000));
+                    return await rpc(method, params);
+                }
+            }
+        },
+        stop: () => {
+            try {
+                Voice.conn.getSenders().forEach(s => {
+                    if (s.track) {
+                        s.track.stop();
+                    }
+                });
+            } catch (e) { };
+
+            [...select('#peer').querySelectorAll("*")].forEach(e => e.remove());
+            try {
+                Voice.conn.close();
+                delete Voice.conn;
+            } catch { }
+            try {
+                Voice.stream.getTracks().forEach(function (track) {
+                    track.stop();
+                });
+                delete Voice.stream;
+            } catch (e) { console.log(e); }
+            Voice.status = VoiceStatus.STOP;
+        },
+        mute: () => {
+            Voice.conn.getSenders().forEach(s => {
+                if (s.track) {
+                    s.track.enabled = false;
+                }
+            });
+            Voice.status = VoiceStatus.MUTED;
+        },
+        unmute: () => {
+            Voice.conn.getSenders().forEach(s => {
+                if (s.track) {
+                    s.track.enabled = true;
+                }
+            });
+            Voice.status = VoiceStatus.UNMUTED;
+        }
+    }
+
+    function generateUUID() {
+        if (crypto.randomUUID != undefined) {
+            return crypto.randomUUID();
+        }
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
 
     /**
      *
@@ -22,7 +311,7 @@
      *  http://www.webtoolkit.info
      *
      **/
-    var Base64 = {
+    const Base64 = {
 
         // private property
         _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
@@ -186,12 +475,14 @@
                 let wrapper = shadowWrapper.attachShadow({ mode: "open" });
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
-                wrapper.innerHTML = `<div id="videoTogetherFlyPannel">
+                wrapper.innerHTML = `<div id="peer" style="display: none;"></div>
+<div id="videoTogetherFlyPannel" style="display: none;">
   <iframe style="display: none;" id="storage" src="https://storage.2gether.video/"></iframe>
 
   <div id="videoTogetherHeader" class="vt-modal-header">
     <div style="display: flex;align-items: center;">
-      <img style="width: 16px; height: 16px;" src="data:image/png;base64,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">
+      <img style="width: 16px; height: 16px;"
+        src="data:image/png;base64,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">
       <div class="vt-modal-title">VideoTogether</div>
     </div>
 
@@ -221,56 +512,102 @@
   </div>
 
   <div class="vt-modal-content">
-    <div class="vt-modal-body">
-      <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
-      <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
-      <div style="margin-bottom: 10px;">
-        <span id="videoTogetherRoomNameLabel">Room:</span>
-        <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="Name of room">
-      </div>
-      <div>
-        <span id="videoTogetherRoomPasswordLabel">Password:</span>
-        <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="Host's password">
-      </div>
-    </div>
-    <!-- <div>
-      <p>123</p>
-    </div> -->
-    <div class="vt-modal-footer">
-      <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
-        <span>Create</span>
-      </button>
-      <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
-        <span>Join</span>
-      </button>
-      <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
-        <span>Exit</span>
-      </button>
-      <button id="videoTogetherVoiceButton" class="vt-btn vt-btn-dangerous" type="button" style="display: none;">
-        <span>Call</span>
-      </button>
 
-      <button id="videoTogetherAudio" style="display: none;" type="button" aria-label="Close" class="vt-modal-audio vt-modal-title-button">
-        <span class="vt-modal-close-x">
-          <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
-            <svg width="24px" height="24px" viewBox= "0 0 489.6 489.6" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M361.1,337.6c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c18.7-26.3,28.5-57.4,28.5-89.9s-9.9-63.6-28.5-89.9
-              c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c15.7,22.1,24,48.3,24,75.8c0,27.4-8.3,53.6-24,75.8
-              C354.3,326.1,355.6,333.7,361.1,337.6z"/>
-            <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M425.4,396.3c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c30.8-43.4,47.1-94.8,47.1-148.6s-16.3-105.1-47.1-148.6
-              c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c27.9,39.3,42.6,85.7,42.6,134.4c0,48.6-14.7,95.1-42.6,134.4
-              C418.6,384.7,419.9,392.3,425.4,396.3z"/>
-            <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M254.7,415.7c4.3,2.5,9.2,3.8,14.2,3.8l0,0c7.4,0,14.4-2.8,19.7-7.9c5.6-5.4,8.7-12.6,8.7-20.4V98.5
-              c0-15.7-12.7-28.4-28.4-28.4c-4.9,0-9.8,1.3-14.2,3.8c-0.3,0.2-0.6,0.3-0.8,0.5l-100.1,69.2H73.3C32.9,143.6,0,176.5,0,216.9v55.6
-              c0,40.4,32.9,73.3,73.3,73.3h84.5l95.9,69.2C254,415.3,254.4,415.5,254.7,415.7z M161.8,321.3H73.3c-26.9,0-48.8-21.9-48.8-48.8
-              v-55.6c0-26.9,21.9-48.8,48.8-48.8h84.3c2.5,0,4.9-0.8,7-2.2l102.7-71c0.5-0.3,1.1-0.4,1.6-0.4c1.6,0,3.9,1.2,3.9,3.9v292.7
-              c0,1.1-0.4,2-1.1,2.8c-0.7,0.7-1.8,1.1-2.7,1.1c-0.5,0-1-0.1-1.5-0.3l-98.4-71.1C166.9,322.1,164.4,321.3,161.8,321.3z"/>
+    <div class="vt-modal-body">
+      <div id="mainPannel" class="content" >
+        <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
+        <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
+        <div style="margin-bottom: 10px;">
+          <span id="videoTogetherRoomNameLabel">Room:</span>
+          <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="Name of room">
+        </div>
+        <div>
+          <span id="videoTogetherRoomPasswordLabel">Password:</span>
+          <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="Host's password">
+        </div>
+        </div>
+        
+        <div id="voicePannel" class="content" style="display: none;">
+        <div style="margin-top: 5px;width: 100%;text-align: left;">
+          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Voide volume</span>
+          <div class="range-slider">
+            <input id="videoVolume" class="slider" type="range" value="100" min="0" max="100">
+          </div>
+
+        </div>
+        <div style="margin-top: 5px;width: 100%;text-align: left;">
+          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Call Volume</span>
+          <div class="range-slider">
+            <input id="callVolume" class="slider" type="range" value="100" min="0" max="100">
+          </div>
+        </div>
+        <div style="margin-top: 5px;width: 100%;text-align: left;">
+          <span style="margin-top: 0px;display: inline-block;margin-left: 20px; margin-right: 10px;">Noise cancelling voice</span>
+            <label class="toggler-wrapper style-1">
+              <input type="checkbox">
+              <div class="toggler-slider">
+                <div class="toggler-knob"></div>
+              </div>
+            </label>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="vt-modal-footer">
+      <div id="lobbyBtnGroup">
+        <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
+          <span>Create</span>
+        </button>
+        <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
+          <span>Join</span>
+        </button>
+      </div>
+
+
+      <div id="roomButtonGroup" style="display: none;">
+
+        <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button">
+          <span>Exit</span>
+        </button>
+
+        <button id="callBtn" class="vt-btn vt-btn-dangerous" type="button">
+          <span>Call</span>
+        </button>
+
+
+        <div id="callConnecting" class="lds-ellipsis" style="display: none;">
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+        <button id="audioBtn" style="display: none;" type="button" aria-label="Close"
+          class="vt-modal-audio vt-modal-title-button">
+          <span class="vt-modal-close-x">
+            <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
+              <svg width="24px" height="24px" viewBox="0 0 489.6 489.6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M361.1,337.6c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c18.7-26.3,28.5-57.4,28.5-89.9s-9.9-63.6-28.5-89.9
+                c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c15.7,22.1,24,48.3,24,75.8c0,27.4-8.3,53.6-24,75.8
+                C354.3,326.1,355.6,333.7,361.1,337.6z" />
+                <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M425.4,396.3c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c30.8-43.4,47.1-94.8,47.1-148.6s-16.3-105.1-47.1-148.6
+                c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c27.9,39.3,42.6,85.7,42.6,134.4c0,48.6-14.7,95.1-42.6,134.4
+                C418.6,384.7,419.9,392.3,425.4,396.3z" />
+                <path stroke="currentColor" stroke-width="16" fill="currentColor"
+                  d="M254.7,415.7c4.3,2.5,9.2,3.8,14.2,3.8l0,0c7.4,0,14.4-2.8,19.7-7.9c5.6-5.4,8.7-12.6,8.7-20.4V98.5
+                c0-15.7-12.7-28.4-28.4-28.4c-4.9,0-9.8,1.3-14.2,3.8c-0.3,0.2-0.6,0.3-0.8,0.5l-100.1,69.2H73.3C32.9,143.6,0,176.5,0,216.9v55.6
+                c0,40.4,32.9,73.3,73.3,73.3h84.5l95.9,69.2C254,415.3,254.4,415.5,254.7,415.7z M161.8,321.3H73.3c-26.9,0-48.8-21.9-48.8-48.8
+                v-55.6c0-26.9,21.9-48.8,48.8-48.8h84.3c2.5,0,4.9-0.8,7-2.2l102.7-71c0.5-0.3,1.1-0.4,1.6-0.4c1.6,0,3.9,1.2,3.9,3.9v292.7
+                c0,1.1-0.4,2-1.1,2.8c-0.7,0.7-1.8,1.1-2.7,1.1c-0.5,0-1-0.1-1.5-0.3l-98.4-71.1C166.9,322.1,164.4,321.3,161.8,321.3z" />
               </svg>
+            </span>
           </span>
-        </span>
-      </button>
-  
-  
+        </button>
+      </div>
+
+
+
       <!-- <button id="videoTogetherMic" type="button" aria-label="Close" class="vt-modal-mic vt-modal-title-button">
         <span class="vt-modal-close-x">
           <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
@@ -282,17 +619,34 @@
           </span>
         </span>
       </button> -->
-  
-      <button id="videoTogetherMic" style="display: none;" type="button" aria-label="Close" class="vt-modal-mic vt-modal-title-button">
+
+      <button id="micBtn" style="display: none;" type="button" aria-label="Close"
+        class="vt-modal-mic vt-modal-title-button">
         <span class="vt-modal-close-x">
           <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
             <svg width="24px" height="24px" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" fill="white" fill-opacity="0"/>
-              <path d="M31 24V11C31 7.13401 27.866 4 24 4C20.134 4 17 7.13401 17 11V24C17 27.866 20.134 31 24 31C27.866 31 31 27.866 31 24Z" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
-              <path d="M9 23C9 31.2843 15.7157 38 24 38C25.7532 38 27.4361 37.6992 29 37.1465M39 23C39 25.1333 38.5547 27.1626 37.7519 29" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M24 38V44" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M42 42L6 6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+              <rect width="48" height="48" fill="white" fill-opacity="0" />
+              <path
+                d="M31 24V11C31 7.13401 27.866 4 24 4C20.134 4 17 7.13401 17 11V24C17 27.866 20.134 31 24 31C27.866 31 31 27.866 31 24Z"
+                stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+              <path d="M9 23C9 31.2843 15.7157 38 24 38C32.2843 38 39 31.2843 39 23" stroke="currentColor"
+                stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M24 38V44" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path id="disabledMic" d="M42 42L6 6" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            <svg id="enabledMic" style="display: none;" width="24px" height="24px" viewBox="0 0 48 48" fill="none"
+              xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" fill="white" fill-opacity="0" />
+              <path
+                d="M31 24V11C31 7.13401 27.866 4 24 4C20.134 4 17 7.13401 17 11V24C17 27.866 20.134 31 24 31C27.866 31 31 27.866 31 24Z"
+                stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+              <path d="M9 23C9 31.2843 15.7157 38 24 38C32.2843 38 39 31.2843 39 23" stroke="currentColor"
+                stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M24 38V44" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
           </span>
         </span>
       </button>
@@ -318,7 +672,7 @@
 <style>
   #videoTogetherFlyPannel {
     background-color: #ffffff !important;
-    display: none;
+    display: block;
     z-index: 2147483647;
     position: fixed;
     bottom: 15px;
@@ -344,6 +698,11 @@
     height: 100%;
   }
 
+  #roomButtonGroup,
+  #lobbyBtnGroup,
+  .content {
+    display: contents;
+  }
 
   .vt-modal-audio {
     position: absolute;
@@ -422,6 +781,7 @@
   }
 
   .vt-modal-body {
+    height: 100px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -553,22 +913,249 @@
     border: 1px solid #e9e9e9 !important;
     margin: 0 !important;
   }
+
+  .lds-ellipsis {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 32px;
+  }
+
+  .lds-ellipsis div {
+    position: absolute;
+    top: 8px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #6c6c6c;
+    animation-timing-function: cubic-bezier(0, 1, 1, 0);
+  }
+
+  .lds-ellipsis div:nth-child(1) {
+    left: 8px;
+    animation: lds-ellipsis1 0.6s infinite;
+  }
+
+  .lds-ellipsis div:nth-child(2) {
+    left: 8px;
+    animation: lds-ellipsis2 0.6s infinite;
+  }
+
+  .lds-ellipsis div:nth-child(3) {
+    left: 32px;
+    animation: lds-ellipsis2 0.6s infinite;
+  }
+
+  .lds-ellipsis div:nth-child(4) {
+    left: 56px;
+    animation: lds-ellipsis3 0.6s infinite;
+  }
+
+  @keyframes lds-ellipsis1 {
+    0% {
+      transform: scale(0);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes lds-ellipsis3 {
+    0% {
+      transform: scale(1);
+    }
+
+    100% {
+      transform: scale(0);
+    }
+  }
+
+  @keyframes lds-ellipsis2 {
+    0% {
+      transform: translate(0, 0);
+    }
+
+    100% {
+      transform: translate(24px, 0);
+    }
+  }
+
+
+
+
+  .range-slider {
+    margin: 0px 0 0 0px;
+    display: inline-block;
+  }
+
+  .range-slider {
+    width: 130px
+  }
+
+  .slider {
+    -webkit-appearance: none;
+    width: calc(100% - (0px));
+    height: 5px;
+    border-radius: 5px;
+    background: #d7dcdf;
+    outline: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2c3e50;
+    cursor: pointer;
+    -webkit-transition: background 0.15s ease-in-out;
+    transition: background 0.15s ease-in-out;
+  }
+
+  .slider::-moz-range-progress {
+    background-color: #1abc9c;
+  }
+
+  .slider::-webkit-slider-thumb:hover {
+    background: #1abc9c;
+  }
+
+  .slider:active::-webkit-slider-thumb {
+    background: #1abc9c;
+  }
+
+  .slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border: 0;
+    border-radius: 50%;
+    background: #2c3e50;
+    cursor: pointer;
+    -moz-transition: background 0.15s ease-in-out;
+    transition: background 0.15s ease-in-out;
+  }
+
+  .slider::-moz-range-thumb:hover {
+    background: #1abc9c;
+  }
+
+  .slider:active::-moz-range-thumb {
+    background: #1abc9c;
+  }
+
+  ::-moz-range-track {
+    background: #d7dcdf;
+    border: 0;
+  }
+
+  input::-moz-focus-inner,
+  input::-moz-focus-outer {
+    border: 0;
+  }
+
+
+
+  .toggler-wrapper {
+    display: inline-block;
+    width: 45px;
+    height: 20px;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .toggler-wrapper input[type="checkbox"] {
+    display: none;
+  }
+
+  .toggler-wrapper input[type="checkbox"]:checked+.toggler-slider {
+    background-color: #1abc9c;
+  }
+
+  .toggler-wrapper .toggler-slider {
+    margin-top: 4px;
+    background-color: #ccc;
+    position: absolute;
+    border-radius: 100px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-transition: all 300ms ease;
+    transition: all 300ms ease;
+  }
+
+  .toggler-wrapper .toggler-knob {
+    position: absolute;
+    -webkit-transition: all 300ms ease;
+    transition: all 300ms ease;
+  }
+
+  .toggler-wrapper.style-1 input[type="checkbox"]:checked+.toggler-slider .toggler-knob {
+    left: calc(100% - 16px - 3px);
+  }
+
+  .toggler-wrapper.style-1 .toggler-knob {
+    width: calc(20px - 6px);
+    height: calc(20px - 6px);
+    border-radius: 50%;
+    left: 3px;
+    top: 3px;
+    background-color: #fff;
+  }
 </style>`;
                 (document.body || document.documentElement).appendChild(shadowWrapper);
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
 
+                this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
                 this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
                 this.joinRoomButton = wrapper.querySelector("#videoTogetherJoinButton");
+                this.roomButtonGroup = wrapper.querySelector('#roomButtonGroup');
                 this.exitButton = wrapper.querySelector("#videoTogetherExitButton");
-                this.voiceButton = wrapper.querySelector("#videoTogetherVoiceButton");
-                this.voiceButton.onclick = this.JoinVoiceRoom.bind(this);
+                this.callBtn = wrapper.querySelector("#callBtn");
+                this.callBtn.onclick = () => Voice.join("", window.videoTogetherExtension.roomName);
                 this.helpButton = wrapper.querySelector("#videoTogetherHelpButton");
-                this.videoTogetherAudio = wrapper.querySelector("#videoTogetherAudio");
-                this.videoTogetherMic = wrapper.querySelector("#videoTogetherMic");
-                this.videoTogetherMic.onclick = ()=>{
-                    window.videoTogetherExtension.StartVoice();
+                this.audioBtn = wrapper.querySelector("#audioBtn");
+                this.micBtn = wrapper.querySelector("#micBtn");
+                this.videoVolume = wrapper.querySelector("#videoVolume");
+                this.callVolume = wrapper.querySelector("#callVolume");
+                this.videoVolume.oninput = () => {
+                    window.videoTogetherExtension.sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.videoVolume.value / 100 })
+                }
+                initRangeSlider(this.videoVolume);
+                initRangeSlider(this.callVolume);
+                this.audioBtn.onclick = () => {
+                    let hideMain = select('#mainPannel').style.display == 'none';
+
+                    dsply(select('#mainPannel'), hideMain);
+                    dsply(select('#voicePannel'), !hideMain);
+                    if(!hideMain){
+                        this.audioBtn.style.color='#1890ff';
+                    }else{
+                        this.audioBtn.style.color='#6c6c6c';
+                    }
+                }
+                this.micBtn.onclick = async () => {
+                    console.log(Voice.status);
+                    switch (Voice.status) {
+                        case VoiceStatus.STOP: {
+                            await Voice.join();
+                            break;
+                        }
+                        case VoiceStatus.UNMUTED: {
+                            Voice.mute();
+                            break;
+                        }
+                        case VoiceStatus.MUTED: {
+                            Voice.unmute();
+                            break;
+                        }
+                    }
                 }
 
                 this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
@@ -626,8 +1213,8 @@
                 this.SaveIsMinimized(true);
             }
             this.disableDefaultSize = true;
-            this.videoTogetherFlyPannel.style.display = "none";
-            this.videoTogetherSamllIcon.style.display = "block"
+            hide(this.videoTogetherFlyPannel);
+            show(this.videoTogetherSamllIcon);
         }
 
         Maximize(isDefault = false) {
@@ -635,8 +1222,8 @@
                 this.SaveIsMinimized(false);
             }
             this.disableDefaultSize = true;
-            this.videoTogetherFlyPannel.style.display = "block";
-            this.videoTogetherSamllIcon.style.display = "none"
+            show(this.videoTogetherFlyPannel);
+            hide(this.videoTogetherSamllIcon);
         }
 
         SaveIsMinimized(minimized) {
@@ -674,9 +1261,9 @@
             voiceRoomIframe.src = url;
             voiceRoomIframe.id = "videoTogetherVoiceIframe"
             voiceRoomIframe.allow = "camera;microphone"
-            voiceRoomIframe.style.display = "None";
+            hide(voiceRoomIframe);
             document.body.appendChild(voiceRoomIframe);
-            // this.voiceButton.style = "display: None";
+            // this.voiceButton)
             this.videoTogetherVideoVolumeDown.style = "";
             this.videoTogetherVideoVolumeUp.style = "";
         }
@@ -701,15 +1288,13 @@
         InRoom() {
             this.Maximize();
             this.inputRoomName.disabled = true;
-            this.createRoomButton.style = "display: None";
-            this.joinRoomButton.style = "display: None";
+            hide(this.lobbyBtnGroup)
+            show(this.roomButtonGroup);
             this.exitButton.style = "";
-            this.videoTogetherMic.style = "";
-            this.videoTogetherAudio.style = "";
-            this.inputRoomPasswordLabel.style.display = "None";
-            this.inputRoomPassword.style.display = "None";
-            this.videoTogetherVideoVolumeDown.style = "display: None";
-            this.videoTogetherVideoVolumeUp.style = "display: None";
+            hide(this.inputRoomPasswordLabel);
+            hide(this.inputRoomPassword);
+            hide(this.videoTogetherVideoVolumeDown)
+            hide(this.videoTogetherVideoVolumeUp)
             this.isInRoom = true;
         }
 
@@ -720,14 +1305,10 @@
             this.inputRoomName.disabled = false;
             this.inputRoomPasswordLabel.style.display = "inline-block";
             this.inputRoomPassword.style.display = "inline-block";
-            this.createRoomButton.style = "";
-            this.joinRoomButton.style = "";
-            this.exitButton.style = "display: None";
-            this.videoTogetherMic.style = "display: None";
-            this.videoTogetherAudio.style = "display: None";
-
-            this.videoTogetherVideoVolumeDown.style = "display: None";
-            this.videoTogetherVideoVolumeUp.style = "display: None";
+            show(this.lobbyBtnGroup);
+            hide(this.roomButtonGroup);
+            hide(this.videoTogetherVideoVolumeDown)
+            hide(this.videoTogetherVideoVolumeUp)
             this.isInRoom = false;
         }
 
@@ -853,8 +1434,8 @@
             this.timeOffset = 0;
 
             this.activatedVideo = undefined;
-            this.tempUser = this.generateUUID();
-            this.version = '1664450889';
+            this.tempUser = generateUUID();
+            this.version = '1664869557';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -930,22 +1511,13 @@
             }
         }
 
-        generateUUID() {
-            if (crypto.randomUUID != undefined) {
-                return crypto.randomUUID();
-            }
-            return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-            );
-        }
-
         PostMessage(window, data) {
             if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
                 window.postMessage(data, "*");
             } else {
                 if (!this.NativePostMessageFunction) {
                     let temp = document.createElement("iframe");
-                    temp.style.display = 'None';
+                    hide(temp);
                     document.body.append(temp);
                     this.NativePostMessageFunction = temp.contentWindow.postMessage;
                 }
@@ -965,7 +1537,7 @@
             url = url.toString();
             let host = (new URL(url)).host;
             if (this.cspBlockedHost[host]) {
-                let id = this.generateUUID()
+                let id = generateUUID()
                 return await new Promise((resolve, reject) => {
                     this.callbackMap.set(id, (data) => {
                         if (data.data) {
@@ -997,7 +1569,7 @@
             } else {
                 if (!this.NativeFetchFunction) {
                     let temp = document.createElement("iframe");
-                    temp.style.display = 'None';
+                    hide(temp);
                     document.body.append(temp);
                     this.NativeFetchFunction = temp.contentWindow.fetch;
                 }
@@ -1205,7 +1777,7 @@
                         }
                     }
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
-                        this.sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: this.generateUUID() });
+                        this.sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
                     if (window.VideoTogetherSettingEnabled == undefined) {
                         try {
@@ -1242,7 +1814,7 @@
 
         setActivatedVideoDom(videoDom) {
             if (videoDom.VideoTogetherVideoId == undefined) {
-                videoDom.VideoTogetherVideoId = this.generateUUID();
+                videoDom.VideoTogetherVideoId = generateUUID();
             }
             this.sendMessageToTop(MessageType.ActivatedVideo, new VideoModel(videoDom.VideoTogetherVideoId, videoDom.duration, Date.now() / 1000, Date.now() / 1000));
         }
@@ -1320,6 +1892,7 @@
                 let vtRoomName = getFunc("VideoTogetherRoomName");
                 let timestamp = parseFloat(getFunc("VideoTogetherTimestamp"));
                 let password = getFunc("VideoTogetherPassword");
+                let voice = getFunc("VideoTogetherVoice");
                 if (timestamp + 60 < Date.now() / 1000) {
                     return;
                 }
@@ -1333,6 +1906,17 @@
                         window.videoTogetherFlyPannel.inputRoomName.value = vtRoomName;
                         window.videoTogetherFlyPannel.inputRoomPassword.value = password;
                         window.videoTogetherFlyPannel.InRoom();
+                        switch (voice) {
+                            case VoiceStatus.MUTED:
+                                Voice.join("", vtRoomName, true);
+                                break;
+                            case VoiceStatus.UNMUTED:
+                                Voice.join("", vtRoomName, false);
+                                break;
+                            default:
+                                Voice.status = VoiceStatus.STOP;
+                                break;
+                        }
                     }
                 }
             }
@@ -1361,7 +1945,7 @@
 
         async JoinRoom(name, password) {
             try {
-                this.tempUser = this.generateUUID();
+                this.tempUser = generateUUID();
                 let data = await this.RunWithRetry(async () => await this.GetRoom(name, password), 2);
                 this.roomName = name;
                 this.password = password;
@@ -1373,6 +1957,7 @@
         }
 
         exitRoom() {
+            Voice.stop();
             this.duration = undefined;
             window.videoTogetherFlyPannel.inputRoomName.value = "";
             window.videoTogetherFlyPannel.inputRoomPassword.value = "";
@@ -1389,7 +1974,7 @@
             try {
                 await this.ForEachVideo(video => {
                     if (video.VideoTogetherVideoId == undefined) {
-                        video.VideoTogetherVideoId = _this.generateUUID();
+                        video.VideoTogetherVideoId = generateUUID();
                     }
                     if (video instanceof VideoWrapper) {
                         // ad hoc
@@ -1569,12 +2154,23 @@
             if (this.role == this.RoleEnum.Null) {
                 return {};
             }
+
+            let voice = Voice.status;
+            if (voice == VoiceStatus.CONNECTTING) {
+                try {
+                    voice = window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherVoice;
+                } catch {
+                    voice = VoiceStatus.STOP;
+                }
+            }
+
             return {
                 VideoTogetherUrl: link,
                 VideoTogetherRoomName: this.roomName,
                 VideoTogetherPassword: this.password,
                 VideoTogetherRole: this.role,
                 VideoTogetherTimestamp: Date.now() / 1000,
+                VideoTogetherVoice: voice
             }
         }
 
@@ -1692,7 +2288,7 @@
 
         async CreateRoom(name, password) {
             try {
-                this.tempUser = this.generateUUID();
+                this.tempUser = generateUUID();
                 let url = this.linkWithoutState(window.location);
                 let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0), 2);
                 this.setRole(this.RoleEnum.Master);
@@ -1750,167 +2346,6 @@
             let data = await this.CheckResponse(response);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
-        }
-
-        StartVoice() {
-            let _this = this;
-            let rname = this.roomName
-            let uid = localStorage.getItem('uid');
-            if (!uid) {
-                uid = this.generateUUID();
-                localStorage.setItem('uid', uid);
-            }
-            const rnameRPC = encodeURIComponent(rname);
-            const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(_this.generateUUID()));
-            let ucid = "";
-            console.log(rnameRPC, unameRPC);
-            const constraints = {
-                audio: {
-                    echoCancellation: false,
-                    noiseSuppression: false
-                },
-                video: false
-            };
-            const configuration = {
-                bundlePolicy: 'max-bundle',
-                rtcpMuxPolicy: 'require',
-                sdpSemantics: 'unified-plan'
-            };
-
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const audioCtx = new AudioContext();
-            async function subscribe(pc) {
-                var res = await rpc('subscribe', [rnameRPC, unameRPC, ucid]);
-                if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
-                    pc.close();
-                    await start();
-                    return;
-                }
-                if (res.data) {
-                    var jsep = JSON.parse(res.data.jsep);
-                    if (jsep.type == 'offer') {
-                        await pc.setRemoteDescription(jsep);
-                        var sdp = await pc.createAnswer();
-                        await pc.setLocalDescription(sdp);
-                        await rpc('answer', [rnameRPC, unameRPC, ucid, JSON.stringify(sdp)]);
-                    }
-                }
-                setTimeout(function () {
-                    subscribe(pc);
-                }, 3000);
-            }
-
-            start();
-
-            async function start() {
-                try {
-                    document.querySelectorAll('.peer').forEach((el) => el.remove());
-
-                    var res = await rpc('turn', [unameRPC]);
-                    if (ICE_POLICY === 'relay' && res.data && res.data.length > 0) {
-                        configuration.iceServers = res.data;
-                        configuration.iceTransportPolicy = 'relay';
-                    } else {
-                        configuration.iceServers = [];
-                        configuration.iceTransportPolicy = 'all';
-                    }
-
-                    var pc = new RTCPeerConnection(configuration);
-
-                    pc.onicecandidate = ({ candidate }) => {
-                        rpc('trickle', [rnameRPC, unameRPC, ucid, JSON.stringify(candidate)]);
-                    };
-
-                    pc.ontrack = (event) => {
-                        console.log("ontrack", event);
-
-                        var stream = event.streams[0];
-                        var sid = decodeURIComponent(stream.id);
-                        var id = sid.split(':')[0];
-                        // var name = Base64.decode(sid.split(':')[1]);
-                        console.log(id, uid);
-                        if (id === uid) {
-                            return;
-                        }
-
-                        event.track.onmute = (event) => {
-                            console.log("onmute", event);
-                            var el = document.querySelector(`[data-track-id="${event.target.id}"]`);
-                            if (el) {
-                                el.remove();
-                                resizeVisulizers();
-                            }
-                        };
-
-                        var aid = 'peer-audio-' + id;
-                        var el = document.getElementById(aid);
-                        if (el) {
-                            el.srcObject = stream;
-                        } else {
-                            el = document.createElement(event.track.kind)
-                            el.id = aid;
-                            el.srcObject = stream;
-                            el.autoplay = true;
-                            el.controls = false;
-                            // document.getElementById('peers').appendChild(el)
-                        }
-
-                        // buildCanvas(stream, id, name, event.track.id);
-                        // resizeVisulizers();
-                    };
-
-                    var stream;
-                    try {
-                        stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    } catch (err) {
-                        document.getElementById('microphone').style.display = 'block';
-                        console.error(err);
-                        return;
-                    }
-
-                    audioCtx.resume();
-
-                    stream.getTracks().forEach((track) => {
-                        pc.addTrack(track, stream);
-                    });
-                    await pc.setLocalDescription(await pc.createOffer());
-
-                    res = await rpc('publish', [rnameRPC, unameRPC, JSON.stringify(pc.localDescription)]);
-                    if (res.data) {
-                        var jsep = JSON.parse(res.data.jsep);
-                        if (jsep.type == 'answer') {
-                            await pc.setRemoteDescription(jsep);
-                            ucid = res.data.track;
-                            subscribe(pc);
-                        }
-                    }
-                } catch (err) {
-                    console.error(err);
-                }
-            }
-
-            async function rpc(method, params = []) {
-                try {
-                    const response = await fetch(KRAKEN_API, {
-                        method: 'POST', // *GET, POST, PUT, DELETE, etc.
-                        mode: 'cors', // no-cors, *cors, same-origin
-                        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-                        credentials: 'omit', // include, *same-origin, omit
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        redirect: 'follow', // manual, *follow, error
-                        referrerPolicy: 'no-referrer', // no-referrer, *client
-                        body: JSON.stringify({ id: _this.generateUUID(), method: method, params: params }) // body data type must match "Content-Type" header
-                    });
-                    return response.json(); // parses JSON response into native JavaScript objects
-                } catch (err) {
-                    console.log('fetch error', method, params, err);
-                    await new Promise(r => setTimeout(r, 1000));
-                    return await rpc(method, params);
-                }
-            }
-
         }
 
         EnableDraggable() {
