@@ -558,7 +558,13 @@
                     }
                 });
                 let shadowWrapper = document.createElement("div")
-                let wrapper = shadowWrapper.attachShadow({ mode: "open" });
+                let wrapper
+                try {
+                    wrapper = shadowWrapper.attachShadow({ mode: "open" });
+                } catch (e) {
+                    wrapper = shadowWrapper._attachShadow({ mode: "open" });
+                }
+
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
                 wrapper.innerHTML = `{{{ {"": "./html/pannel.html","order":100} }}}`;
