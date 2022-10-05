@@ -68,23 +68,6 @@
         });
     }
 
-    function sendMessageToSon(type, data) {
-        let iframs = document.getElementsByTagName("iframe");
-        for (let i = 0; i < iframs.length; i++) {
-            PostMessage(iframs[i].contentWindow, {
-                source: "VideoTogether",
-                type: type,
-                data: data,
-                context: {
-                    tempUser: this.tempUser,
-                    videoTitle: this.isMain ? document.title : this.videoTitle,
-                    VideoTogetherStorage: window.VideoTogetherStorage
-                }
-            });
-            // console.info("send ", type, iframs[i].contentWindow, data)
-        }
-    }
-
     function initRangeSlider(slider) {
         const min = slider.min
         const max = slider.max
@@ -1102,6 +1085,23 @@
             });
         }
 
+        sendMessageToSonWithContext(type, data) {
+            let iframs = document.getElementsByTagName("iframe");
+            for (let i = 0; i < iframs.length; i++) {
+                PostMessage(iframs[i].contentWindow, {
+                    source: "VideoTogether",
+                    type: type,
+                    data: data,
+                    context: {
+                        tempUser: this.tempUser,
+                        videoTitle: this.isMain ? document.title : this.videoTitle,
+                        VideoTogetherStorage: window.VideoTogetherStorage
+                    }
+                });
+                // console.info("send ", type, iframs[i].contentWindow, data)
+            }
+        }
+
         UpdateStatusText(text, color) {
             if (window.self != window.top) {
                 sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
@@ -1133,7 +1133,7 @@
                             }
                         }
                     })
-                    sendMessageToSon(type, data);
+                    this.sendMessageToSonWithContext(type, data);
                     break;
                 case MessageType.SyncMemberVideo:
                     this.ForEachVideo(async video => {
@@ -1145,7 +1145,7 @@
                             }
                         }
                     })
-                    sendMessageToSon(type, data);
+                    this.sendMessageToSonWithContext(type, data);
                     break;
                 case MessageType.GetRoomData:
                     this.duration = data["duration"];
@@ -1160,7 +1160,7 @@
                     this.ForEachVideo(video => {
                         video.volume = data.volume;
                     });
-                    sendMessageToSon(type, data);
+                    this.sendMessageToSonWithContext(type, data);
                 case MessageType.FetchResponse: {
                     this.callbackMap.get(data.id)(data);
                     break;

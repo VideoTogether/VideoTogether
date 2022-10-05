@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1664894198
+// @version      1664931577
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -66,23 +66,6 @@
             type: type,
             data: data
         });
-    }
-
-    function sendMessageToSon(type, data) {
-        let iframs = document.getElementsByTagName("iframe");
-        for (let i = 0; i < iframs.length; i++) {
-            PostMessage(iframs[i].contentWindow, {
-                source: "VideoTogether",
-                type: type,
-                data: data,
-                context: {
-                    tempUser: this.tempUser,
-                    videoTitle: this.isMain ? document.title : this.videoTitle,
-                    VideoTogetherStorage: window.VideoTogetherStorage
-                }
-            });
-            // console.info("send ", type, iframs[i].contentWindow, data)
-        }
     }
 
     function initRangeSlider(slider) {
@@ -1511,7 +1494,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateUUID();
-            this.version = '1664894198';
+            this.version = '1664931577';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1727,6 +1710,23 @@
             });
         }
 
+        sendMessageToSonWithContext(type, data) {
+            let iframs = document.getElementsByTagName("iframe");
+            for (let i = 0; i < iframs.length; i++) {
+                PostMessage(iframs[i].contentWindow, {
+                    source: "VideoTogether",
+                    type: type,
+                    data: data,
+                    context: {
+                        tempUser: this.tempUser,
+                        videoTitle: this.isMain ? document.title : this.videoTitle,
+                        VideoTogetherStorage: window.VideoTogetherStorage
+                    }
+                });
+                // console.info("send ", type, iframs[i].contentWindow, data)
+            }
+        }
+
         UpdateStatusText(text, color) {
             if (window.self != window.top) {
                 sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
@@ -1758,7 +1758,7 @@
                             }
                         }
                     })
-                    sendMessageToSon(type, data);
+                    this.sendMessageToSonWithContext(type, data);
                     break;
                 case MessageType.SyncMemberVideo:
                     this.ForEachVideo(async video => {
@@ -1770,7 +1770,7 @@
                             }
                         }
                     })
-                    sendMessageToSon(type, data);
+                    this.sendMessageToSonWithContext(type, data);
                     break;
                 case MessageType.GetRoomData:
                     this.duration = data["duration"];
@@ -1785,7 +1785,7 @@
                     this.ForEachVideo(video => {
                         video.volume = data.volume;
                     });
-                    sendMessageToSon(type, data);
+                    this.sendMessageToSonWithContext(type, data);
                 case MessageType.FetchResponse: {
                     this.callbackMap.get(data.id)(data);
                     break;
