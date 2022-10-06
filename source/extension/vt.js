@@ -374,6 +374,10 @@
         );
     }
 
+    function generateTempUserId() {
+        return generateUUID() + ":" + Date.now() / 1000;
+    }
+
     /**
      *
      *  Base64 encode / decode
@@ -614,9 +618,6 @@
                 this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
                 this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
                 this.exitButton.onclick = (() => {
-                    try {
-                        wrapper.querySelector("#videoTogetherVoiceIframe").remove();
-                    } catch (e) { console.error(e); }
                     window.videoTogetherExtension.exitRoom();
                 });
                 this.videoTogetherRoleText = wrapper.querySelector("#videoTogetherRoleText")
@@ -687,23 +688,6 @@
                     this.inputRoomPassword.value = data.roomName;
                 }
             }
-        }
-
-        JoinVoiceRoom() {
-            this.Maximize();
-            try {
-                document.querySelector("#videoTogetherVoiceIframe").remove();
-            } catch (e) { console.error(e); }
-            let roomName = "VideoTogether_" + this.inputRoomName.value;
-            alert("{$voice_call_experimental_alert$}");
-            let voiceRoomIframe = document.createElement("iframe");
-            let url = new URL("https://voice.2gether.video");
-            url.searchParams.set("room", roomName);
-            voiceRoomIframe.src = url;
-            voiceRoomIframe.id = "videoTogetherVoiceIframe"
-            voiceRoomIframe.allow = "camera;microphone"
-            hide(voiceRoomIframe);
-            document.body.appendChild(voiceRoomIframe);
         }
 
         GetSavedRoomInfo() {
@@ -868,7 +852,7 @@
             this.timeOffset = 0;
 
             this.activatedVideo = undefined;
-            this.tempUser = generateUUID();
+            this.tempUser = generateTempUserId();
             this.version = '{{timestamp}}';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
@@ -1238,11 +1222,9 @@
             if (this.VideoClickedListener == undefined) {
                 this.VideoClickedListener = this.VideoClicked.bind(this)
             }
-            let _this = this;
             this.addListenerMulti(videoDom, "play pause", this.VideoClickedListener);
         }
 
-        // todo 腾讯视频
         CreateVideoDomObserver() {
             let _this = this;
             let observer = new WebKitMutationObserver(function (mutations) {
@@ -1351,7 +1333,7 @@
 
         async JoinRoom(name, password) {
             try {
-                this.tempUser = generateUUID();
+                this.tempUser = generateTempUserId();
                 let data = await this.RunWithRetry(async () => await this.GetRoom(name, password), 2);
                 this.roomName = name;
                 this.password = password;
@@ -1364,6 +1346,8 @@
 
         exitRoom() {
             Voice.stop();
+            show(select('#mainPannel'));
+            hide(select('#voicePannel'));
             this.duration = undefined;
             window.videoTogetherFlyPannel.inputRoomName.value = "";
             window.videoTogetherFlyPannel.inputRoomPassword.value = "";
@@ -1701,7 +1685,7 @@
 
         async CreateRoom(name, password) {
             try {
-                this.tempUser = generateUUID();
+                this.tempUser = generateTempUserId();
                 let url = this.linkWithoutState(window.location);
                 let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0), 2);
                 this.setRole(this.RoleEnum.Master);

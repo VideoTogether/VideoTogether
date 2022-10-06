@@ -178,6 +178,13 @@ def getTimestamp():
     return jsonify({"timestamp": time.time()})
 
 
+def parseTempUserTs(tempUser: str):
+    try:
+        return float(tempUser.split(':')[1])
+    except:
+        return 0
+
+
 @app.route('/room/update', methods=["get"])
 def updateRoom():
     room = Room()
@@ -219,6 +226,8 @@ def updateRoom():
 
     if "tempUser" in request.args:
         tempUserId = request.args["tempUser"]
+        print(parseTempUserTs(tempUserId))
+        # TODO 1665026306
         if tempUserId not in tempUserDatabase:
             tempUser = TempUser()
             tempUser.id = tempUserId

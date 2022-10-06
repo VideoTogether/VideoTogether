@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1664931577
+// @version      1665026631
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -374,6 +374,10 @@
         );
     }
 
+    function generateTempUserId() {
+        return generateUUID() + ":" + Date.now() / 1000;
+    }
+
     /**
      *
      *  Base64 encode / decode
@@ -680,20 +684,6 @@
           </span>
         </button>
       </div>
-
-
-
-      <!-- <button id="videoTogetherMic" type="button" aria-label="Close" class="vt-modal-mic vt-modal-title-button">
-        <span class="vt-modal-close-x">
-          <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
-            <svg width="18px" height="18px" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="17" y="4" width="14" height="27" rx="7" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
-              <path d="M9 23C9 31.2843 15.7157 38 24 38C32.2843 38 39 31.2843 39 23" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M24 43V44" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-          </span>
-        </span>
-      </button> -->
 
       <button id="micBtn" style="display: none;" type="button" aria-label="Close"
         class="vt-modal-mic vt-modal-title-button">
@@ -1239,9 +1229,6 @@
                 this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
                 this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
                 this.exitButton.onclick = (() => {
-                    try {
-                        wrapper.querySelector("#videoTogetherVoiceIframe").remove();
-                    } catch (e) { console.error(e); }
                     window.videoTogetherExtension.exitRoom();
                 });
                 this.videoTogetherRoleText = wrapper.querySelector("#videoTogetherRoleText")
@@ -1312,23 +1299,6 @@
                     this.inputRoomPassword.value = data.roomName;
                 }
             }
-        }
-
-        JoinVoiceRoom() {
-            this.Maximize();
-            try {
-                document.querySelector("#videoTogetherVoiceIframe").remove();
-            } catch (e) { console.error(e); }
-            let roomName = "VideoTogether_" + this.inputRoomName.value;
-            alert("目前语音通话仍然只是实验性功能，有任何问题都欢迎点击帮助按钮反馈。为了隐私考虑，推荐使用超过7位的房间名");
-            let voiceRoomIframe = document.createElement("iframe");
-            let url = new URL("https://voice.2gether.video");
-            url.searchParams.set("room", roomName);
-            voiceRoomIframe.src = url;
-            voiceRoomIframe.id = "videoTogetherVoiceIframe"
-            voiceRoomIframe.allow = "camera;microphone"
-            hide(voiceRoomIframe);
-            document.body.appendChild(voiceRoomIframe);
         }
 
         GetSavedRoomInfo() {
@@ -1493,8 +1463,8 @@
             this.timeOffset = 0;
 
             this.activatedVideo = undefined;
-            this.tempUser = generateUUID();
-            this.version = '1664931577';
+            this.tempUser = generateTempUserId();
+            this.version = '1665026631';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1863,11 +1833,9 @@
             if (this.VideoClickedListener == undefined) {
                 this.VideoClickedListener = this.VideoClicked.bind(this)
             }
-            let _this = this;
             this.addListenerMulti(videoDom, "play pause", this.VideoClickedListener);
         }
 
-        // todo 腾讯视频
         CreateVideoDomObserver() {
             let _this = this;
             let observer = new WebKitMutationObserver(function (mutations) {
@@ -1976,7 +1944,7 @@
 
         async JoinRoom(name, password) {
             try {
-                this.tempUser = generateUUID();
+                this.tempUser = generateTempUserId();
                 let data = await this.RunWithRetry(async () => await this.GetRoom(name, password), 2);
                 this.roomName = name;
                 this.password = password;
@@ -1989,6 +1957,8 @@
 
         exitRoom() {
             Voice.stop();
+            show(select('#mainPannel'));
+            hide(select('#voicePannel'));
             this.duration = undefined;
             window.videoTogetherFlyPannel.inputRoomName.value = "";
             window.videoTogetherFlyPannel.inputRoomPassword.value = "";
@@ -2326,7 +2296,7 @@
 
         async CreateRoom(name, password) {
             try {
-                this.tempUser = generateUUID();
+                this.tempUser = generateTempUserId();
                 let url = this.linkWithoutState(window.location);
                 let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0), 2);
                 this.setRole(this.RoleEnum.Master);
