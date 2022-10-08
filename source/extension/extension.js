@@ -311,7 +311,6 @@
                 if (hotUpdated) {
                     return;
                 }
-                console.log(e);
                 if (e.blockedURI.indexOf('2gether.video') != -1) {
                     urlDisabled = true;
                 }
