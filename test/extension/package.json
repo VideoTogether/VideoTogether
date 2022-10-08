@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "carlo": "^0.9.46",
+    "puppeteer": "^18.2.1"
+  }
+}

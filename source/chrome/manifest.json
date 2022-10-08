@@ -29,6 +29,8 @@
             "resources": [
                 "load.en-us.js",
                 "load.zh-cn.js",
+                "vt.en-us.user.js",
+                "vt.zh-cn.user.js",
                 "preInjected.js"
             ],
             "matches": [
@@ -43,9 +45,9 @@
     "icons": {
         "192": "./icon/android-icon-192x192.png"
     },
-    "action": {
-        "default_popup": "popup.html"
-    },
+    // "action": {
+    //     "default_popup": "popup.html"
+    // },
     "permissions": [
         "storage"
     ]

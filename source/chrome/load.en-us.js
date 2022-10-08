@@ -1,3 +1,12 @@
+function generateUUID() {
+    if (crypto.randomUUID != undefined) {
+        return crypto.randomUUID();
+    }
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+}
+
 (function () {
     try {
         let origin = Element.prototype.attachShadow;
@@ -29,7 +38,7 @@
             source: "VideoTogether",
             type: 13,
             data: {
-                id: Date.now(),
+                id: "vt_load83x" + generateUUID(),
                 url: url.toString(),
                 method: "GET",
                 data: null,
@@ -38,7 +47,7 @@
     }
 
     window.addEventListener('message', message => {
-        if (message.data.type == 14) {
+        if (message.data.type == 14 && message.data.data.id.startsWith("vt_load83x")) {
             let inlineScript = document.createElement("script");
             inlineScript.textContent = message.data.data.text;
             try {

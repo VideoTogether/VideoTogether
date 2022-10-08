@@ -99,7 +99,7 @@
             let callConnecting = select("#callConnecting");
             dsply(callConnecting, s == VoiceStatus.CONNECTTING);
             dsply(callBtn, s == VoiceStatus.STOP);
-            let inCall = (VoiceStatus.UNMUTED == s || VoiceStatus.MUTED==s);
+            let inCall = (VoiceStatus.UNMUTED == s || VoiceStatus.MUTED == s);
             dsply(micBtn, inCall);
             dsply(audioBtn, inCall);
             switch (s) {
@@ -281,7 +281,7 @@
 
             async function rpc(method, params = []) {
                 try {
-                    const response = await fetch(KRAKEN_API, {
+                    const response = await window.videoTogetherExtension.Fetch(KRAKEN_API, "POST", { id: generateUUID(), method: method, params: params }, {
                         method: 'POST', // *GET, POST, PUT, DELETE, etc.
                         mode: 'cors', // no-cors, *cors, same-origin
                         cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
@@ -544,8 +544,9 @@
                         window.VideoTogetherStorage = e.data.data;
                     }
                 });
-                let shadowWrapper = document.createElement("div")
-                let wrapper
+                let shadowWrapper = document.createElement("div");
+                shadowWrapper.id = "VideoTogetherWrapper";
+                let wrapper;
                 try {
                     wrapper = shadowWrapper.attachShadow({ mode: "open" });
                 } catch (e) {
@@ -715,6 +716,7 @@
             this.exitButton.style = "";
             hide(this.inputRoomPasswordLabel);
             hide(this.inputRoomPassword);
+            this.inputRoomName.placeholder = "";
             this.isInRoom = true;
         }
 
@@ -725,6 +727,7 @@
             this.inputRoomName.disabled = false;
             this.inputRoomPasswordLabel.style.display = "inline-block";
             this.inputRoomPassword.style.display = "inline-block";
+            this.inputRoomName.placeholder = "{$room_input_placeholder$}"
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
             this.isInRoom = false;
@@ -930,7 +933,7 @@
         }
 
 
-        async Fetch(url) {
+        async Fetch(url, method = 'GET', data = null) {
             url = new URL(url);
             url.searchParams.set("version", this.version);
             try {
@@ -946,7 +949,7 @@
                 return await new Promise((resolve, reject) => {
                     this.callbackMap.set(id, (data) => {
                         if (data.data) {
-                            resolve({ json: () => data, status: 200 });
+                            resolve({ json: () => data.data, status: 200 });
                         } else {
                             reject(new Error(data.error));
                         }
@@ -955,8 +958,8 @@
                     sendMessageToTop(MessageType.FetchRequest, {
                         id: id,
                         url: url.toString(),
-                        method: "GET",
-                        data: null,
+                        method: method,
+                        data: data,
                     });
                     setTimeout(() => {
                         try {
@@ -1146,7 +1149,9 @@
                     });
                     this.sendMessageToSonWithContext(type, data);
                 case MessageType.FetchResponse: {
-                    this.callbackMap.get(data.id)(data);
+                    try {
+                        this.callbackMap.get(data.id)(data);
+                    } catch { };
                     break;
                 }
                 case MessageType.SyncStorageValue: {
@@ -1313,7 +1318,7 @@
             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                 try {
                     RecoveryStateFrom.bind(this)(key => window.VideoTogetherStorage.VideoTogetherTabStorage[key]);
-                } catch (e) { console.error(e) };
+                } catch { };
                 return;
             }
             let localTimestamp = window.sessionStorage.getItem("VideoTogetherTimestamp");

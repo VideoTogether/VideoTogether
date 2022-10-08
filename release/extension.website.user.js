@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1664883071
+// @version      1665231114
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1664883071'
+    let version = '1665231114'
     let type = 'website'
     if (type == "Chrome") {
         window.GM = {};
@@ -98,6 +98,12 @@
             }
         }
     }
+    // if (type == 'Chrome') {
+    //     let vtEnabled = await GM.getValue('vtEnabled');
+    //     if (vtEnabled === false) {
+    //         return;
+    //     }
+    // }
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
     let prefixLen = 0;
@@ -182,6 +188,7 @@
                     if (!url.hostname.endsWith("2gether.video")
                         && !url.hostname.endsWith("chizhou.in")
                         && !url.hostname.endsWith("panghair.com")
+                        && !url.hostname.endsWith("rpc.kraken.fm")
                         && !url.hostname.endsWith("aliyuncs.com")) {
                         console.error("permission error", e.data);
                         return;
@@ -279,6 +286,13 @@
         PostStorage();
     }, 1000);
 
+    function insertJs(url) {
+        let script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = url;
+        (document.body || document.documentElement).appendChild(script);
+    }
+
     let wrapper = document.createElement("div");
     wrapper.innerHTML = `<div id="videoTogetherLoading">
     <div id="videoTogetherLoadingwrap">
@@ -332,7 +346,32 @@
             script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
             break;
         case "Chrome":
-            script.src = chrome.runtime.getURL(`load.${language}.js`)
+            let inlineDisabled = false;
+            let evalDisabled = false;
+            let urlDisabled = false;
+            let hotUpdated = false;
+            document.addEventListener("securitypolicyviolation", (e) => {
+                if (hotUpdated) {
+                    return;
+                }
+                console.log(e);
+                if (e.blockedURI.indexOf('2gether.video') != -1) {
+                    urlDisabled = true;
+                }
+                if (e.blockedURI == 'eval') {
+                    evalDisabled = true;
+                }
+                if (e.blockedURI = 'inline') {
+                    inlineDisabled = true;
+                }
+                if (inlineDisabled && evalDisabled && urlDisabled) {
+                    console.log("hot update is not successful")
+                    insertJs(chrome.runtime.getURL(`vt.${language}.user.js`));
+                    hotUpdated = true;
+                }
+            });
+            // script.src = chrome.runtime.getURL(`vt.${language}.user.js`);
+            script.src = chrome.runtime.getURL(`load.${language}.js`);
             break;
         case "userscript_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());

@@ -99,5 +99,9 @@ if __name__ == '__main__':
                     rootPath.joinpath("source/chrome/load.en-us.js"))
     shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
                     rootPath.joinpath("source/chrome/load.zh-cn.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.en-us.user.js"),
+                    rootPath.joinpath("source/chrome/vt.en-us.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
+                    rootPath.joinpath("source/chrome/vt.zh-cn.user.js"))
     shutil.copyfile(rootPath.joinpath("release/extension.chrome.user.js"),
                     rootPath.joinpath("source/chrome/extension.chrome.user.js"))
