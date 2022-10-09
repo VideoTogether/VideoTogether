@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665231572
+// @version      1665279042
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,9 +33,12 @@
         }
     } catch (e) { };
 
-    let version = '1665231572'
+    let version = '1665279042'
     let type = 'website'
-    if (type == "Chrome") {
+    if (type == 'Safari') {
+        var chrome = browser;
+    }
+    if (type == "Chrome" || type == "Safari") {
         window.GM = {};
         GM.setValue = async (key, value) => {
             return await new Promise((resolve, reject) => {
@@ -346,6 +349,7 @@
             script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
             break;
         case "Chrome":
+        case "Safari":
             let inlineDisabled = false;
             let evalDisabled = false;
             let urlDisabled = false;
@@ -387,7 +391,7 @@
     }
 
     (document.body || document.documentElement).appendChild(script);
-    if (type != "Chrome") {
+    if (type != "Chrome" && type != "Safari") {
         try {
             InsertInlineJs(script.src);
             GM_addElement('script', {

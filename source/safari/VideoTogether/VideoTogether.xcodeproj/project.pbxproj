@@ -1,0 +1,996 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4682879228F1CF25008CFC46 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4682879128F1CF25008CFC46 /* AppDelegate.swift */; };
+		4682879428F1CF25008CFC46 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4682879328F1CF25008CFC46 /* SceneDelegate.swift */; };
+		4682879728F1CF25008CFC46 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4682879528F1CF25008CFC46 /* LaunchScreen.storyboard */; };
+		4682879A28F1CF25008CFC46 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4682879828F1CF25008CFC46 /* Main.storyboard */; };
+		468287A328F1CF25008CFC46 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 468287A228F1CF25008CFC46 /* AppDelegate.swift */; };
+		468287A628F1CF25008CFC46 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 468287A428F1CF25008CFC46 /* Main.storyboard */; };
+		468287AD28F1CF25008CFC46 /* VideoTogether Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 468287AC28F1CF25008CFC46 /* VideoTogether Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		468287B728F1CF25008CFC46 /* VideoTogether Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 468287B628F1CF25008CFC46 /* VideoTogether Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		468287BD28F1CF25008CFC46 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 4682877828F1CF24008CFC46 /* Main.html */; };
+		468287BE28F1CF25008CFC46 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 4682877828F1CF24008CFC46 /* Main.html */; };
+		468287C128F1CF25008CFC46 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 4682877B28F1CF24008CFC46 /* Style.css */; };
+		468287C228F1CF25008CFC46 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 4682877B28F1CF24008CFC46 /* Style.css */; };
+		468287C328F1CF25008CFC46 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 4682877C28F1CF24008CFC46 /* Script.js */; };
+		468287C428F1CF25008CFC46 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 4682877C28F1CF24008CFC46 /* Script.js */; };
+		468287C528F1CF25008CFC46 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4682877D28F1CF24008CFC46 /* ViewController.swift */; };
+		468287C628F1CF25008CFC46 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4682877D28F1CF24008CFC46 /* ViewController.swift */; };
+		468287C728F1CF25008CFC46 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4682877E28F1CF25008CFC46 /* Assets.xcassets */; };
+		468287C828F1CF25008CFC46 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4682877E28F1CF25008CFC46 /* Assets.xcassets */; };
+		468287C928F1CF25008CFC46 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4682878028F1CF25008CFC46 /* SafariWebExtensionHandler.swift */; };
+		468287CA28F1CF25008CFC46 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4682878028F1CF25008CFC46 /* SafariWebExtensionHandler.swift */; };
+		468287CB28F1CF25008CFC46 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 4682878228F1CF25008CFC46 /* _locales */; };
+		468287CC28F1CF25008CFC46 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 4682878228F1CF25008CFC46 /* _locales */; };
+		468287CD28F1CF25008CFC46 /* images in Resources */ = {isa = PBXBuildFile; fileRef = 4682878328F1CF25008CFC46 /* images */; };
+		468287CE28F1CF25008CFC46 /* images in Resources */ = {isa = PBXBuildFile; fileRef = 4682878328F1CF25008CFC46 /* images */; };
+		468287CF28F1CF25008CFC46 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 4682878428F1CF25008CFC46 /* manifest.json */; };
+		468287D028F1CF25008CFC46 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 4682878428F1CF25008CFC46 /* manifest.json */; };
+		468287D128F1CF25008CFC46 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 4682878528F1CF25008CFC46 /* background.js */; };
+		468287D228F1CF25008CFC46 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 4682878528F1CF25008CFC46 /* background.js */; };
+		468287D328F1CF25008CFC46 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 4682878628F1CF25008CFC46 /* content.js */; };
+		468287D428F1CF25008CFC46 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 4682878628F1CF25008CFC46 /* content.js */; };
+		468287D528F1CF25008CFC46 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 4682878728F1CF25008CFC46 /* popup.html */; };
+		468287D628F1CF25008CFC46 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 4682878728F1CF25008CFC46 /* popup.html */; };
+		468287D728F1CF25008CFC46 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = 4682878828F1CF25008CFC46 /* popup.css */; };
+		468287D828F1CF25008CFC46 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = 4682878828F1CF25008CFC46 /* popup.css */; };
+		468287D928F1CF25008CFC46 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 4682878928F1CF25008CFC46 /* popup.js */; };
+		468287DA28F1CF25008CFC46 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 4682878928F1CF25008CFC46 /* popup.js */; };
+		468287EC28F1D16E008CFC46 /* extension.safari.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287EB28F1D16E008CFC46 /* extension.safari.user.js */; };
+		468287ED28F1D16E008CFC46 /* extension.safari.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287EB28F1D16E008CFC46 /* extension.safari.user.js */; };
+		468287F028F1DEE2008CFC46 /* load.en-us.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287EE28F1DEE2008CFC46 /* load.en-us.js */; };
+		468287F128F1DEE2008CFC46 /* load.en-us.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287EE28F1DEE2008CFC46 /* load.en-us.js */; };
+		468287F228F1DEE2008CFC46 /* load.zh-cn.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287EF28F1DEE2008CFC46 /* load.zh-cn.js */; };
+		468287F328F1DEE2008CFC46 /* load.zh-cn.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287EF28F1DEE2008CFC46 /* load.zh-cn.js */; };
+		468287F628F25B10008CFC46 /* vt.en-us.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287F428F25B10008CFC46 /* vt.en-us.user.js */; };
+		468287F728F25B10008CFC46 /* vt.en-us.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287F428F25B10008CFC46 /* vt.en-us.user.js */; };
+		468287F828F25B10008CFC46 /* vt.zh-cn.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287F528F25B10008CFC46 /* vt.zh-cn.user.js */; };
+		468287F928F25B10008CFC46 /* vt.zh-cn.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287F528F25B10008CFC46 /* vt.zh-cn.user.js */; };
+		46ACA8EB28F25E8F00F37C93 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 46ACA8EA28F25E8F00F37C93 /* Icon.png */; };
+		46ACA8EC28F25E8F00F37C93 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 46ACA8EA28F25E8F00F37C93 /* Icon.png */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		468287AE28F1CF25008CFC46 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4682877228F1CF24008CFC46 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 468287AB28F1CF25008CFC46;
+			remoteInfo = "VideoTogether Extension (iOS)";
+		};
+		468287B828F1CF25008CFC46 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4682877228F1CF24008CFC46 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 468287B528F1CF25008CFC46;
+			remoteInfo = "VideoTogether Extension (macOS)";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		468287E028F1CF25008CFC46 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				468287AD28F1CF25008CFC46 /* VideoTogether Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		468287E728F1CF25008CFC46 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				468287B728F1CF25008CFC46 /* VideoTogether Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		4682877928F1CF24008CFC46 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = ../Base.lproj/Main.html; sourceTree = "<group>"; };
+		4682877B28F1CF24008CFC46 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		4682877C28F1CF24008CFC46 /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
+		4682877D28F1CF24008CFC46 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		4682877E28F1CF25008CFC46 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4682878028F1CF25008CFC46 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		4682878228F1CF25008CFC46 /* _locales */ = {isa = PBXFileReference; lastKnownFileType = folder; path = _locales; sourceTree = "<group>"; };
+		4682878328F1CF25008CFC46 /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; path = images; sourceTree = "<group>"; };
+		4682878428F1CF25008CFC46 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
+		4682878528F1CF25008CFC46 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = background.js; sourceTree = "<group>"; };
+		4682878628F1CF25008CFC46 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = content.js; sourceTree = "<group>"; };
+		4682878728F1CF25008CFC46 /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = popup.html; sourceTree = "<group>"; };
+		4682878828F1CF25008CFC46 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = popup.css; sourceTree = "<group>"; };
+		4682878928F1CF25008CFC46 /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = popup.js; sourceTree = "<group>"; };
+		4682878E28F1CF25008CFC46 /* VideoTogether.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VideoTogether.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4682879128F1CF25008CFC46 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		4682879328F1CF25008CFC46 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		4682879628F1CF25008CFC46 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		4682879928F1CF25008CFC46 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		4682879B28F1CF25008CFC46 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		468287A028F1CF25008CFC46 /* VideoTogether.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VideoTogether.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		468287A228F1CF25008CFC46 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		468287A528F1CF25008CFC46 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		468287A728F1CF25008CFC46 /* VideoTogether.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VideoTogether.entitlements; sourceTree = "<group>"; };
+		468287AC28F1CF25008CFC46 /* VideoTogether Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "VideoTogether Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		468287B128F1CF25008CFC46 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		468287B628F1CF25008CFC46 /* VideoTogether Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "VideoTogether Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		468287BB28F1CF25008CFC46 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		468287BC28F1CF25008CFC46 /* VideoTogether.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VideoTogether.entitlements; sourceTree = "<group>"; };
+		468287EB28F1D16E008CFC46 /* extension.safari.user.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = extension.safari.user.js; sourceTree = "<group>"; };
+		468287EE28F1DEE2008CFC46 /* load.en-us.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "load.en-us.js"; sourceTree = "<group>"; };
+		468287EF28F1DEE2008CFC46 /* load.zh-cn.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "load.zh-cn.js"; sourceTree = "<group>"; };
+		468287F428F25B10008CFC46 /* vt.en-us.user.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "vt.en-us.user.js"; sourceTree = "<group>"; };
+		468287F528F25B10008CFC46 /* vt.zh-cn.user.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "vt.zh-cn.user.js"; sourceTree = "<group>"; };
+		46ACA8EA28F25E8F00F37C93 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = "Shared (Extension)/Resources/images/Icon.png"; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4682878B28F1CF25008CFC46 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4682879D28F1CF25008CFC46 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		468287A928F1CF25008CFC46 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		468287B328F1CF25008CFC46 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4682877128F1CF24008CFC46 = {
+			isa = PBXGroup;
+			children = (
+				4682877628F1CF24008CFC46 /* Shared (App) */,
+				4682877F28F1CF25008CFC46 /* Shared (Extension) */,
+				4682879028F1CF25008CFC46 /* iOS (App) */,
+				468287A128F1CF25008CFC46 /* macOS (App) */,
+				468287B028F1CF25008CFC46 /* iOS (Extension) */,
+				468287BA28F1CF25008CFC46 /* macOS (Extension) */,
+				4682878F28F1CF25008CFC46 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4682877628F1CF24008CFC46 /* Shared (App) */ = {
+			isa = PBXGroup;
+			children = (
+				4682877D28F1CF24008CFC46 /* ViewController.swift */,
+				4682877E28F1CF25008CFC46 /* Assets.xcassets */,
+				4682877728F1CF24008CFC46 /* Resources */,
+			);
+			path = "Shared (App)";
+			sourceTree = "<group>";
+		};
+		4682877728F1CF24008CFC46 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				46ACA8EA28F25E8F00F37C93 /* Icon.png */,
+				4682877828F1CF24008CFC46 /* Main.html */,
+				4682877B28F1CF24008CFC46 /* Style.css */,
+				4682877C28F1CF24008CFC46 /* Script.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		4682877F28F1CF25008CFC46 /* Shared (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				4682878028F1CF25008CFC46 /* SafariWebExtensionHandler.swift */,
+				4682878128F1CF25008CFC46 /* Resources */,
+			);
+			path = "Shared (Extension)";
+			sourceTree = "<group>";
+		};
+		4682878128F1CF25008CFC46 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				468287F428F25B10008CFC46 /* vt.en-us.user.js */,
+				468287F528F25B10008CFC46 /* vt.zh-cn.user.js */,
+				468287EE28F1DEE2008CFC46 /* load.en-us.js */,
+				468287EF28F1DEE2008CFC46 /* load.zh-cn.js */,
+				468287EB28F1D16E008CFC46 /* extension.safari.user.js */,
+				4682878228F1CF25008CFC46 /* _locales */,
+				4682878328F1CF25008CFC46 /* images */,
+				4682878428F1CF25008CFC46 /* manifest.json */,
+				4682878528F1CF25008CFC46 /* background.js */,
+				4682878628F1CF25008CFC46 /* content.js */,
+				4682878728F1CF25008CFC46 /* popup.html */,
+				4682878828F1CF25008CFC46 /* popup.css */,
+				4682878928F1CF25008CFC46 /* popup.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		4682878F28F1CF25008CFC46 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4682878E28F1CF25008CFC46 /* VideoTogether.app */,
+				468287A028F1CF25008CFC46 /* VideoTogether.app */,
+				468287AC28F1CF25008CFC46 /* VideoTogether Extension.appex */,
+				468287B628F1CF25008CFC46 /* VideoTogether Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4682879028F1CF25008CFC46 /* iOS (App) */ = {
+			isa = PBXGroup;
+			children = (
+				4682879128F1CF25008CFC46 /* AppDelegate.swift */,
+				4682879328F1CF25008CFC46 /* SceneDelegate.swift */,
+				4682879528F1CF25008CFC46 /* LaunchScreen.storyboard */,
+				4682879828F1CF25008CFC46 /* Main.storyboard */,
+				4682879B28F1CF25008CFC46 /* Info.plist */,
+			);
+			path = "iOS (App)";
+			sourceTree = "<group>";
+		};
+		468287A128F1CF25008CFC46 /* macOS (App) */ = {
+			isa = PBXGroup;
+			children = (
+				468287A228F1CF25008CFC46 /* AppDelegate.swift */,
+				468287A428F1CF25008CFC46 /* Main.storyboard */,
+				468287A728F1CF25008CFC46 /* VideoTogether.entitlements */,
+			);
+			path = "macOS (App)";
+			sourceTree = "<group>";
+		};
+		468287B028F1CF25008CFC46 /* iOS (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				468287B128F1CF25008CFC46 /* Info.plist */,
+			);
+			path = "iOS (Extension)";
+			sourceTree = "<group>";
+		};
+		468287BA28F1CF25008CFC46 /* macOS (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				468287BB28F1CF25008CFC46 /* Info.plist */,
+				468287BC28F1CF25008CFC46 /* VideoTogether.entitlements */,
+			);
+			path = "macOS (Extension)";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4682878D28F1CF25008CFC46 /* VideoTogether (iOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 468287E128F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether (iOS)" */;
+			buildPhases = (
+				4682878A28F1CF25008CFC46 /* Sources */,
+				4682878B28F1CF25008CFC46 /* Frameworks */,
+				4682878C28F1CF25008CFC46 /* Resources */,
+				468287E028F1CF25008CFC46 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				468287AF28F1CF25008CFC46 /* PBXTargetDependency */,
+			);
+			name = "VideoTogether (iOS)";
+			productName = "VideoTogether (iOS)";
+			productReference = 4682878E28F1CF25008CFC46 /* VideoTogether.app */;
+			productType = "com.apple.product-type.application";
+		};
+		4682879F28F1CF25008CFC46 /* VideoTogether (macOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 468287E828F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether (macOS)" */;
+			buildPhases = (
+				4682879C28F1CF25008CFC46 /* Sources */,
+				4682879D28F1CF25008CFC46 /* Frameworks */,
+				4682879E28F1CF25008CFC46 /* Resources */,
+				468287E728F1CF25008CFC46 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				468287B928F1CF25008CFC46 /* PBXTargetDependency */,
+			);
+			name = "VideoTogether (macOS)";
+			productName = "VideoTogether (macOS)";
+			productReference = 468287A028F1CF25008CFC46 /* VideoTogether.app */;
+			productType = "com.apple.product-type.application";
+		};
+		468287AB28F1CF25008CFC46 /* VideoTogether Extension (iOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 468287DD28F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether Extension (iOS)" */;
+			buildPhases = (
+				468287A828F1CF25008CFC46 /* Sources */,
+				468287A928F1CF25008CFC46 /* Frameworks */,
+				468287AA28F1CF25008CFC46 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "VideoTogether Extension (iOS)";
+			productName = "VideoTogether Extension (iOS)";
+			productReference = 468287AC28F1CF25008CFC46 /* VideoTogether Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		468287B528F1CF25008CFC46 /* VideoTogether Extension (macOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 468287E428F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether Extension (macOS)" */;
+			buildPhases = (
+				468287B228F1CF25008CFC46 /* Sources */,
+				468287B328F1CF25008CFC46 /* Frameworks */,
+				468287B428F1CF25008CFC46 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "VideoTogether Extension (macOS)";
+			productName = "VideoTogether Extension (macOS)";
+			productReference = 468287B628F1CF25008CFC46 /* VideoTogether Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4682877228F1CF24008CFC46 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1400;
+				LastUpgradeCheck = 1400;
+				TargetAttributes = {
+					4682878D28F1CF25008CFC46 = {
+						CreatedOnToolsVersion = 14.0.1;
+					};
+					4682879F28F1CF25008CFC46 = {
+						CreatedOnToolsVersion = 14.0.1;
+					};
+					468287AB28F1CF25008CFC46 = {
+						CreatedOnToolsVersion = 14.0.1;
+					};
+					468287B528F1CF25008CFC46 = {
+						CreatedOnToolsVersion = 14.0.1;
+					};
+				};
+			};
+			buildConfigurationList = 4682877528F1CF24008CFC46 /* Build configuration list for PBXProject "VideoTogether" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 4682877128F1CF24008CFC46;
+			productRefGroup = 4682878F28F1CF25008CFC46 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				4682878D28F1CF25008CFC46 /* VideoTogether (iOS) */,
+				4682879F28F1CF25008CFC46 /* VideoTogether (macOS) */,
+				468287AB28F1CF25008CFC46 /* VideoTogether Extension (iOS) */,
+				468287B528F1CF25008CFC46 /* VideoTogether Extension (macOS) */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4682878C28F1CF25008CFC46 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				46ACA8EB28F25E8F00F37C93 /* Icon.png in Resources */,
+				4682879728F1CF25008CFC46 /* LaunchScreen.storyboard in Resources */,
+				468287BD28F1CF25008CFC46 /* Main.html in Resources */,
+				468287C328F1CF25008CFC46 /* Script.js in Resources */,
+				468287C728F1CF25008CFC46 /* Assets.xcassets in Resources */,
+				4682879A28F1CF25008CFC46 /* Main.storyboard in Resources */,
+				468287C128F1CF25008CFC46 /* Style.css in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4682879E28F1CF25008CFC46 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				46ACA8EC28F25E8F00F37C93 /* Icon.png in Resources */,
+				468287C228F1CF25008CFC46 /* Style.css in Resources */,
+				468287A628F1CF25008CFC46 /* Main.storyboard in Resources */,
+				468287C428F1CF25008CFC46 /* Script.js in Resources */,
+				468287C828F1CF25008CFC46 /* Assets.xcassets in Resources */,
+				468287BE28F1CF25008CFC46 /* Main.html in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		468287AA28F1CF25008CFC46 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				468287F228F1DEE2008CFC46 /* load.zh-cn.js in Resources */,
+				468287F828F25B10008CFC46 /* vt.zh-cn.user.js in Resources */,
+				468287D128F1CF25008CFC46 /* background.js in Resources */,
+				468287D728F1CF25008CFC46 /* popup.css in Resources */,
+				468287D528F1CF25008CFC46 /* popup.html in Resources */,
+				468287CD28F1CF25008CFC46 /* images in Resources */,
+				468287CF28F1CF25008CFC46 /* manifest.json in Resources */,
+				468287EC28F1D16E008CFC46 /* extension.safari.user.js in Resources */,
+				468287CB28F1CF25008CFC46 /* _locales in Resources */,
+				468287F628F25B10008CFC46 /* vt.en-us.user.js in Resources */,
+				468287D328F1CF25008CFC46 /* content.js in Resources */,
+				468287F028F1DEE2008CFC46 /* load.en-us.js in Resources */,
+				468287D928F1CF25008CFC46 /* popup.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		468287B428F1CF25008CFC46 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				468287F328F1DEE2008CFC46 /* load.zh-cn.js in Resources */,
+				468287F928F25B10008CFC46 /* vt.zh-cn.user.js in Resources */,
+				468287D228F1CF25008CFC46 /* background.js in Resources */,
+				468287D828F1CF25008CFC46 /* popup.css in Resources */,
+				468287D628F1CF25008CFC46 /* popup.html in Resources */,
+				468287CE28F1CF25008CFC46 /* images in Resources */,
+				468287D028F1CF25008CFC46 /* manifest.json in Resources */,
+				468287ED28F1D16E008CFC46 /* extension.safari.user.js in Resources */,
+				468287CC28F1CF25008CFC46 /* _locales in Resources */,
+				468287F728F25B10008CFC46 /* vt.en-us.user.js in Resources */,
+				468287D428F1CF25008CFC46 /* content.js in Resources */,
+				468287F128F1DEE2008CFC46 /* load.en-us.js in Resources */,
+				468287DA28F1CF25008CFC46 /* popup.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4682878A28F1CF25008CFC46 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				468287C528F1CF25008CFC46 /* ViewController.swift in Sources */,
+				4682879228F1CF25008CFC46 /* AppDelegate.swift in Sources */,
+				4682879428F1CF25008CFC46 /* SceneDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4682879C28F1CF25008CFC46 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				468287C628F1CF25008CFC46 /* ViewController.swift in Sources */,
+				468287A328F1CF25008CFC46 /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		468287A828F1CF25008CFC46 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				468287C928F1CF25008CFC46 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		468287B228F1CF25008CFC46 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				468287CA28F1CF25008CFC46 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		468287AF28F1CF25008CFC46 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 468287AB28F1CF25008CFC46 /* VideoTogether Extension (iOS) */;
+			targetProxy = 468287AE28F1CF25008CFC46 /* PBXContainerItemProxy */;
+		};
+		468287B928F1CF25008CFC46 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 468287B528F1CF25008CFC46 /* VideoTogether Extension (macOS) */;
+			targetProxy = 468287B828F1CF25008CFC46 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		4682877828F1CF24008CFC46 /* Main.html */ = {
+			isa = PBXVariantGroup;
+			children = (
+				4682877928F1CF24008CFC46 /* Base */,
+			);
+			name = Main.html;
+			sourceTree = "<group>";
+		};
+		4682879528F1CF25008CFC46 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				4682879628F1CF25008CFC46 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		4682879828F1CF25008CFC46 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				4682879928F1CF25008CFC46 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		468287A428F1CF25008CFC46 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				468287A528F1CF25008CFC46 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		468287DB28F1CF25008CFC46 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		468287DC28F1CF25008CFC46 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		468287DE28F1CF25008CFC46 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NN72FH6YR3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "VideoTogether Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = VideoTogether.VideoTogether.Extension;
+				PRODUCT_NAME = "VideoTogether Extension";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		468287DF28F1CF25008CFC46 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NN72FH6YR3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "VideoTogether Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = VideoTogether.VideoTogether.Extension;
+				PRODUCT_NAME = "VideoTogether Extension";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		468287E228F1CF25008CFC46 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NN72FH6YR3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = VideoTogether;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = VideoTogether.VideoTogether;
+				PRODUCT_NAME = VideoTogether;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		468287E328F1CF25008CFC46 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NN72FH6YR3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = VideoTogether;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = VideoTogether.VideoTogether;
+				PRODUCT_NAME = VideoTogether;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		468287E528F1CF25008CFC46 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "macOS (Extension)/VideoTogether.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NN72FH6YR3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "VideoTogether Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = VideoTogether.VideoTogether.Extension;
+				PRODUCT_NAME = "VideoTogether Extension";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		468287E628F1CF25008CFC46 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "macOS (Extension)/VideoTogether.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NN72FH6YR3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "VideoTogether Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = VideoTogether.VideoTogether.Extension;
+				PRODUCT_NAME = "VideoTogether Extension";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		468287E928F1CF25008CFC46 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "macOS (App)/VideoTogether.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NN72FH6YR3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = VideoTogether;
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = VideoTogether.VideoTogether;
+				PRODUCT_NAME = VideoTogether;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		468287EA28F1CF25008CFC46 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "macOS (App)/VideoTogether.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = NN72FH6YR3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = VideoTogether;
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = VideoTogether.VideoTogether;
+				PRODUCT_NAME = VideoTogether;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4682877528F1CF24008CFC46 /* Build configuration list for PBXProject "VideoTogether" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				468287DB28F1CF25008CFC46 /* Debug */,
+				468287DC28F1CF25008CFC46 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		468287DD28F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether Extension (iOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				468287DE28F1CF25008CFC46 /* Debug */,
+				468287DF28F1CF25008CFC46 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		468287E128F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether (iOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				468287E228F1CF25008CFC46 /* Debug */,
+				468287E328F1CF25008CFC46 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		468287E428F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether Extension (macOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				468287E528F1CF25008CFC46 /* Debug */,
+				468287E628F1CF25008CFC46 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		468287E828F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether (macOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				468287E928F1CF25008CFC46 /* Debug */,
+				468287EA28F1CF25008CFC46 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4682877228F1CF24008CFC46 /* Project object */;
+}

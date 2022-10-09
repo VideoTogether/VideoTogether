@@ -1,0 +1,43 @@
+{
+    "manifest_version": 3,
+    "default_locale": "en",
+
+    "name": "__MSG_extension_name__",
+    "description": "__MSG_extension_description__",
+    "version": "1.0",
+
+    "icons": {
+        "192": "images/android-icon-192x192.png"
+    },
+
+    "background": {
+        "service_worker": "background.js"
+    },
+
+    "content_scripts": [{
+        "js": [ "content.js" , "extension.safari.user.js"],
+        "matches": [ "<all_urls>" ]
+    }],
+
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "192": "images/android-icon-192x192.png"
+        }
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "load.en-us.js",
+                "load.zh-cn.js",
+                "vt.en-us.user.js",
+                "vt.zh-cn.user.js",
+                "preInjected.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "permissions": ["storage" ]
+}

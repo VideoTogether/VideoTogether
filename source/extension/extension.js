@@ -34,8 +34,11 @@
     } catch (e) { };
 
     let version = '{{timestamp}}'
-    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
-    if (type == "Chrome") {
+    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
+    if (type == 'Safari') {
+        var chrome = browser;
+    }
+    if (type == "Chrome" || type == "Safari") {
         window.GM = {};
         GM.setValue = async (key, value) => {
             return await new Promise((resolve, reject) => {
@@ -303,6 +306,7 @@
             script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
             break;
         case "Chrome":
+        case "Safari":
             let inlineDisabled = false;
             let evalDisabled = false;
             let urlDisabled = false;
@@ -344,7 +348,7 @@
     }
 
     (document.body || document.documentElement).appendChild(script);
-    if (type != "Chrome") {
+    if (type != "Chrome" && type != "Safari") {
         try {
             InsertInlineJs(script.src);
             GM_addElement('script', {
