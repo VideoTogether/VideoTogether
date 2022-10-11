@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665279042
+// @version      1665307144
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -596,11 +596,11 @@
         <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
         <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
         <div style="margin-bottom: 10px;">
-          <span id="videoTogetherRoomNameLabel">Room:</span>
+          <span id="videoTogetherRoomNameLabel">Room</span>
           <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="Name of room">
         </div>
         <div>
-          <span id="videoTogetherRoomPasswordLabel">Password:</span>
+          <span id="videoTogetherRoomPasswordLabel">Password</span>
           <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="Host's password">
         </div>
         </div>
@@ -955,7 +955,7 @@
   #videoTogetherRoomNameLabel,
   #videoTogetherRoomPasswordLabel {
     display: inline-block;
-    width: 70px !important;
+    width: 76px;
   }
 
   #videoTogetherRoomNameInput,
@@ -1465,7 +1465,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1665279042';
+            this.version = '1665307144';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1515,12 +1515,6 @@
                     }, 2000);
                 } catch (e) { console.error(e) }
             }
-            setTimeout(() => {
-                // fall back to china service
-                if (this.minTrip == 1e9) {
-                    this.video_together_host = this.video_together_backup_host;
-                }
-            }, 3000);
         }
 
         setRole(role) {
@@ -1878,12 +1872,16 @@
             return Date.now() / 1000 + this.timeOffset;
         }
 
-        async SyncTimeWithServer() {
+        async SyncTimeWithServer(url = null) {
+            if (url == null) {
+                url = this.video_together_host;
+            }
             let startTime = Date.now() / 1000;
-            let response = await this.Fetch(this.video_together_host + "/timestamp");
+            let response = await this.Fetch(url + "/timestamp");
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
+            this.video_together_host = url;
         }
 
         RecoveryState() {
@@ -2002,7 +2000,8 @@
 
             try {
                 if (this.minTrip == 1e9) {
-                    await this.SyncTimeWithServer();
+                    this.SyncTimeWithServer(this.video_together_host);
+                    this.SyncTimeWithServer(this.video_together_backup_host);
                 }
             } catch { };
 

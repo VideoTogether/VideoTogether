@@ -1,0 +1,47 @@
+{
+    "manifest_version": 2,
+    "default_locale": "en",
+    "name": "__MSG_extension_name__",
+    "description": "__MSG_extension_description__",
+    "version": "1.3.56",
+    "icons": {
+        "192": "images/android-icon-192x192.png"
+    },
+    "background": {
+        "scripts": [
+            "background.firefox.js"
+        ],
+        "persistent": false
+    },
+    "content_scripts": [
+        {
+            "js": [
+                "extension.firefox.user.js"
+            ],
+            "matches": [
+                "<all_urls>"
+            ],
+            "all_frames": true
+        },
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "pre.js"
+            ],
+            "run_at": "document_start",
+            "all_frames": true
+        }
+    ],
+    "web_accessible_resources": [
+        "load.en-us.js",
+        "load.zh-cn.js",
+        "vt.en-us.user.js",
+        "vt.zh-cn.user.js",
+        "preInjected.js"
+    ],
+    "permissions": [
+        "storage"
+    ]
+}

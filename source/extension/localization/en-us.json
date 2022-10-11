@@ -1,7 +1,7 @@
 {
-    "room_input_lable": "Room:",
+    "room_input_lable": "Room",
     "room_input_placeholder": "Name of room",
-    "password_input_lable": "Password:",
+    "password_input_lable": "Password",
     "password_input_placeholder": "Host's password",
     "create_room_button": "Create",
     "join_room_button": "Join",

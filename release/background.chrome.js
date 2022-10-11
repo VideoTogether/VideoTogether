@@ -1,16 +1,28 @@
+let type = 'Chrome'
+
+function getBrowser() {
+    switch (type) {
+        case 'Safari':
+            return browser;
+        case 'Chrome':
+        case 'Firefox':
+            return chrome;
+    }
+}
+
 let tabs = []
 
-chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+getBrowser().runtime.onMessage.addListener(function (msgText, sender, sendResponse) {
+    let msg = JSON.parse(msgText);
     switch (msg.type) {
         case 1:
             try {
                 let tabId = `tab-${sender.tab.id}`;
-                chrome.storage.session.get(tabId, tab => {
+                getBrowser().storage.session.get(tabId, tab => {
                     sendResponse(tab[tabId] == null ? {} : tab[tabId]);
                 })
                 return true;
             } catch (e) {
-                console.log("fallback");
                 if (tabs[sender.tab.id] == undefined) tabs[sender.tab.id] = {};
                 sendResponse(tabs[sender.tab.id]);
             }
@@ -20,7 +32,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
                 let tabId = `tab-${sender.tab.id}`;
                 let item = {};
                 item[tabId] = msg.tab;
-                chrome.storage.session.set(item, () => {
+                getBrowser().storage.session.set(item, () => {
                     sendResponse(msg.tab);
                 })
                 return true;

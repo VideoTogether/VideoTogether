@@ -906,12 +906,6 @@
                     }, 2000);
                 } catch (e) { console.error(e) }
             }
-            setTimeout(() => {
-                // fall back to china service
-                if (this.minTrip == 1e9) {
-                    this.video_together_host = this.video_together_backup_host;
-                }
-            }, 3000);
         }
 
         setRole(role) {
@@ -1269,12 +1263,16 @@
             return Date.now() / 1000 + this.timeOffset;
         }
 
-        async SyncTimeWithServer() {
+        async SyncTimeWithServer(url = null) {
+            if (url == null) {
+                url = this.video_together_host;
+            }
             let startTime = Date.now() / 1000;
-            let response = await this.Fetch(this.video_together_host + "/timestamp");
+            let response = await this.Fetch(url + "/timestamp");
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
+            this.video_together_host = url;
         }
 
         RecoveryState() {
@@ -1393,7 +1391,8 @@
 
             try {
                 if (this.minTrip == 1e9) {
-                    await this.SyncTimeWithServer();
+                    this.SyncTimeWithServer(this.video_together_host);
+                    this.SyncTimeWithServer(this.video_together_backup_host);
                 }
             } catch { };
 

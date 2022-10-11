@@ -100,6 +100,10 @@ if __name__ == '__main__':
     shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
                     rootPath.joinpath("source/chrome/load.zh-cn.js"))
     shutil.copyfile(rootPath.joinpath("release/load.en-us.js"),
+                    rootPath.joinpath("source/firefox/load.en-us.js"))
+    shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
+                    rootPath.joinpath("source/firefox/load.zh-cn.js"))
+    shutil.copyfile(rootPath.joinpath("release/load.en-us.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/load.en-us.js"))
     shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/load.zh-cn.js"))
@@ -109,6 +113,10 @@ if __name__ == '__main__':
     shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
                     rootPath.joinpath("source/chrome/vt.zh-cn.user.js"))
     shutil.copyfile(rootPath.joinpath("release/vt.en-us.user.js"),
+                    rootPath.joinpath("source/firefox/vt.en-us.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
+                    rootPath.joinpath("source/firefox/vt.zh-cn.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.en-us.user.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/vt.en-us.user.js"))
     shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/vt.zh-cn.user.js"))
@@ -117,3 +125,12 @@ if __name__ == '__main__':
                     rootPath.joinpath("source/chrome/extension.chrome.user.js"))
     shutil.copyfile(rootPath.joinpath("release/extension.safari.user.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/extension.safari.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/extension.firefox.user.js"),
+                    rootPath.joinpath("source/firefox/extension.firefox.user.js"))
+
+    shutil.copyfile(rootPath.joinpath("release/background.chrome.js"),
+                    rootPath.joinpath("source/chrome/background.chrome.js"))
+    shutil.copyfile(rootPath.joinpath("release/background.firefox.js"),
+                    rootPath.joinpath("source/firefox/background.firefox.js"))
+    shutil.copyfile(rootPath.joinpath("release/background.safari.js"),
+                    rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/background.safari.js"))

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665279042
+// @version      1665307144
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,19 +33,26 @@
         }
     } catch (e) { };
 
-    let version = '1665279042'
+    let version = '1665307144'
     let type = 'Chrome'
-    if (type == 'Safari') {
-        var chrome = browser;
+    function getBrowser() {
+        switch (type) {
+            case 'Safari':
+                return browser;
+            case 'Chrome':
+            case 'Firefox':
+                return chrome;
+        }
     }
-    if (type == "Chrome" || type == "Safari") {
+
+    if (type == "Chrome" || type == "Safari" || type == "Firefox") {
         window.GM = {};
         GM.setValue = async (key, value) => {
             return await new Promise((resolve, reject) => {
                 try {
                     let item = {};
                     item[key] = value;
-                    chrome.storage.local.set(item, function () {
+                    getBrowser().storage.local.set(item, function () {
                         resolve();
                     });
                 } catch (e) {
@@ -56,7 +63,7 @@
         GM.getValue = async (key) => {
             return await new Promise((resolve, reject) => {
                 try {
-                    chrome.storage.local.get([key], function (result) {
+                    getBrowser().storage.local.get([key], function (result) {
                         resolve(result[key]);
                     });
                 } catch (e) {
@@ -68,7 +75,7 @@
         GM.getTab = async () => {
             return await new Promise((resolve, reject) => {
                 try {
-                    chrome.runtime.sendMessage({ type: 1 }, function (response) {
+                    getBrowser().runtime.sendMessage(JSON.stringify({ type: 1 }), function (response) {
                         resolve(response);
                     })
                 } catch (e) {
@@ -80,7 +87,7 @@
         GM.saveTab = async (tab) => {
             return await new Promise((resolve, reject) => {
                 try {
-                    chrome.runtime.sendMessage({ type: 2, tab: tab }, function (response) {
+                    getBrowser().runtime.sendMessage(JSON.stringify({ type: 2, tab: tab }), function (response) {
                         resolve(response);
                     })
                 } catch (e) {
@@ -90,7 +97,7 @@
         }
         GM.xmlHttpRequest = async (props) => {
             try {
-                chrome.runtime.sendMessage({ type: 3, props: props }, function (response) {
+                getBrowser().runtime.sendMessage(JSON.stringify({ type: 3, props: props }), function (response) {
                     if (response.error != undefined) {
                         throw response.error;
                     }
@@ -350,6 +357,7 @@
             break;
         case "Chrome":
         case "Safari":
+        case "Firefox":
             let inlineDisabled = false;
             let evalDisabled = false;
             let urlDisabled = false;
@@ -369,12 +377,12 @@
                 }
                 if (inlineDisabled && evalDisabled && urlDisabled) {
                     console.log("hot update is not successful")
-                    insertJs(chrome.runtime.getURL(`vt.${language}.user.js`));
+                    insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
                     hotUpdated = true;
                 }
             });
-            // script.src = chrome.runtime.getURL(`vt.${language}.user.js`);
-            script.src = chrome.runtime.getURL(`load.${language}.js`);
+            // script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
+            script.src = getBrowser().runtime.getURL(`load.${language}.js`);
             break;
         case "userscript_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
@@ -391,7 +399,7 @@
     }
 
     (document.body || document.documentElement).appendChild(script);
-    if (type != "Chrome" && type != "Safari") {
+    if (type != "Chrome" && type != "Safari" && type != "Firefox") {
         try {
             InsertInlineJs(script.src);
             GM_addElement('script', {
@@ -403,7 +411,7 @@
 
     // fallback to china service
     setTimeout(() => {
-        if (type == "Chrome") {
+        if (type == "Chrome" || type == "Firefox" || type == "Safari") {
             return;
         }
         if (!ExtensionInitSuccess) {

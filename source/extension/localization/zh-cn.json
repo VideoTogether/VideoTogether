@@ -1,7 +1,7 @@
 {
-    "room_input_lable": "房间：",
+    "room_input_lable": "房间",
     "room_input_placeholder": "请输入房间名",
-    "password_input_lable": "密码：",
+    "password_input_lable": "密码",
     "password_input_placeholder": "输入建房密码",
     "create_room_button": "建 房",
     "join_room_button": "加 入",
