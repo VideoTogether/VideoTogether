@@ -967,7 +967,11 @@
                 });
             }
             if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
-                return await window.fetch(url);
+                console.log(method, data, data == null ? undefined : JSON.stringify(data));
+                return await window.fetch(url, {
+                    method: method,
+                    body: data == null ? undefined : JSON.stringify(data)
+                });
             } else {
                 if (!this.NativeFetchFunction) {
                     let temp = document.createElement("iframe");
@@ -975,7 +979,10 @@
                     document.body.append(temp);
                     this.NativeFetchFunction = temp.contentWindow.fetch;
                 }
-                return await this.NativeFetchFunction.call(window, url);
+                return await this.NativeFetchFunction.call(window, {
+                    method: method,
+                    body: data == null ? undefined : JSON.stringify(data)
+                });
             }
         }
 
