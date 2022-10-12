@@ -978,7 +978,7 @@
                     document.body.append(temp);
                     this.NativeFetchFunction = temp.contentWindow.fetch;
                 }
-                return await this.NativeFetchFunction.call(window, {
+                return await this.NativeFetchFunction.call(window, url, {
                     method: method,
                     body: data == null ? undefined : JSON.stringify(data)
                 });
