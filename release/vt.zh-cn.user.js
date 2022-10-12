@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665535870
+// @version      1665537314
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1465,7 +1465,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1665535870';
+            this.version = '1665537314';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1576,7 +1576,6 @@
                 });
             }
             if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
-                console.log(method, data, data == null ? undefined : JSON.stringify(data));
                 return await window.fetch(url, {
                     method: method,
                     body: data == null ? undefined : JSON.stringify(data)

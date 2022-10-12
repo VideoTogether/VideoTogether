@@ -967,7 +967,6 @@
                 });
             }
             if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
-                console.log(method, data, data == null ? undefined : JSON.stringify(data));
                 return await window.fetch(url, {
                     method: method,
                     body: data == null ? undefined : JSON.stringify(data)
