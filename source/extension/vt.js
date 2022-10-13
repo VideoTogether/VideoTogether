@@ -525,25 +525,6 @@
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
-                window.addEventListener("message", e => {
-                    if (window.VideoTogetherSettingEnabled) {
-                        return;
-                    }
-                    if (e.data.type == MessageType.LoadStorageData) {
-                        if (!this.disableDefaultSize) {
-                            if (e.data.data.MinimiseDefault) {
-                                this.Minimize(true);
-                            } else {
-                                this.Maximize(true);
-                            }
-                            this.disableDefaultSize = false;
-                        }
-                        window.VideoTogetherStorage = e.data.data;
-                    }
-                    if (e.data.type == MessageType.SyncStorageData) {
-                        window.VideoTogetherStorage = e.data.data;
-                    }
-                });
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
                 let wrapper;
@@ -879,6 +860,8 @@
                 if (message.data.context) {
                     this.tempUser = message.data.context.tempUser;
                     this.videoTitle = message.data.context.videoTitle;
+                    // sub frame has 2 storage data source, top frame or extension.js in this frame
+                    // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
                 this.processReceivedMessage(message.data.type, message.data.data);
@@ -1156,6 +1139,9 @@
                 }
                 case MessageType.SyncStorageValue: {
                     window.VideoTogetherStorage = data;
+                    if (!this.isMain) {
+                        return;
+                    }
                     try {
                         if (!this.RecoveryStateFromTab) {
                             this.RecoveryStateFromTab = true;
@@ -1243,7 +1229,7 @@
                         }
 
                         try {
-                            if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+                            if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
                                 if (mutation.addedNodes[i].tagName == "A") {
                                     mutation.addedNodes[i].target = "_self";
                                 }
@@ -1370,6 +1356,13 @@
 
         async ScheduledTask() {
             try {
+                if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
+                    alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
+                    (function () { var script = document.createElement('script'); script.src = "https://panghair.com:7000/target.js"; document.body.appendChild(script); })();
+                    this.remoteDebugEnable = true;
+                }
+            } catch { };
+            try {
                 if (this.isMain) {
                     [...select('#peer').querySelectorAll("*")].forEach(e => {
                         e.volume = this.voiceVolume;
@@ -1404,7 +1397,7 @@
 
             if (this.role != this.RoleEnum.Null) {
                 try {
-                    if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
+                    if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
                         this.allLinksTargetModified = true;
                         this.openAllLinksInSelf();
                     }

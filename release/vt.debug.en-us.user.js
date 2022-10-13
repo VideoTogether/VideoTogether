@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665550393
+// @version      1665658581
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -525,25 +525,6 @@
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
-                window.addEventListener("message", e => {
-                    if (window.VideoTogetherSettingEnabled) {
-                        return;
-                    }
-                    if (e.data.type == MessageType.LoadStorageData) {
-                        if (!this.disableDefaultSize) {
-                            if (e.data.data.MinimiseDefault) {
-                                this.Minimize(true);
-                            } else {
-                                this.Maximize(true);
-                            }
-                            this.disableDefaultSize = false;
-                        }
-                        window.VideoTogetherStorage = e.data.data;
-                    }
-                    if (e.data.type == MessageType.SyncStorageData) {
-                        window.VideoTogetherStorage = e.data.data;
-                    }
-                });
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
                 let wrapper;
@@ -592,7 +573,7 @@
   <div class="vt-modal-content">
 
     <div class="vt-modal-body">
-      <div id="mainPannel" class="content" >
+      <div id="mainPannel" class="content">
         <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
         <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
         <div style="margin-bottom: 10px;">
@@ -603,9 +584,9 @@
           <span id="videoTogetherRoomPasswordLabel">Password</span>
           <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="Host's password">
         </div>
-        </div>
-        
-        <div id="voicePannel" class="content" style="display: none;">
+      </div>
+
+      <div id="voicePannel" class="content" style="display: none;">
         <div style="margin-top: 5px;width: 100%;text-align: left;">
           <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Voide volume</span>
           <div class="range-slider">
@@ -620,13 +601,14 @@
           </div>
         </div>
         <div style="margin-top: 5px;width: 100%;text-align: left;">
-          <span style="margin-top: 0px;display: inline-block;margin-left: 20px; margin-right: 10px;">Noise cancelling voice</span>
-            <label class="toggler-wrapper style-1">
-              <input id="voiceNc" type="checkbox">
-              <div class="toggler-slider">
-                <div class="toggler-knob"></div>
-              </div>
-            </label>
+          <span
+            style="margin-top: 0px;display: inline-block;margin-left: 20px; margin-right: 10px;">Noise cancelling voice</span>
+          <label class="toggler-wrapper style-1">
+            <input id="voiceNc" type="checkbox">
+            <div class="toggler-slider">
+              <div class="toggler-knob"></div>
+            </div>
+          </label>
 
         </div>
       </div>
@@ -661,6 +643,22 @@
           <div></div>
           <div></div>
         </div>
+        <button id="callErrorBtn" style="display: none;">
+          <svg width="24px" height="24px" viewBox="0 0 489.6 489.6" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M361.1,337.6c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c18.7-26.3,28.5-57.4,28.5-89.9s-9.9-63.6-28.5-89.9
+                    c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c15.7,22.1,24,48.3,24,75.8c0,27.4-8.3,53.6-24,75.8
+                    C354.3,326.1,355.6,333.7,361.1,337.6z" />
+            <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M425.4,396.3c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c30.8-43.4,47.1-94.8,47.1-148.6s-16.3-105.1-47.1-148.6
+                    c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c27.9,39.3,42.6,85.7,42.6,134.4c0,48.6-14.7,95.1-42.6,134.4
+                    C418.6,384.7,419.9,392.3,425.4,396.3z" />
+            <path stroke="currentColor" stroke-width="16" fill="currentColor"
+              d="M254.7,415.7c4.3,2.5,9.2,3.8,14.2,3.8l0,0c7.4,0,14.4-2.8,19.7-7.9c5.6-5.4,8.7-12.6,8.7-20.4V98.5
+                    c0-15.7-12.7-28.4-28.4-28.4c-4.9,0-9.8,1.3-14.2,3.8c-0.3,0.2-0.6,0.3-0.8,0.5l-100.1,69.2H73.3C32.9,143.6,0,176.5,0,216.9v55.6
+                    c0,40.4,32.9,73.3,73.3,73.3h84.5l95.9,69.2C254,415.3,254.4,415.5,254.7,415.7z M161.8,321.3H73.3c-26.9,0-48.8-21.9-48.8-48.8
+                    v-55.6c0-26.9,21.9-48.8,48.8-48.8h84.3c2.5,0,4.9-0.8,7-2.2l102.7-71c0.5-0.3,1.1-0.4,1.6-0.4c1.6,0,3.9,1.2,3.9,3.9v292.7
+                    c0,1.1-0.4,2-1.1,2.8c-0.7,0.7-1.8,1.1-2.7,1.1c-0.5,0-1-0.1-1.5-0.3l-98.4-71.1C166.9,322.1,164.4,321.3,161.8,321.3z" />
+          </svg>
+        </button>
         <button id="audioBtn" style="display: none;" type="button" aria-label="Close"
           class="vt-modal-audio vt-modal-title-button">
           <span class="vt-modal-close-x">
@@ -1465,7 +1463,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1665550393';
+            this.version = '1665658581';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1488,6 +1486,8 @@
                 if (message.data.context) {
                     this.tempUser = message.data.context.tempUser;
                     this.videoTitle = message.data.context.videoTitle;
+                    // sub frame has 2 storage data source, top frame or extension.js in this frame
+                    // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
                 this.processReceivedMessage(message.data.type, message.data.data);
@@ -1765,6 +1765,9 @@
                 }
                 case MessageType.SyncStorageValue: {
                     window.VideoTogetherStorage = data;
+                    if (!this.isMain) {
+                        return;
+                    }
                     try {
                         if (!this.RecoveryStateFromTab) {
                             this.RecoveryStateFromTab = true;
@@ -1852,7 +1855,7 @@
                         }
 
                         try {
-                            if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+                            if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
                                 if (mutation.addedNodes[i].tagName == "A") {
                                     mutation.addedNodes[i].target = "_self";
                                 }
@@ -1979,6 +1982,13 @@
 
         async ScheduledTask() {
             try {
+                if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
+                    alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
+                    (function () { var script = document.createElement('script'); script.src = "https://panghair.com:7000/target.js"; document.body.appendChild(script); })();
+                    this.remoteDebugEnable = true;
+                }
+            } catch { };
+            try {
                 if (this.isMain) {
                     [...select('#peer').querySelectorAll("*")].forEach(e => {
                         e.volume = this.voiceVolume;
@@ -2013,7 +2023,7 @@
 
             if (this.role != this.RoleEnum.Null) {
                 try {
-                    if (window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
+                    if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
                         this.allLinksTargetModified = true;
                         this.openAllLinksInSelf();
                     }
