@@ -1,6 +1,5 @@
 # <a name="0">Video Together 一起看视频</a>
 
-**Currently only Chinese display language is available in this extension. I'm working on the localization now. English will be available soon, both extension display language and documentation.**
 
 ## Visit http://2gether.video/ for more information
 
