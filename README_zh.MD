@@ -1,4 +1,4 @@
-# <a name="0">Video Together 一起看视频</a>
+# <a name="0">VideoTogether 一起看视频</a>
 
 
 ## 欢迎访问插件主页，查看安装使用说明 http://2gether.video/

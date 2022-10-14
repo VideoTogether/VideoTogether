@@ -1,4 +1,4 @@
-# <a name="0">Video Together 一起看视频</a>
+# <a name="0">VideoTogether</a>
 
 
 ## Visit http://2gether.video/ for more information
