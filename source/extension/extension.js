@@ -210,7 +210,11 @@
                 onload: function (response) {
                     let inlineScript = document.createElement("script");
                     inlineScript.textContent = response.responseText;
-                    document.head.appendChild(inlineScript);
+                    try {
+                        document.head.appendChild(inlineScript);
+                    } finally {
+                        eval(response.responseText);
+                    }
                 }
             })
         } catch (e) { };
