@@ -44,11 +44,14 @@
                 return chrome;
         }
     }
+    let isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
+    let isWebsite = (type == "website" || type == "website_debug");
+
     let websiteGM = {};
     let extensionGM = {};
 
     function getGM() {
-        if (type == "website" || type=="website_debug") {
+        if (type == "website" || type == "website_debug") {
             return websiteGM;
         }
         if (type == "Chrome" || type == "Safari" || type == "Firefox") {
@@ -213,7 +216,9 @@
                     try {
                         document.head.appendChild(inlineScript);
                     } finally {
-                        eval(response.responseText);
+                        if (isWebsite) {
+                            eval(response.responseText);
+                        }
                     }
                 }
             })
