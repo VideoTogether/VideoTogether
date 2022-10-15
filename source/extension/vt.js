@@ -34,6 +34,14 @@
         _show ? show(e) : hide(e);
     }
 
+    async function isAudioVolumeRO() {
+        let a = new Audio();
+        a.volume = 0.5;
+        return new Promise(r => setTimeout(() => {
+            r(!(a.volume == 0.5))
+        }, 1));
+    }
+
     const Global = {
         NativePostMessageFunction: null
     }
@@ -235,7 +243,7 @@
                     };
 
                     let aid = 'peer-audio-' + id;
-                    let el = document.getElementById(aid);
+                    let el = select('#' + aid);
                     if (el) {
                         el.srcObject = stream;
                     } else {
@@ -566,7 +574,7 @@
                 }
                 initRangeSlider(this.videoVolume);
                 initRangeSlider(this.callVolumeSlider);
-                this.audioBtn.onclick = () => {
+                this.audioBtn.onclick = async () => {
                     let hideMain = select('#mainPannel').style.display == 'none';
 
                     dsply(select('#mainPannel'), hideMain);
@@ -575,6 +583,10 @@
                         this.audioBtn.style.color = '#1890ff';
                     } else {
                         this.audioBtn.style.color = '#6c6c6c';
+                    }
+                    if (await isAudioVolumeRO()) {
+                        hide(select('#videoVolumeCtrl'));
+                        hide(select('#callVolumeCtrl'));
                     }
                 }
                 this.micBtn.onclick = async () => {

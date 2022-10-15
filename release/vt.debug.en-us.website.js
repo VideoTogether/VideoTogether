@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665658581
+// @version      1665815456
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -32,6 +32,14 @@
 
     function dsply(e, _show = true) {
         _show ? show(e) : hide(e);
+    }
+
+    async function isAudioVolumeRO() {
+        let a = new Audio();
+        a.volume = 0.5;
+        return new Promise(r => setTimeout(() => {
+            r(!(a.volume == 0.5))
+        }, 1));
     }
 
     const Global = {
@@ -235,7 +243,7 @@
                     };
 
                     let aid = 'peer-audio-' + id;
-                    let el = document.getElementById(aid);
+                    let el = select('#' + aid);
                     if (el) {
                         el.srcObject = stream;
                     } else {
@@ -587,14 +595,14 @@
       </div>
 
       <div id="voicePannel" class="content" style="display: none;">
-        <div style="margin-top: 5px;width: 100%;text-align: left;">
+        <div id="videoVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
           <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Voide volume</span>
           <div class="range-slider">
             <input id="videoVolume" class="slider" type="range" value="100" min="0" max="100">
           </div>
 
         </div>
-        <div style="margin-top: 5px;width: 100%;text-align: left;">
+        <div id="callVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
           <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Call Volume</span>
           <div class="range-slider">
             <input id="callVolume" class="slider" type="range" value="100" min="0" max="100">
@@ -1192,7 +1200,7 @@
                 }
                 initRangeSlider(this.videoVolume);
                 initRangeSlider(this.callVolumeSlider);
-                this.audioBtn.onclick = () => {
+                this.audioBtn.onclick = async () => {
                     let hideMain = select('#mainPannel').style.display == 'none';
 
                     dsply(select('#mainPannel'), hideMain);
@@ -1201,6 +1209,10 @@
                         this.audioBtn.style.color = '#1890ff';
                     } else {
                         this.audioBtn.style.color = '#6c6c6c';
+                    }
+                    if (await isAudioVolumeRO()) {
+                        hide(select('#videoVolumeCtrl'));
+                        hide(select('#callVolumeCtrl'));
                     }
                 }
                 this.micBtn.onclick = async () => {
@@ -1463,7 +1475,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1665658581';
+            this.version = '1665815456';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
