@@ -18,7 +18,8 @@
     "no_video": "No video",
     "locale": "en-us",
     "ad_playing": "Playing AD",
-    "video_volume":"Voide volume",
-    "call_volume":"Call Volume",
-    "call_noise_cancellation":"Noise cancelling voice"
+    "video_volume": "Voide volume",
+    "call_volume": "Call Volume",
+    "call_noise_cancellation": "Noise cancelling voice",
+    "please_join_again_after_jump": "Please join again after jump"
 }

@@ -18,7 +18,8 @@
     "no_video": "没有视频",
     "locale": "zh-cn",
     "ad_playing": "广告中",
-    "video_volume":"视频音量",
-    "call_volume":"通话音量",
-    "call_noise_cancellation":"通话降噪"
+    "video_volume": "视频音量",
+    "call_volume": "通话音量",
+    "call_noise_cancellation": "通话降噪",
+    "please_join_again_after_jump": "请在跳转后再次加入"
 }

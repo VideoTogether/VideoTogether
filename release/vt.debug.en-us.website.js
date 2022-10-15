@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665815456
+// @version      1665837920
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -13,7 +13,9 @@
     const vtRuntime = `website`;
 
     const KRAKEN_API = 'https://rpc.kraken.fm';
-
+    function isWeb(type) {
+        return type == 'website' || type == 'website_debug';
+    }
     /**
      * @returns {Element}
      */
@@ -1475,7 +1477,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1665815456';
+            this.version = '1665837920';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1553,6 +1555,7 @@
             url.searchParams.set("version", this.version);
             try {
                 url.searchParams.set("loaddingVersion", window.VideoTogetherStorage.LoaddingVersion);
+                url.searchParams.set("runtimeType", window.VideoTogetherStorage.UserscriptType);
             } catch (e) { }
             try {
                 url.searchParams.set("userId", window.VideoTogetherStorage.PublicUserId);
@@ -1797,7 +1800,7 @@
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
                         sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
-                    if (window.VideoTogetherSettingEnabled == undefined) {
+                    if (window.VideoTogetherSettingEnabled == undefined && !isWeb(window.VideoTogetherStorage.UserscriptType)) {
                         try {
                             window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
                         } catch (e) { }
@@ -2076,6 +2079,14 @@
                                 sendMessageToTop(MessageType.SetTabStorage, state);
                                 setInterval(() => {
                                     if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == room["url"]) {
+                                        try {
+                                            if (isWeb(window.VideoTogetherStorage.UserscriptType)) {
+                                                if (!this._jumping && window.location.origin != (new URL(room["url"]).origin)) {
+                                                    this._jumping = true;
+                                                    alert("Please join again after jump");
+                                                }
+                                            }
+                                        } catch { };
                                         this.SetTabStorageSuccessCallback = () => {
                                             sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
                                         }
