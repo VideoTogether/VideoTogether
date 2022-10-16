@@ -100,6 +100,14 @@
 
     const Voice = {
         _status: VoiceStatus.STOP,
+        _errorMessage: "",
+        get errorMessage(){
+            return this._errorMessage;
+        },
+        set errorMessage(m) {
+            this._errorMessage = m;
+            select("#snackbar").innerHTML = m;
+        },
         set status(s) {
             this._status = s;
             let disabledMic = select("#disabledMic");
@@ -107,11 +115,13 @@
             let audioBtn = select('#audioBtn');
             let callBtn = select("#callBtn");
             let callConnecting = select("#callConnecting");
+            let callErrorBtn = select("#callErrorBtn");
             dsply(callConnecting, s == VoiceStatus.CONNECTTING);
             dsply(callBtn, s == VoiceStatus.STOP);
             let inCall = (VoiceStatus.UNMUTED == s || VoiceStatus.MUTED == s);
             dsply(micBtn, inCall);
             dsply(audioBtn, inCall);
+            dsply(callErrorBtn, s == VoiceStatus.ERROR);
             switch (s) {
                 case VoiceStatus.STOP:
                     break;
@@ -120,6 +130,11 @@
                     break;
                 case VoiceStatus.UNMUTED:
                     hide(disabledMic);
+                    break;
+                case VoiceStatus.ERROR:
+                    var x = select("#snackbar");
+                    x.className = "show";
+                    setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
                     break;
                 default:
                     break;
@@ -168,7 +183,6 @@
         },
 
         join: async function (name, rname, mutting = false, cancellingNoise = false) {
-            console.log(mutting, cancellingNoise);
             Voice.stop();
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
@@ -186,7 +200,6 @@
             async function subscribe(pc) {
                 var res = await rpc('subscribe', [rnameRPC, unameRPC, ucid]);
                 if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
-                    console.log("close !!!!!!!!!!!!")
                     pc.close();
                     await start();
                     return;
@@ -208,15 +221,22 @@
             }
 
 
+            try {
+                await start();
+            } catch (e) {
+                if (Voice.status == VoiceStatus.CONNECTTING) {
+                    Voice.status = VoiceStatus.ERROR;
+                    Voice.errorMessage = "{$connection_error$}";
+                }
+            }
 
-            await start();
             if (Voice.status == VoiceStatus.CONNECTTING) {
                 Voice.status = mutting ? VoiceStatus.MUTED : VoiceStatus.UNMUTED;
             }
 
             async function start() {
 
-                let res = await rpc('turn', [unameRPC]);
+                let res = await rpc('turn', [unameRPC], 5);
                 if (res.data && res.data.length > 0) {
                     configuration.iceServers = res.data;
                     configuration.iceTransportPolicy = 'relay';
@@ -239,7 +259,6 @@
                     if (id === uid) {
                         return;
                     }
-                    console.log("1!!!!", id, uid);
                     event.track.onmute = (event) => {
                         console.log("onmute", event);
                     };
@@ -268,7 +287,10 @@
                     };
                     Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 } catch (err) {
-                    console.error(err);
+                    if (Voice.status == VoiceStatus.CONNECTTING) {
+                        Voice.errorMessage = "{$no_micphone_access$}";
+                        Voice.status = VoiceStatus.ERROR;
+                    }
                     return;
                 }
 
@@ -289,7 +311,7 @@
                 }
             }
 
-            async function rpc(method, params = []) {
+            async function rpc(method, params = [], retryTime = -1) {
                 try {
                     const response = await window.videoTogetherExtension.Fetch(KRAKEN_API, "POST", { id: generateUUID(), method: method, params: params }, {
                         method: 'POST', // *GET, POST, PUT, DELETE, etc.
@@ -308,9 +330,11 @@
                     if (Voice.status == VoiceStatus.STOP) {
                         return;
                     }
-                    console.log('fetch error', method, params, err);
+                    if (retryTime == 0) {
+                        throw err;
+                    }
                     await new Promise(r => setTimeout(r, 1000));
-                    return await rpc(method, params);
+                    return await rpc(method, params, retryTime - 1);
                 }
             }
         },
@@ -333,7 +357,7 @@
                     track.stop();
                 });
                 delete Voice.stream;
-            } catch (e) { console.log(e); }
+            } catch { }
             Voice.status = VoiceStatus.STOP;
         },
         mute: () => {
@@ -365,7 +389,6 @@
                 Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 Voice.conn.getSenders().forEach(s => {
                     if (s.track) {
-                        console.log(s.track, Voice.stream.getTracks().find(t => t.kind == s.track.kind));
                         s.replaceTrack(Voice.stream.getTracks().find(t => t.kind == s.track.kind));
                     }
                 })
@@ -565,6 +588,10 @@
                 this.videoVolume = wrapper.querySelector("#videoVolume");
                 this.callVolumeSlider = wrapper.querySelector("#callVolume");
                 this.voiceNc = wrapper.querySelector("#voiceNc");
+                this.callErrorBtn = wrapper.querySelector("#callErrorBtn");
+                this.callErrorBtn.onclick = () => {
+                    Voice.join("", window.videoTogetherExtension.roomName);
+                }
                 this.videoVolume.oninput = () => {
                     sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.videoVolume.value / 100 })
                 }
@@ -592,7 +619,6 @@
                     }
                 }
                 this.micBtn.onclick = async () => {
-                    console.log(Voice.status);
                     switch (Voice.status) {
                         case VoiceStatus.STOP: {
                             // TODO need fix
@@ -964,10 +990,14 @@
                     }, 20000);
                 });
             }
+
             if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 return await window.fetch(url, {
                     method: method,
-                    body: data == null ? undefined : JSON.stringify(data)
+                    body: data == null ? undefined : JSON.stringify(data),
+                    signal: controller.signal
                 });
             } else {
                 if (!this.NativeFetchFunction) {
@@ -976,9 +1006,12 @@
                     document.body.append(temp);
                     this.NativeFetchFunction = temp.contentWindow.fetch;
                 }
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 return await this.NativeFetchFunction.call(window, url, {
                     method: method,
-                    body: data == null ? undefined : JSON.stringify(data)
+                    body: data == null ? undefined : JSON.stringify(data),
+                    signal: controller.signal
                 });
             }
         }

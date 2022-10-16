@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665837920
+// @version      1665931550
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -100,6 +100,14 @@
 
     const Voice = {
         _status: VoiceStatus.STOP,
+        _errorMessage: "",
+        get errorMessage(){
+            return this._errorMessage;
+        },
+        set errorMessage(m) {
+            this._errorMessage = m;
+            select("#snackbar").innerHTML = m;
+        },
         set status(s) {
             this._status = s;
             let disabledMic = select("#disabledMic");
@@ -107,11 +115,13 @@
             let audioBtn = select('#audioBtn');
             let callBtn = select("#callBtn");
             let callConnecting = select("#callConnecting");
+            let callErrorBtn = select("#callErrorBtn");
             dsply(callConnecting, s == VoiceStatus.CONNECTTING);
             dsply(callBtn, s == VoiceStatus.STOP);
             let inCall = (VoiceStatus.UNMUTED == s || VoiceStatus.MUTED == s);
             dsply(micBtn, inCall);
             dsply(audioBtn, inCall);
+            dsply(callErrorBtn, s == VoiceStatus.ERROR);
             switch (s) {
                 case VoiceStatus.STOP:
                     break;
@@ -120,6 +130,11 @@
                     break;
                 case VoiceStatus.UNMUTED:
                     hide(disabledMic);
+                    break;
+                case VoiceStatus.ERROR:
+                    var x = select("#snackbar");
+                    x.className = "show";
+                    setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
                     break;
                 default:
                     break;
@@ -168,7 +183,6 @@
         },
 
         join: async function (name, rname, mutting = false, cancellingNoise = false) {
-            console.log(mutting, cancellingNoise);
             Voice.stop();
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
@@ -186,7 +200,6 @@
             async function subscribe(pc) {
                 var res = await rpc('subscribe', [rnameRPC, unameRPC, ucid]);
                 if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
-                    console.log("close !!!!!!!!!!!!")
                     pc.close();
                     await start();
                     return;
@@ -208,15 +221,22 @@
             }
 
 
+            try {
+                await start();
+            } catch (e) {
+                if (Voice.status == VoiceStatus.CONNECTTING) {
+                    Voice.status = VoiceStatus.ERROR;
+                    Voice.errorMessage = "Connection error";
+                }
+            }
 
-            await start();
             if (Voice.status == VoiceStatus.CONNECTTING) {
                 Voice.status = mutting ? VoiceStatus.MUTED : VoiceStatus.UNMUTED;
             }
 
             async function start() {
 
-                let res = await rpc('turn', [unameRPC]);
+                let res = await rpc('turn', [unameRPC], 5);
                 if (res.data && res.data.length > 0) {
                     configuration.iceServers = res.data;
                     configuration.iceTransportPolicy = 'relay';
@@ -239,7 +259,6 @@
                     if (id === uid) {
                         return;
                     }
-                    console.log("1!!!!", id, uid);
                     event.track.onmute = (event) => {
                         console.log("onmute", event);
                     };
@@ -268,7 +287,10 @@
                     };
                     Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 } catch (err) {
-                    console.error(err);
+                    if (Voice.status == VoiceStatus.CONNECTTING) {
+                        Voice.errorMessage = "No microphone access";
+                        Voice.status = VoiceStatus.ERROR;
+                    }
                     return;
                 }
 
@@ -289,7 +311,7 @@
                 }
             }
 
-            async function rpc(method, params = []) {
+            async function rpc(method, params = [], retryTime = -1) {
                 try {
                     const response = await window.videoTogetherExtension.Fetch(KRAKEN_API, "POST", { id: generateUUID(), method: method, params: params }, {
                         method: 'POST', // *GET, POST, PUT, DELETE, etc.
@@ -308,9 +330,11 @@
                     if (Voice.status == VoiceStatus.STOP) {
                         return;
                     }
-                    console.log('fetch error', method, params, err);
+                    if (retryTime == 0) {
+                        throw err;
+                    }
                     await new Promise(r => setTimeout(r, 1000));
-                    return await rpc(method, params);
+                    return await rpc(method, params, retryTime - 1);
                 }
             }
         },
@@ -333,7 +357,7 @@
                     track.stop();
                 });
                 delete Voice.stream;
-            } catch (e) { console.log(e); }
+            } catch { }
             Voice.status = VoiceStatus.STOP;
         },
         mute: () => {
@@ -365,7 +389,6 @@
                 Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 Voice.conn.getSenders().forEach(s => {
                     if (s.track) {
-                        console.log(s.track, Voice.stream.getTracks().find(t => t.kind == s.track.kind));
                         s.replaceTrack(Voice.stream.getTracks().find(t => t.kind == s.track.kind));
                     }
                 })
@@ -625,6 +648,8 @@
 
     </div>
 
+    <div id="snackbar"></div>
+
     <div class="vt-modal-footer">
       <div id="lobbyBtnGroup">
         <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
@@ -653,22 +678,15 @@
           <div></div>
           <div></div>
         </div>
-        <button id="callErrorBtn" style="display: none;">
-          <svg width="24px" height="24px" viewBox="0 0 489.6 489.6" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M361.1,337.6c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c18.7-26.3,28.5-57.4,28.5-89.9s-9.9-63.6-28.5-89.9
-                    c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c15.7,22.1,24,48.3,24,75.8c0,27.4-8.3,53.6-24,75.8
-                    C354.3,326.1,355.6,333.7,361.1,337.6z" />
-            <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M425.4,396.3c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c30.8-43.4,47.1-94.8,47.1-148.6s-16.3-105.1-47.1-148.6
-                    c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c27.9,39.3,42.6,85.7,42.6,134.4c0,48.6-14.7,95.1-42.6,134.4
-                    C418.6,384.7,419.9,392.3,425.4,396.3z" />
-            <path stroke="currentColor" stroke-width="16" fill="currentColor"
-              d="M254.7,415.7c4.3,2.5,9.2,3.8,14.2,3.8l0,0c7.4,0,14.4-2.8,19.7-7.9c5.6-5.4,8.7-12.6,8.7-20.4V98.5
-                    c0-15.7-12.7-28.4-28.4-28.4c-4.9,0-9.8,1.3-14.2,3.8c-0.3,0.2-0.6,0.3-0.8,0.5l-100.1,69.2H73.3C32.9,143.6,0,176.5,0,216.9v55.6
-                    c0,40.4,32.9,73.3,73.3,73.3h84.5l95.9,69.2C254,415.3,254.4,415.5,254.7,415.7z M161.8,321.3H73.3c-26.9,0-48.8-21.9-48.8-48.8
-                    v-55.6c0-26.9,21.9-48.8,48.8-48.8h84.3c2.5,0,4.9-0.8,7-2.2l102.7-71c0.5-0.3,1.1-0.4,1.6-0.4c1.6,0,3.9,1.2,3.9,3.9v292.7
-                    c0,1.1-0.4,2-1.1,2.8c-0.7,0.7-1.8,1.1-2.7,1.1c-0.5,0-1-0.1-1.5-0.3l-98.4-71.1C166.9,322.1,164.4,321.3,161.8,321.3z" />
+
+        <button id="callErrorBtn" class="vt-modal-title-button error-button" style="display: none;">
+          <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M11.001 10h2v5h-2zM11 16h2v2h-2z" />
+            <path fill="currentColor"
+              d="M13.768 4.2C13.42 3.545 12.742 3.138 12 3.138s-1.42.407-1.768 1.063L2.894 18.064a1.986 1.986 0 0 0 .054 1.968A1.984 1.984 0 0 0 4.661 21h14.678c.708 0 1.349-.362 1.714-.968a1.989 1.989 0 0 0 .054-1.968L13.768 4.2zM4.661 19 12 5.137 19.344 19H4.661z" />
           </svg>
         </button>
+
         <button id="audioBtn" style="display: none;" type="button" aria-label="Close"
           class="vt-modal-audio vt-modal-title-button">
           <span class="vt-modal-close-x">
@@ -824,6 +842,14 @@
 
   .vt-modal-close-x:hover {
     color: #1890ff;
+  }
+
+  .error-button {
+    color: #ff6f72;
+  }
+
+  .error-button:hover {
+    color: red;
   }
 
   .vt-modal-header {
@@ -1172,6 +1198,44 @@
     top: 3px;
     background-color: #fff;
   }
+
+
+  #snackbar {
+    visibility: hidden;
+    width: auto;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 16px 0px 16px 0px;
+    position: sticky;
+    z-index: 999999;
+    bottom: 0px;
+  }
+
+  #snackbar.show {
+    visibility: visible;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+  }
+
+  @keyframes fadein {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeout {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
 </style>`;
                 (document.body || document.documentElement).appendChild(shadowWrapper);
 
@@ -1191,6 +1255,10 @@
                 this.videoVolume = wrapper.querySelector("#videoVolume");
                 this.callVolumeSlider = wrapper.querySelector("#callVolume");
                 this.voiceNc = wrapper.querySelector("#voiceNc");
+                this.callErrorBtn = wrapper.querySelector("#callErrorBtn");
+                this.callErrorBtn.onclick = () => {
+                    Voice.join("", window.videoTogetherExtension.roomName);
+                }
                 this.videoVolume.oninput = () => {
                     sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.videoVolume.value / 100 })
                 }
@@ -1218,7 +1286,6 @@
                     }
                 }
                 this.micBtn.onclick = async () => {
-                    console.log(Voice.status);
                     switch (Voice.status) {
                         case VoiceStatus.STOP: {
                             // TODO need fix
@@ -1477,7 +1544,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1665837920';
+            this.version = '1665931550';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1590,10 +1657,14 @@
                     }, 20000);
                 });
             }
+
             if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 return await window.fetch(url, {
                     method: method,
-                    body: data == null ? undefined : JSON.stringify(data)
+                    body: data == null ? undefined : JSON.stringify(data),
+                    signal: controller.signal
                 });
             } else {
                 if (!this.NativeFetchFunction) {
@@ -1602,9 +1673,12 @@
                     document.body.append(temp);
                     this.NativeFetchFunction = temp.contentWindow.fetch;
                 }
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 return await this.NativeFetchFunction.call(window, url, {
                     method: method,
-                    body: data == null ? undefined : JSON.stringify(data)
+                    body: data == null ? undefined : JSON.stringify(data),
+                    signal: controller.signal
                 });
             }
         }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665837920
+// @version      1665931550
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1665837920'
+    let version = '1665931550'
     let type = 'Safari'
     function getBrowser() {
         switch (type) {
@@ -44,11 +44,14 @@
                 return chrome;
         }
     }
+    let isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
+    let isWebsite = (type == "website" || type == "website_debug");
+
     let websiteGM = {};
     let extensionGM = {};
 
     function getGM() {
-        if (type == "website" || type=="website_debug") {
+        if (type == "website" || type == "website_debug") {
             return websiteGM;
         }
         if (type == "Chrome" || type == "Safari" || type == "Firefox") {
@@ -210,7 +213,13 @@
                 onload: function (response) {
                     let inlineScript = document.createElement("script");
                     inlineScript.textContent = response.responseText;
-                    document.head.appendChild(inlineScript);
+                    try {
+                        document.head.appendChild(inlineScript);
+                    } finally {
+                        if (isWebsite) {
+                            eval(response.responseText);
+                        }
+                    }
                 }
             })
         } catch (e) { };

@@ -21,5 +21,7 @@
     "video_volume": "Voide volume",
     "call_volume": "Call Volume",
     "call_noise_cancellation": "Noise cancelling voice",
-    "please_join_again_after_jump": "Please join again after jump"
+    "please_join_again_after_jump": "Please join again after jump",
+    "no_micphone_access":"No microphone access",
+    "connection_error":"Connection error"
 }
