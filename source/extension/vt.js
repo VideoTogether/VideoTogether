@@ -955,6 +955,7 @@
             url = new URL(url);
             url.searchParams.set("version", this.version);
             try {
+                url.searchParams.set("voiceStatus", Voice.status);
                 url.searchParams.set("loaddingVersion", window.VideoTogetherStorage.LoaddingVersion);
                 url.searchParams.set("runtimeType", window.VideoTogetherStorage.UserscriptType);
             } catch (e) { }

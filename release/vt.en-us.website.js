@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1666003992
+// @version      1666005833
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1548,7 +1548,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1666003992';
+            this.version = '1666005833';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1625,6 +1625,7 @@
             url = new URL(url);
             url.searchParams.set("version", this.version);
             try {
+                url.searchParams.set("voiceStatus", Voice.status);
                 url.searchParams.set("loaddingVersion", window.VideoTogetherStorage.LoaddingVersion);
                 url.searchParams.set("runtimeType", window.VideoTogetherStorage.UserscriptType);
             } catch (e) { }
