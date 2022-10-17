@@ -62,7 +62,10 @@
             <input id="callVolume" class="slider" type="range" value="100" min="0" max="100">
           </div>
         </div>
-        <div style="margin-top: 5px;width: 100%;text-align: left;">
+        <div id="iosVolumeErr" style="display: none;">
+          <p>{$ios_does_not_support_volume_adjustment$}</p>
+        </div>
+        <!-- <div style="margin-top: 5px;width: 100%;text-align: left;">
           <span
             style="margin-top: 0px;display: inline-block;margin-left: 20px; margin-right: 10px;">{$call_noise_cancellation$}</span>
           <label class="toggler-wrapper style-1">
@@ -72,7 +75,7 @@
             </div>
           </label>
 
-        </div>
+        </div> -->
       </div>
 
     </div>

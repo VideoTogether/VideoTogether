@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665931550
+// @version      1666003992
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -165,10 +165,9 @@
             return this._stream;
         },
 
-        _noiseCancellationEnabled: false,
+        _noiseCancellationEnabled: true,
         set noiseCancellationEnabled(n) {
             this._noiseCancellationEnabled = n;
-            select('#voiceNc').checked = n;
             if (this.inCall) {
                 this.updateVoiceSetting(n);
             }
@@ -182,7 +181,12 @@
             return this.status == VoiceStatus.MUTED || this.status == VoiceStatus.UNMUTED;
         },
 
-        join: async function (name, rname, mutting = false, cancellingNoise = false) {
+        join: async function (name, rname, mutting = false) {
+            let cancellingNoise = true;
+            try {
+                cancellingNoise = !(window.VideoTogetherStorage.EchoCancellation === false);
+            } catch { }
+
             Voice.stop();
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
@@ -633,7 +637,10 @@
             <input id="callVolume" class="slider" type="range" value="100" min="0" max="100">
           </div>
         </div>
-        <div style="margin-top: 5px;width: 100%;text-align: left;">
+        <div id="iosVolumeErr" style="display: none;">
+          <p>iOS does not support volume adjustment</p>
+        </div>
+        <!-- <div style="margin-top: 5px;width: 100%;text-align: left;">
           <span
             style="margin-top: 0px;display: inline-block;margin-left: 20px; margin-right: 10px;">Noise cancelling voice</span>
           <label class="toggler-wrapper style-1">
@@ -643,7 +650,7 @@
             </div>
           </label>
 
-        </div>
+        </div> -->
       </div>
 
     </div>
@@ -1254,7 +1261,6 @@
                 this.micBtn = wrapper.querySelector("#micBtn");
                 this.videoVolume = wrapper.querySelector("#videoVolume");
                 this.callVolumeSlider = wrapper.querySelector("#callVolume");
-                this.voiceNc = wrapper.querySelector("#voiceNc");
                 this.callErrorBtn = wrapper.querySelector("#callErrorBtn");
                 this.callErrorBtn.onclick = () => {
                     Voice.join("", window.videoTogetherExtension.roomName);
@@ -1264,9 +1270,6 @@
                 }
                 this.callVolumeSlider.oninput = () => {
                     window.videoTogetherExtension.voiceVolume = this.callVolumeSlider.value / 100;
-                }
-                this.voiceNc.oninput = () => {
-                    Voice.noiseCancellationEnabled = this.voiceNc.checked;
                 }
                 initRangeSlider(this.videoVolume);
                 initRangeSlider(this.callVolumeSlider);
@@ -1281,6 +1284,7 @@
                         this.audioBtn.style.color = '#6c6c6c';
                     }
                     if (await isAudioVolumeRO()) {
+                        show(select('#iosVolumeErr'));
                         hide(select('#videoVolumeCtrl'));
                         hide(select('#callVolumeCtrl'));
                     }
@@ -1544,7 +1548,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1665931550';
+            this.version = '1666003992';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1990,7 +1994,6 @@
                 let timestamp = parseFloat(getFunc("VideoTogetherTimestamp"));
                 let password = getFunc("VideoTogetherPassword");
                 let voice = getFunc("VideoTogetherVoice");
-                let ns = getFunc("VideoTogetherNoiseCancellation");
                 if (timestamp + 60 < Date.now() / 1000) {
                     return;
                 }
@@ -2006,10 +2009,10 @@
                         window.videoTogetherFlyPannel.InRoom();
                         switch (voice) {
                             case VoiceStatus.MUTED:
-                                Voice.join("", vtRoomName, true, ns);
+                                Voice.join("", vtRoomName, true);
                                 break;
                             case VoiceStatus.UNMUTED:
-                                Voice.join("", vtRoomName, false, ns);
+                                Voice.join("", vtRoomName, false);
                                 break;
                             default:
                                 Voice.status = VoiceStatus.STOP;
@@ -2293,7 +2296,6 @@
                 VideoTogetherRole: this.role,
                 VideoTogetherTimestamp: Date.now() / 1000,
                 VideoTogetherVoice: voice,
-                VideoTogetherNoiseCancellation: Voice.noiseCancellationEnabled
             }
         }
 

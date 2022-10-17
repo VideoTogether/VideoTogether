@@ -22,6 +22,7 @@
     "call_volume": "Call Volume",
     "call_noise_cancellation": "Noise cancelling voice",
     "please_join_again_after_jump": "Please join again after jump",
-    "no_micphone_access":"No microphone access",
-    "connection_error":"Connection error"
+    "no_micphone_access": "No microphone access",
+    "connection_error": "Connection error",
+    "ios_does_not_support_volume_adjustment": "iOS does not support volume adjustment"
 }

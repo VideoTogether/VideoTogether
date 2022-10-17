@@ -165,10 +165,9 @@
             return this._stream;
         },
 
-        _noiseCancellationEnabled: false,
+        _noiseCancellationEnabled: true,
         set noiseCancellationEnabled(n) {
             this._noiseCancellationEnabled = n;
-            select('#voiceNc').checked = n;
             if (this.inCall) {
                 this.updateVoiceSetting(n);
             }
@@ -182,7 +181,12 @@
             return this.status == VoiceStatus.MUTED || this.status == VoiceStatus.UNMUTED;
         },
 
-        join: async function (name, rname, mutting = false, cancellingNoise = false) {
+        join: async function (name, rname, mutting = false) {
+            let cancellingNoise = true;
+            try {
+                cancellingNoise = !(window.VideoTogetherStorage.EchoCancellation === false);
+            } catch { }
+
             Voice.stop();
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
@@ -587,7 +591,6 @@
                 this.micBtn = wrapper.querySelector("#micBtn");
                 this.videoVolume = wrapper.querySelector("#videoVolume");
                 this.callVolumeSlider = wrapper.querySelector("#callVolume");
-                this.voiceNc = wrapper.querySelector("#voiceNc");
                 this.callErrorBtn = wrapper.querySelector("#callErrorBtn");
                 this.callErrorBtn.onclick = () => {
                     Voice.join("", window.videoTogetherExtension.roomName);
@@ -597,9 +600,6 @@
                 }
                 this.callVolumeSlider.oninput = () => {
                     window.videoTogetherExtension.voiceVolume = this.callVolumeSlider.value / 100;
-                }
-                this.voiceNc.oninput = () => {
-                    Voice.noiseCancellationEnabled = this.voiceNc.checked;
                 }
                 initRangeSlider(this.videoVolume);
                 initRangeSlider(this.callVolumeSlider);
@@ -614,6 +614,7 @@
                         this.audioBtn.style.color = '#6c6c6c';
                     }
                     if (await isAudioVolumeRO()) {
+                        show(select('#iosVolumeErr'));
                         hide(select('#videoVolumeCtrl'));
                         hide(select('#callVolumeCtrl'));
                     }
@@ -1323,7 +1324,6 @@
                 let timestamp = parseFloat(getFunc("VideoTogetherTimestamp"));
                 let password = getFunc("VideoTogetherPassword");
                 let voice = getFunc("VideoTogetherVoice");
-                let ns = getFunc("VideoTogetherNoiseCancellation");
                 if (timestamp + 60 < Date.now() / 1000) {
                     return;
                 }
@@ -1339,10 +1339,10 @@
                         window.videoTogetherFlyPannel.InRoom();
                         switch (voice) {
                             case VoiceStatus.MUTED:
-                                Voice.join("", vtRoomName, true, ns);
+                                Voice.join("", vtRoomName, true);
                                 break;
                             case VoiceStatus.UNMUTED:
-                                Voice.join("", vtRoomName, false, ns);
+                                Voice.join("", vtRoomName, false);
                                 break;
                             default:
                                 Voice.status = VoiceStatus.STOP;
@@ -1626,7 +1626,6 @@
                 VideoTogetherRole: this.role,
                 VideoTogetherTimestamp: Date.now() / 1000,
                 VideoTogetherVoice: voice,
-                VideoTogetherNoiseCancellation: Voice.noiseCancellationEnabled
             }
         }
 

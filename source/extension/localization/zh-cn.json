@@ -22,6 +22,7 @@
     "call_volume": "通话音量",
     "call_noise_cancellation": "通话降噪",
     "please_join_again_after_jump": "请在跳转后再次加入",
-    "no_micphone_access":"麦克风权限获取失败",
-    "connection_error":"连接失败"
+    "no_micphone_access": "麦克风权限获取失败",
+    "connection_error": "连接失败",
+    "ios_does_not_support_volume_adjustment": "IOS不支持音量调节"
 }
