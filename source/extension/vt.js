@@ -901,6 +901,7 @@
                 if (message.data.context) {
                     this.tempUser = message.data.context.tempUser;
                     this.videoTitle = message.data.context.videoTitle;
+                    this.voiceStatus = message.data.context.voiceStatus;
                     // sub frame has 2 storage data source, top frame or extension.js in this frame
                     // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
@@ -955,7 +956,7 @@
             url = new URL(url);
             url.searchParams.set("version", this.version);
             try {
-                url.searchParams.set("voiceStatus", Voice.status);
+                url.searchParams.set("voiceStatus", this.isMain ? Voice.status : this.voiceStatus);
                 url.searchParams.set("loaddingVersion", window.VideoTogetherStorage.LoaddingVersion);
                 url.searchParams.set("runtimeType", window.VideoTogetherStorage.UserscriptType);
             } catch (e) { }
@@ -1115,6 +1116,7 @@
                     context: {
                         tempUser: this.tempUser,
                         videoTitle: this.isMain ? document.title : this.videoTitle,
+                        voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
                         VideoTogetherStorage: window.VideoTogetherStorage
                     }
                 });
