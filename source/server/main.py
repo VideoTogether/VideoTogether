@@ -95,6 +95,7 @@ tempUserDatabase = dict()
 
 loaddingVersionDatabase = dict()
 versionDatabase = dict()
+voiceStatusDatabase = dict()
 
 pool = None
 
@@ -133,6 +134,16 @@ def getClientVersion(request):
             versionDatabase[version] = 1
         else:
             versionDatabase[version] += 1
+    except:
+        pass
+    try:
+        status = 'unknown'
+        if 'voiceStatus' in request.args:
+            status = request.args["voiceStatus"]
+        if status not in voiceStatusDatabase:
+            voiceStatusDatabase[status] = 1
+        else:
+            voiceStatusDatabase[status] += 1
     except:
         pass
 
@@ -268,7 +279,14 @@ def updateRoom():
 @app.route('/statistics', methods=["get"])
 def getStatistics():
     if not dbSwitchToRedis:
-        return jsonify({"roomCount": len(database), "userCount": len(tempUserDatabase), 'version': versionDatabase, 'loaddingVersion': loaddingVersionDatabase})
+        return jsonify(
+            {
+                "roomCount": len(database),
+                "userCount": len(tempUserDatabase),
+                'version': versionDatabase,
+                'loaddingVersion': loaddingVersionDatabase,
+                'voiceStatus': voiceStatusDatabase
+            })
     r = redisConnect(pool)
     return jsonify({"roomCount": r.hlen(namespace)})
 
