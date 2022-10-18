@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'">
 
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
@@ -10,9 +10,20 @@
     <script src="../Script.js" defer></script>
 </head>
 <body>
-    <img src="../Icon.png" width="128" height="128" alt="VideoTogether Icon">
-    <p class="platform-ios">You can turn on VideoTogether’s Safari extension in Settings.</p>
-    <p class="platform-ios">你可以在设置->Safari->插件中启用 VideoTogether</p>
+    <img src="../Icon.png" width="32" height="32" alt="VideoTogether Icon" />
+    <div>
+        <button class="platform-ios"style="display:inline-block" onclick="changeLanguage('en-us')">English</button>
+        <button class="platform-ios" style="display:inline-block" onclick="changeLanguage('zh-cn')">中文</button>
+    </div>
+    <p class="zh-cn platform-ios">按照下面的操作启用插件并允许所有网站的权限</p>
+    <p class="en-us platform-ios">Follow the actions below to enable the extension and allow permissions for all sites</p>
+    <img class="en-us platform-ios" src="../en-us.gif" width="80%"/>
+    <img class="zh-cn platform-ios" src="../zh-cn.gif" width="80%"/>
+<!--    <p class="platform-ios en-us">You can turn on VideoTogether’s Safari extension in Settings.</p>-->
+<!--    <p></p>-->
+<!--    <p class="platform-ios zh-cn">你可以在设置->Safari->插件中启用 VideoTogether</p>-->
+<!--    <p class="platform-ios zh-cn">你可以在设置->Safari->插件中启用 VideoTogether</p>-->
+    
     <p class="platform-mac">你可以在Safari->偏好设置->插件中启用 VideoTogether</p>
     <p class="platform-mac state-unknown">You can turn on VideoTogether’s extension in Safari Extensions preferences.</p>
     <p class="platform-mac state-on">VideoTogether’s extension is currently on. You can turn it off in Safari Extensions preferences.</p>

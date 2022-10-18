@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1665307144
+// @version      1666089671
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1665307144'
+    let version = '1666089671'
     let type = 'Chrome'
     function getBrowser() {
         switch (type) {
@@ -44,10 +44,57 @@
                 return chrome;
         }
     }
+    let isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
+    let isWebsite = (type == "website" || type == "website_debug");
 
+    let websiteGM = {};
+    let extensionGM = {};
+
+    function getGM() {
+        if (type == "website" || type == "website_debug") {
+            return websiteGM;
+        }
+        if (type == "Chrome" || type == "Safari" || type == "Firefox") {
+            return extensionGM;
+        }
+        return GM;
+    }
+
+    if (type == "website" || type == "website_debug") {
+
+        getGM().setValue = async (key, value) => {
+            return localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        getGM().getValue = async (key) => {
+            return JSON.parse(localStorage.getItem(key));
+        }
+
+        getGM().getTab = async () => {
+            let tab = sessionStorage.getItem('VideoTogetherTab');
+            return tab == null ? {} : JSON.parse(tab);
+        }
+
+        getGM().saveTab = async (tab) => {
+            return sessionStorage.setItem('VideoTogetherTab', JSON.stringify(tab));
+        }
+
+        getGM().xmlHttpRequest = async (props) => {
+            try {
+                fetch(props.url, {
+                    method: props.method,
+                    body: props.method == "GET" ? undefined : JSON.stringify(props.data)
+                })
+                    .then(r => r.text())
+                    .then(text => props.onload({ responseText: text }))
+                    .catch(e => props.onerror(e));
+            } catch (e) {
+                props.onerror(e);
+            }
+        }
+    }
     if (type == "Chrome" || type == "Safari" || type == "Firefox") {
-        window.GM = {};
-        GM.setValue = async (key, value) => {
+        getGM().setValue = async (key, value) => {
             return await new Promise((resolve, reject) => {
                 try {
                     let item = {};
@@ -60,7 +107,7 @@
                 }
             })
         }
-        GM.getValue = async (key) => {
+        getGM().getValue = async (key) => {
             return await new Promise((resolve, reject) => {
                 try {
                     getBrowser().storage.local.get([key], function (result) {
@@ -72,7 +119,7 @@
 
             })
         }
-        GM.getTab = async () => {
+        getGM().getTab = async () => {
             return await new Promise((resolve, reject) => {
                 try {
                     getBrowser().runtime.sendMessage(JSON.stringify({ type: 1 }), function (response) {
@@ -84,7 +131,7 @@
 
             })
         }
-        GM.saveTab = async (tab) => {
+        getGM().saveTab = async (tab) => {
             return await new Promise((resolve, reject) => {
                 try {
                     getBrowser().runtime.sendMessage(JSON.stringify({ type: 2, tab: tab }), function (response) {
@@ -95,7 +142,7 @@
                 }
             })
         }
-        GM.xmlHttpRequest = async (props) => {
+        getGM().xmlHttpRequest = async (props) => {
             try {
                 getBrowser().runtime.sendMessage(JSON.stringify({ type: 3, props: props }), function (response) {
                     if (response.error != undefined) {
@@ -109,7 +156,7 @@
         }
     }
     // if (type == 'Chrome') {
-    //     let vtEnabled = await GM.getValue('vtEnabled');
+    //     let vtEnabled = await getGM().getValue('vtEnabled');
     //     if (vtEnabled === false) {
     //         return;
     //     }
@@ -119,7 +166,7 @@
     let prefixLen = 0;
     let settingLanguage = undefined;
     try {
-        settingLanguage = await GM.getValue("DisplayLanguage");
+        settingLanguage = await getGM().getValue("DisplayLanguage");
     } catch (e) { };
 
     if (typeof settingLanguage != 'string') {
@@ -141,32 +188,38 @@
     }
 
     async function AppendKey(key) {
-        let keysStr = await GM.getValue("VideoTogetherKeys");
+        let keysStr = await getGM().getValue("VideoTogetherKeys");
         let keys = new Set(JSON.parse(keysStr));
         keys.add(key);
-        await GM.setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
+        await getGM().setValue("VideoTogetherKeys", JSON.stringify(Array.from(keys)));
     }
 
     async function GetKeys() {
-        let keysStr = await GM.getValue("VideoTogetherKeys");
+        let keysStr = await getGM().getValue("VideoTogetherKeys");
         try {
             let keys = new Set(JSON.parse(keysStr));
             return Array.from(keys);
         } catch (e) {
-            await GM.setValue("VideoTogetherKeys", "[]");
+            await getGM().setValue("VideoTogetherKeys", "[]");
             return [];
         }
     }
 
     function InsertInlineJs(url) {
         try {
-            GM.xmlHttpRequest({
+            getGM().xmlHttpRequest({
                 method: "GET",
                 url: url,
                 onload: function (response) {
                     let inlineScript = document.createElement("script");
                     inlineScript.textContent = response.responseText;
-                    document.head.appendChild(inlineScript);
+                    try {
+                        document.head.appendChild(inlineScript);
+                    } finally {
+                        if (isWebsite) {
+                            eval(response.responseText);
+                        }
+                    }
                 }
             })
         } catch (e) { };
@@ -174,9 +227,9 @@
 
     async function SetTabStorage(data) {
         try {
-            let tabObj = await GM.getTab();
+            let tabObj = await getGM().getTab();
             tabObj.VideoTogetherTabStorage = data;
-            await GM.saveTab(tabObj);
+            await getGM().saveTab(tabObj);
             window.postMessage({
                 source: "VideoTogether",
                 type: 19,
@@ -203,7 +256,7 @@
                         console.error("permission error", e.data);
                         return;
                     }
-                    GM.xmlHttpRequest({
+                    getGM().xmlHttpRequest({
                         method: e.data.data.method,
                         url: e.data.data.url,
                         data: e.data.data.data,
@@ -240,7 +293,7 @@
                         || window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
                         || e.data.data.key.startsWith("Public")) {
-                        GM.setValue(e.data.data.key, e.data.data.value)
+                        getGM().setValue(e.data.data.key, e.data.data.value)
                         AppendKey(e.data.data.key);
                         break;
                     } else {
@@ -267,7 +320,7 @@
             let keys = await GetKeys();
             let data = {}
             for (let i = 0; i < keys.length; i++) {
-                data[keys[i]] = await GM.getValue(keys[i]);
+                data[keys[i]] = await getGM().getValue(keys[i]);
                 if (data[keys[i]] == 'true') {
                     data[keys[i]] = true;
                 }
@@ -279,7 +332,7 @@
             data["LoaddingVersion"] = version;
             data["VideoTogetherTabStorageEnabled"] = true;
             try {
-                data["VideoTogetherTabStorage"] = (await GM.getTab()).VideoTogetherTabStorage;
+                data["VideoTogetherTabStorage"] = (await getGM().getTab()).VideoTogetherTabStorage;
             } catch (e) {
                 data["VideoTogetherTabStorageEnabled"] = false;
             }
