@@ -101,7 +101,7 @@
     const Voice = {
         _status: VoiceStatus.STOP,
         _errorMessage: "",
-        get errorMessage(){
+        get errorMessage() {
             return this._errorMessage;
         },
         set errorMessage(m) {
@@ -1273,13 +1273,15 @@
             let observer = new WebKitMutationObserver(function (mutations) {
                 mutations.forEach(function (mutation) {
                     for (let i = 0; i < mutation.addedNodes.length; i++) {
-
                         if (mutation.addedNodes[i].tagName == "VIDEO" || mutation.addedNodes[i].tagName == "BWP-VIDEO") {
                             try {
                                 _this.AddVideoListener(mutation.addedNodes[i]);
                             } catch { }
                         }
-
+                        try {
+                            let videos = mutation.addedNodes[i].querySelectorAll("video");
+                            [...videos].forEach(v => _this.AddVideoListener(v));
+                        } catch { }
                         try {
                             if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
                                 if (mutation.addedNodes[i].tagName == "A") {
