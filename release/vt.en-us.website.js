@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1666185217
+// @version      1666451311
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -101,6 +101,8 @@
     const Voice = {
         _status: VoiceStatus.STOP,
         _errorMessage: "",
+        _rname: "",
+        _mutting: false,
         get errorMessage() {
             return this._errorMessage;
         },
@@ -182,6 +184,8 @@
         },
 
         join: async function (name, rname, mutting = false) {
+            Voice._rname = rname;
+            Voice._mutting = mutting;
             let cancellingNoise = true;
             try {
                 cancellingNoise = !(window.VideoTogetherStorage.EchoCancellation === false);
@@ -206,6 +210,10 @@
                 if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
                     pc.close();
                     await start();
+                    return;
+                }
+                if (res.error && typeof res.error === 'object' && typeof res.error.code === 'number' && [5002001, 5002002].indexOf(res.error.code) != -1) {
+                    Voice.join("", Voice._rname, Voice._mutting);
                     return;
                 }
                 if (res.data) {
@@ -313,6 +321,16 @@
                         await subscribe(Voice.conn);
                     }
                 }
+                Voice.conn.oniceconnectionstatechange = e => {
+                    if (Voice.conn.iceConnectionState == "disconnected" || Voice.conn.iceConnectionState == "failed" || Voice.conn.iceConnectionState == "closed") {
+                        Voice.errorMessage = "Connection lost";
+                        Voice.status = VoiceStatus.ERROR;
+                    } else {
+                        if (Voice.status == VoiceStatus.ERROR) {
+                            Voice.status = Voice._mutting ? VoiceStatus.MUTED : VoiceStatus.UNMUTED;
+                        }
+                    }
+                }
             }
 
             async function rpc(method, params = [], retryTime = -1) {
@@ -370,6 +388,7 @@
                     s.track.enabled = false;
                 }
             });
+            Voice._mutting = true;
             Voice.status = VoiceStatus.MUTED;
         },
         unmute: () => {
@@ -378,6 +397,7 @@
                     s.track.enabled = true;
                 }
             });
+            Voice._mutting = false;
             Voice.status = VoiceStatus.UNMUTED;
         },
         updateVoiceSetting: async (cancellingNoise = false) => {
@@ -1548,7 +1568,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1666185217';
+            this.version = '1666451311';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

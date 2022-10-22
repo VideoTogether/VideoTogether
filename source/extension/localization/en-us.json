@@ -24,5 +24,6 @@
     "please_join_again_after_jump": "Please join again after jump",
     "no_micphone_access": "No microphone access",
     "connection_error": "Connection error",
-    "ios_does_not_support_volume_adjustment": "iOS does not support volume adjustment"
+    "ios_does_not_support_volume_adjustment": "iOS does not support volume adjustment",
+    "connection_lost": "Connection lost"
 }
