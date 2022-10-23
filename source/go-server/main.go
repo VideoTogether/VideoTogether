@@ -6,24 +6,37 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
+
+	"github.com/unrolled/render"
 )
 
-type Rooom struct {
-	Name                 string  `json:"name"`
-	Password             string  `json:"password"`
-	LastUpdateClientTime float64 `json:"lastUpdateClientTime"`
-	LastUpdateServerTime float64 `json:"lastUpdateServerTime"`
-	PlaybackRate         float64 `json:"playbackRate"`
-	CurrentTime          float64 `json:"currentTime"`
-	Paused               bool    `json:"paused"`
-	Url                  string  `json:"url"`
-	Duration             float64 `json:"duration"`
-
-	expireTime time.Time
+type PublicRoom struct {
+	name                 string
+	lastUpdateClientTime float32
+	lastUpdateServerTime float32
+	playbackRate         float32
+	currentTime          float32
+	paused               bool
+	url                  string
+	duration             float32
+	public               bool
+	protected            bool
+	videoTitle           string
 }
 
-var roomsData = make(map[string]*Rooom, 1000)
+// This struct contains some private info
+type Room struct {
+	PublicRoom
+	tempUser string
+	password string
+}
+
+type RoomResponse struct {
+	PublicRoom
+	timestamp float32
+}
+
+var roomsData = make(map[string]*Room, 1000)
 var dataLock = sync.Mutex{}
 
 func init() {
@@ -39,11 +52,11 @@ func init() {
 
 func main() {
 
-	switch strings.TrimSpace(os.Args[0]) {
+	switch strings.TrimSpace(os.Args[1]) {
 	case "debug":
-		panic(http.ListenAndServe(":5000", nil))
+		panic(http.ListenAndServe("127.0.0.1:5001", nil))
 	case "prod":
-		panic(http.ListenAndServeTLS(":5000", "", "", nil))
+		panic(http.ListenAndServeTLS(":5001", "", "", nil))
 	default:
 		panic("unknown env")
 	}
@@ -57,8 +70,9 @@ func handleRoomGet(res http.ResponseWriter, req *http.Request) {
 		}
 
 	}()
-
 	room := req.URL.Query().Get("room")
+	r := render.New()
+	r.JSON(res, 200, room)
 }
 
 func handleTimestamp(res http.ResponseWriter, req *http.Request) {
