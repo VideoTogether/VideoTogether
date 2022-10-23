@@ -7,6 +7,7 @@ import sys
 import hashlib
 import json
 import grequests
+import requests
 from gevent import monkey
 
 monkey.patch_all()
