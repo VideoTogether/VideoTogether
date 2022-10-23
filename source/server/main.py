@@ -6,7 +6,12 @@ from gevent import pywsgi
 import sys
 import hashlib
 import json
-import requests
+import grequests
+from gevent import monkey
+
+monkey.patch_all()
+
+
 
 # db切换redis开关，默认False使用内存，True切换redis
 # TODO 现在 redis 的代码混到了 API 里面，need someone help 写写好点
