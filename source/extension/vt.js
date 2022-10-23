@@ -346,7 +346,7 @@
                         referrerPolicy: 'no-referrer', // no-referrer, *client
                         body: JSON.stringify({ id: generateUUID(), method: method, params: params }) // body data type must match "Content-Type" header
                     });
-                    return response.json(); // parses JSON response into native JavaScript objects
+                    return await response.json(); // parses JSON response into native JavaScript objects
                 } catch (err) {
                     if (Voice.status == VoiceStatus.STOP) {
                         return;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1666520425
+// @version      1666524424
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -346,7 +346,7 @@
                         referrerPolicy: 'no-referrer', // no-referrer, *client
                         body: JSON.stringify({ id: generateUUID(), method: method, params: params }) // body data type must match "Content-Type" header
                     });
-                    return response.json(); // parses JSON response into native JavaScript objects
+                    return await response.json(); // parses JSON response into native JavaScript objects
                 } catch (err) {
                     if (Voice.status == VoiceStatus.STOP) {
                         return;
@@ -1567,7 +1567,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1666520425';
+            this.version = '1666524424';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
