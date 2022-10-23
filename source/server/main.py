@@ -193,7 +193,7 @@ def getTimestamp():
 @app.route('/kraken', methods=['post'])
 def kraken():
     resp = requests.post('https://rpc.kraken.fm',
-                         json.dumps(json.loads(request.data)))
+                         json.dumps(json.loads(request.data)), timeout=10)
     return jsonify(resp.json())
 
 
