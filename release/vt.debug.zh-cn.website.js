@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1666451311
+// @version      1666520425
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -12,7 +12,6 @@
 (function () {
     const vtRuntime = `website`;
 
-    const KRAKEN_API = 'https://rpc.kraken.fm';
     function isWeb(type) {
         return type == 'website' || type == 'website_debug';
     }
@@ -335,7 +334,7 @@
 
             async function rpc(method, params = [], retryTime = -1) {
                 try {
-                    const response = await window.videoTogetherExtension.Fetch(KRAKEN_API, "POST", { id: generateUUID(), method: method, params: params }, {
+                    const response = await window.videoTogetherExtension.Fetch(extension.video_together_host + "/kraken", "POST", { id: generateUUID(), method: method, params: params }, {
                         method: 'POST', // *GET, POST, PUT, DELETE, etc.
                         mode: 'cors', // no-cors, *cors, same-origin
                         cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
@@ -1568,7 +1567,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1666451311';
+            this.version = '1666520425';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2570,7 +2569,8 @@
     }
     if (window.videoTogetherExtension === undefined) {
         window.videoTogetherExtension = null;
-        window.videoTogetherExtension = new VideoTogetherExtension();
+        var extension = new VideoTogetherExtension();
+        window.videoTogetherExtension = extension;
         sendMessageToSelf(MessageType.ExtensionInitSuccess, {})
     }
     try {

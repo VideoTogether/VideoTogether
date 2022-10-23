@@ -6,6 +6,7 @@ from gevent import pywsgi
 import sys
 import hashlib
 import json
+import requests
 
 # db切换redis开关，默认False使用内存，True切换redis
 # TODO 现在 redis 的代码混到了 API 里面，need someone help 写写好点
@@ -187,6 +188,13 @@ def getRoom():
 @app.route('/timestamp', methods=["get"])
 def getTimestamp():
     return jsonify({"timestamp": time.time()})
+
+
+@app.route('/kraken', methods=['post'])
+def kraken():
+    resp = requests.post('https://rpc.kraken.fm',
+                         json.dumps(json.loads(request.data)))
+    return jsonify(resp.json())
 
 
 def parseTempUserTs(tempUser: str):
