@@ -12,6 +12,17 @@
 (function () {
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
 
+    function fixedEncodeURIComponent(str) {
+        return encodeURIComponent(str).replace(
+            /[!'()*]/g,
+            (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+        ).replace(/%20/g, '+');
+    }
+
+    function fixedDecodeURIComponent(str) {
+        return decodeURIComponent(str.replace(/\+/g, ' '));
+    }
+
     function isWeb(type) {
         return type == 'website' || type == 'website_debug';
     }
@@ -194,8 +205,13 @@
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
             let uid = generateUUID();
-            const rnameRPC = encodeURIComponent("VideoTogether_" + rname);
-            const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
+            const rnameRPC = fixedEncodeURIComponent("VideoTogether_" + rname);
+            if (rnameRPC.length > 256) {
+                Voice.errorMessage = "{$room_name_too_long$}";
+                Voice.status = VoiceStatus.ERROR;
+                return;
+            }
+            const unameRPC = fixedEncodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
             let ucid = "";
             console.log(rnameRPC, uid);
             const configuration = {
@@ -206,11 +222,6 @@
 
             async function subscribe(pc) {
                 var res = await rpc('subscribe', [rnameRPC, unameRPC, ucid]);
-                if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
-                    pc.close();
-                    await start();
-                    return;
-                }
                 if (res.error && typeof res.error === 'object' && typeof res.error.code === 'number' && [5002001, 5002002].indexOf(res.error.code) != -1) {
                     Voice.join("", Voice._rname, Voice._mutting);
                     return;
@@ -263,7 +274,7 @@
                     console.log("ontrack", event);
 
                     let stream = event.streams[0];
-                    let sid = decodeURIComponent(stream.id);
+                    let sid = fixedDecodeURIComponent(stream.id);
                     let id = sid.split(':')[0];
                     // var name = Base64.decode(sid.split(':')[1]);
                     console.log(id, uid);
@@ -313,12 +324,14 @@
                 await Voice.conn.setLocalDescription(await Voice.conn.createOffer());
                 res = await rpc('publish', [rnameRPC, unameRPC, JSON.stringify(Voice.conn.localDescription)]);
                 if (res.data) {
-                    var jsep = JSON.parse(res.data.jsep);
+                    let jsep = JSON.parse(res.data.jsep);
                     if (jsep.type == 'answer') {
                         await Voice.conn.setRemoteDescription(jsep);
                         ucid = res.data.track;
                         await subscribe(Voice.conn);
                     }
+                } else {
+                    throw new Error('{$unknown_error$}');
                 }
                 Voice.conn.oniceconnectionstatechange = e => {
                     if (Voice.conn.iceConnectionState == "disconnected" || Voice.conn.iceConnectionState == "failed" || Voice.conn.iceConnectionState == "closed") {
@@ -984,7 +997,7 @@
             } catch (e) { }
             url = url.toString();
             let host = (new URL(url)).host;
-            if (this.cspBlockedHost[host]) {
+            if (this.cspBlockedHost[host] || url.startsWith('http:')) {
                 let id = generateUUID()
                 return await new Promise((resolve, reject) => {
                     this.callbackMap.set(id, (data) => {
