@@ -1,0 +1,16 @@
+{
+	"add json tag": {
+		"prefix": "json",
+		"body": [
+			"`json:\"${TM_CURRENT_LINE/^[ \t]*([_a-zA-Z])([_a-zA-Z0-9]*)(.*)$/${1:/downcase}$2/}\"`",
+		],
+		"description": "add json tag"
+	},
+	"add json tag underscore ": {
+		"prefix": "json",
+		"body": [
+			"`json:\"${TM_CURRENT_LINE/(?<![ \t]|^)(([ \t]+)([a-zA-Z0-9]*)).*|((?<=[ \t]|^)([A-Z]+)([A-Z]?[a-z1-9]+){0,1}|([A-Z])(?=[a-z0-9])|(?<=[a-z0-9])([A-Z]+)(?![a-z0-9_])|([A-Z]+)(?![a-z0-9_])|([_a-z0-9]+)|([A-Z]+))|./${7:+_}${8:+_}${9:+_}${4:/downcase}/g}\"`",
+		],
+		"description": "add json tag"
+	}
+}
