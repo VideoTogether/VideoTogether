@@ -18,7 +18,7 @@ QQ群: 170200260
 
 使用说明：[http://2gether.video/guide/introduction.html](https://2gether.video/zh-cn/guide/introduction.html)
 
-插件永远不会支持火狐浏览器
+永远不会提供火狐浏览器的插件
 
 ## 开发
 
