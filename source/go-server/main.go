@@ -51,10 +51,6 @@ func init() {
 }
 
 func main() {
-	for i := 0; i < 9; i++ {
-		fmt.Printf("${%d:_}${%d:_}${%d:/downcase}", 9+6*i, 9+1+6*i, 7+6*i)
-	}
-	return
 
 	switch strings.TrimSpace(os.Args[0]) {
 	case "debug":
