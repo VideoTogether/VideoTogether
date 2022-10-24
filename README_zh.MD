@@ -14,14 +14,11 @@ QQ群: 170200260
 
 ## 安装使用
 
-正式版安装说明： http://2gether.video/guide/install.html
+安装说明： [http://2gether.video/guide/install.html](https://2gether.video/zh-cn/guide/install.html)
 
-使用说明：http://2gether.video/guide/introduction.html
+使用说明：[http://2gether.video/guide/introduction.html](https://2gether.video/zh-cn/guide/introduction.html)
 
-
-测试版安装：https://github.com/VideoTogether/VideoTogether/raw/main/release/extension.beta.user.js
-
-测试版使用过程中可能会遇到各种问题，欢迎反馈测试中遇到的问题
+插件永远不会支持火狐浏览器
 
 ## 开发
 
