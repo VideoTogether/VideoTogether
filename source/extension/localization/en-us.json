@@ -25,5 +25,7 @@
     "no_micphone_access": "No microphone access",
     "connection_error": "Connection error",
     "ios_does_not_support_volume_adjustment": "iOS does not support volume adjustment",
-    "connection_lost": "Connection lost"
+    "connection_lost": "Connection lost",
+    "unknown_error": "Unknown error",
+    "room_name_too_long": "Room name too long"
 }

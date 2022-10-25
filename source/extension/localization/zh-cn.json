@@ -25,5 +25,7 @@
     "no_micphone_access": "麦克风权限获取失败",
     "connection_error": "连接失败",
     "ios_does_not_support_volume_adjustment": "IOS不支持音量调节",
-    "connection_lost": "连接断开"
+    "connection_lost": "连接断开",
+    "unknown_error": "未知错误",
+    "room_name_too_long": "房间名太长"
 }

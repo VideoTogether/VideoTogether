@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1666607030
+// @version      1666694548
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1564,7 +1564,7 @@
             }
             this.cspBlockedHost = {};
 
-            this.video_together_host = 'https://vt.panghair.com:5000/';
+            this.video_together_host = 'http://127.0.0.1:5001/';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video"]
 
@@ -1580,7 +1580,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1666607030';
+            this.version = '1666694548';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1985,7 +1985,7 @@
                             [...videos].forEach(v => _this.AddVideoListener(v));
                         } catch { }
                         try {
-                            if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+                            if (extension.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
                                 if (mutation.addedNodes[i].tagName == "A") {
                                     mutation.addedNodes[i].target = "_self";
                                 }
