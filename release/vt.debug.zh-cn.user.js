@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1666694548
+// @version      1666696924
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -258,7 +258,7 @@
 
             async function start() {
 
-                let res = await rpc('turn', [unameRPC], 5);
+                let res = await rpc('turn', [unameRPC]);
                 if (res.data && res.data.length > 0) {
                     configuration.iceServers = res.data;
                     configuration.iceTransportPolicy = 'relay';
@@ -1580,7 +1580,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1666694548';
+            this.version = '1666696924';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
