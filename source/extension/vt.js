@@ -258,7 +258,7 @@
 
             async function start() {
 
-                let res = await rpc('turn', [unameRPC], 5);
+                let res = await rpc('turn', [unameRPC]);
                 if (res.data && res.data.length > 0) {
                     configuration.iceServers = res.data;
                     configuration.iceTransportPolicy = 'relay';
