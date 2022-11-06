@@ -943,7 +943,6 @@
             window.addEventListener('click', message => {
                 setTimeout(this.ScheduledTask.bind(this), 200);
             })
-            this.RunWithRetry(this.SyncTimeWithServer.bind(this), 2);
 
             if (this.isMain) {
                 try {
@@ -1473,12 +1472,6 @@
                 })
             } catch { };
 
-            try {
-                if (this.minTrip == 1e9) {
-                    this.SyncTimeWithServer(this.video_together_host);
-                    this.SyncTimeWithServer(this.video_together_backup_host);
-                }
-            } catch { };
 
             if (this.role != this.RoleEnum.Null) {
                 try {
@@ -1487,6 +1480,12 @@
                         this.openAllLinksInSelf();
                     }
                 } catch { }
+                try {
+                    if (this.minTrip == 1e9) {
+                        this.SyncTimeWithServer(this.video_together_host);
+                        this.SyncTimeWithServer(this.video_together_backup_host);
+                    }
+                } catch { };
             }
 
             try {
