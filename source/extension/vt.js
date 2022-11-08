@@ -1348,8 +1348,10 @@
             let response = await this.Fetch(url + "/timestamp");
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
+            if (this.minTrip == 1e9) {
+                this.video_together_host = url;
+            }
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
-            this.video_together_host = url;
         }
 
         RecoveryState() {
@@ -1483,7 +1485,11 @@
                 try {
                     if (this.minTrip == 1e9) {
                         this.SyncTimeWithServer(this.video_together_host);
-                        this.SyncTimeWithServer(this.video_together_backup_host);
+                        setTimeout(() => {
+                            if (this.minTrip == 1e9) {
+                                this.SyncTimeWithServer(this.video_together_backup_host);
+                            }
+                        }, 5000);
                     }
                 } catch { };
             }
