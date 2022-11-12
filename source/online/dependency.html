@@ -2,10 +2,10 @@
     const WORKER_HOSTNAME = "${WORKER_HOSTNAME}"
 
     function getProxyURL(origin, force = false) {
+        let url = new URL(origin, window.location.href);
         if (origin.startsWith("/")) {
             return origin;
         }
-        let url = new URL(origin);
         if (url.hostname.endsWith(WORKER_HOSTNAME)) {
             // TODO port
             return origin;
