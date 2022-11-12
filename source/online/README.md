@@ -10,6 +10,14 @@
 
 npm install -g miniflare 
 
+修改一下 miniflare 
+
+cd /usr/lib/node_modules/miniflare
+sudo vi node_modules/@miniflare/http-server/dist/src/index.js
+
+if (pathname.startsWith("/cdn-cgi/")) {
+改成
+if (false && pathname.startsWith("/cdn-cgi/")) {
 
 2. 修改内容为你的域名
 
