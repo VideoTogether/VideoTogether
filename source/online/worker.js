@@ -9,6 +9,7 @@ function getRealUrl() {
 }
 
 function getReal(parsedUrl) {
+    console.log('parsedUrl', parsedUrl);
     let u = new URL(parsedUrl);
     u.host = u.host.replaceAll('_', '.').replace('.' + WORKER_HOSTNAME, '');
     return u.toString();
@@ -43,6 +44,7 @@ function Redirect(url) {
     return false;
 }
 async function handleRequest(req) {
+    console.log('--------------------------');
     let parsedUrl = req.url
 
     if (parsedUrl.startsWith(`https://${WORKER_HOSTNAME}`)) {
@@ -81,17 +83,26 @@ async function handleRequest(req) {
     let newReq = new Request(req);
 
     referer = req.headers.get("Referer");
+
     try {
         newReq.headers.set("Referer", getReal(referer))
+        console.log("real_referer", real_url,getReal(referer) );
     } catch { }
+    
+    newReq.headers.delete('x-real-ip');
+    newReq.headers.delete('cf-connecting-ip');
+    newReq.headers.delete('cf-ipcountry');
+    newReq.headers.delete('cf-ray');
+    newReq.headers.delete('cf-visitor');
     const res = await fetch(getRealUrl(), {
         // TODO
         "redirect": "manual",
         body: req.body,
-        headers: req.headers,
+        headers: newReq.headers,
         method: req.method,
     })
-    console.log(res)
+    console.log(newReq);
+    console.log(res);
     console.log(res.headers.get("Location"))
     // 去除 nosniff
     let clean_res
