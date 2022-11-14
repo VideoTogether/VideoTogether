@@ -18,6 +18,15 @@ import (
 	"github.com/unrolled/render"
 )
 
+type slashFix struct {
+	mux http.Handler
+}
+
+func (h *slashFix) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	r.URL.Path = strings.Replace(r.URL.Path, "//", "/", -1)
+	h.mux.ServeHTTP(w, r)
+}
+
 type PublicRoom struct {
 	Name                 string  `json:"name"`
 	LastUpdateClientTime float64 `json:"lastUpdateClientTime"`
@@ -144,29 +153,24 @@ func QueryTempUser(tempUserId string) *TempUser {
 	return tempUser.(*TempUser)
 }
 
-func init() {
-
-	if len(os.Args) < 1 {
-		panic("please set env")
-	}
-
-	http.HandleFunc("/room/get", handleRoomGet)
-	http.HandleFunc("/timestamp", handleTimestamp)
-	http.HandleFunc("/room/update", handleRoomUpdate)
-	http.HandleFunc("/statistics", handleStatistics)
-	http.HandleFunc("/kraken", handleKraken)
-}
-
 func main() {
-	x := os.Args
-	if len(x) <= 1 {
-		panic(http.ListenAndServe("127.0.0.1:5001", nil))
+
+	httpMux := http.NewServeMux()
+	httpMux.HandleFunc("/room/get", handleRoomGet)
+	httpMux.HandleFunc("/timestamp", handleTimestamp)
+	httpMux.HandleFunc("/room/update", handleRoomUpdate)
+	httpMux.HandleFunc("/statistics", handleStatistics)
+	httpMux.HandleFunc("/kraken", handleKraken)
+
+	if len(os.Args) <= 1 {
+		panic(http.ListenAndServe("127.0.0.1:5001", &slashFix{httpMux}))
 	}
+
 	switch strings.TrimSpace(os.Args[1]) {
 	case "debug":
-		panic(http.ListenAndServe("127.0.0.1:5001", nil))
+		panic(http.ListenAndServe("127.0.0.1:5001", &slashFix{httpMux}))
 	case "prod":
-		panic(http.ListenAndServeTLS(":5000", "./certificate.crt", "./private.pem", nil))
+		panic(http.ListenAndServeTLS(":5000", "./certificate.crt", "./private.pem", &slashFix{httpMux}))
 	default:
 		panic("unknown env")
 	}
