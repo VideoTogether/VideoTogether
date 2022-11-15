@@ -37,8 +37,6 @@ func (ths *QP) Show() (string, error) {
 }
 
 func (ths *QP) Count() {
-	ths.mu.Lock()
-	defer ths.mu.Unlock()
 
 	var idx int
 	var timeStr string
@@ -54,6 +52,8 @@ func (ths *QP) Count() {
 		idx = int(now.Unix()) % ths.keepNum
 		timeStr = now.Format("2006-01-02 15:04:05")
 	}
+	ths.mu.Lock()
+	defer ths.mu.Unlock()
 	c := ths.count[idx]
 	if c.Time != timeStr {
 		c.Time = timeStr
