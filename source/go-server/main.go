@@ -22,8 +22,15 @@ type slashFix struct {
 	mux http.Handler
 }
 
+var qps = NewQP(time.Second, 3600)
+
 func (h *slashFix) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.URL.Path = strings.Replace(r.URL.Path, "//", "/", -1)
+	enableCors(&w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	qps.Count()
 	h.mux.ServeHTTP(w, r)
 }
 
@@ -162,6 +169,25 @@ func main() {
 	httpMux.HandleFunc("/statistics", handleStatistics)
 	httpMux.HandleFunc("/kraken", handleKraken)
 
+	httpMux.HandleFunc("/qps", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		// Get the raw HTML, you can gzip it
+		s, err := qps.Show()
+		if err != nil {
+			panic(err)
+		}
+		w.Write([]byte(s))
+	})
+	// Add a route to get json report, The name is the same as getting the HTML routing, but you need to add the '_json' suffix
+	httpMux.HandleFunc("/qps_json", func(w http.ResponseWriter, r *http.Request) {
+		// Get the json report
+		bts, err := qps.GetJson()
+		if err != nil {
+			panic(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(bts)
+	})
 	if len(os.Args) <= 1 {
 		panic(http.ListenAndServe("127.0.0.1:5001", &slashFix{httpMux}))
 	}
