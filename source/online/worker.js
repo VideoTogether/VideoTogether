@@ -173,7 +173,7 @@ class Dependency {
 class RemoveReferrer {
     element(element) {
         if (element.getAttribute('name') == 'referrer') {
-            element.setAttribute('content', 'unsafe-url');
+            // element.setAttribute('content', 'unsafe-url');
             console.log(element, 'referrer');
         }
     }
