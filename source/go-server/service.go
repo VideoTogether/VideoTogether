@@ -1,7 +1,11 @@
 package main
 
+import (
+	"time"
+)
+
 func NewVideoTogetherService() *VideoTogetherService {
-	
+	return &VideoTogetherService{}
 }
 
 type VideoTogetherService struct {

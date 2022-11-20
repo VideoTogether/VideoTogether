@@ -187,10 +187,10 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(bts)
 	})
-	wsHub := newWsHub();
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(wsHub, w, r)
-	})
+	// wsHub := newWsHub();
+	// http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	// 	serveWs(wsHub, w, r)
+	// })
 	if len(os.Args) <= 1 {
 		panic(http.ListenAndServe("127.0.0.1:5001", &slashFix{httpMux}))
 	}
@@ -361,6 +361,6 @@ func handleError(res http.ResponseWriter, e interface{}) {
 	case []byte:
 		http.Error(res, string(e), http.StatusInternalServerError)
 	default:
-		http.Error(res, fmt.Sprint("%v", e), http.StatusInternalServerError)
+		http.Error(res, fmt.Sprintf("%v", e), http.StatusInternalServerError)
 	}
 }
