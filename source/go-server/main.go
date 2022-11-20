@@ -87,7 +87,6 @@ func NewRoomResponse(room *Room) *RoomResponse {
 
 var rooms = sync.Map{}
 var tempUsers = sync.Map{}
-var dataLock = sync.Mutex{}
 
 // utils-------------------------------------------------------------------
 func p(x float64) *float64 {
