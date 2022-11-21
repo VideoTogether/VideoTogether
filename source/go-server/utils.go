@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func p(x float64) *float64 {
+func p[T any](x T) *T {
 	return &x
 }
 
@@ -43,4 +43,18 @@ func floatParam(req *http.Request, key string, defaultValue *float64) float64 {
 		}
 	}
 	return num
+}
+
+func In[V comparable](v V, list []V) int {
+	for i := range list {
+		if list[i] == v {
+			return i
+		}
+	}
+	return -1
+}
+
+func Remove[V any](s []V, i int) []V {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
 }

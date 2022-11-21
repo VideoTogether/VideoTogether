@@ -11,10 +11,10 @@ import (
 )
 
 func main() {
-	srv := NewVideoTogetherService()
+	vtSrv := NewVideoTogetherService()
 	server := &slashFix{
 		render:    render.New(),
-		vtSrv:     srv,
+		vtSrv:     vtSrv,
 		qps:       qps.NewQP(time.Second, 3600),
 		krakenUrl: "http://panghair.com:7002/",
 		rpClient:  &http.Client{},
@@ -28,10 +28,10 @@ func main() {
 	mux.HandleFunc("/kraken", server.handleKraken)
 	mux.HandleFunc("/qps", server.qpsHtml)
 	mux.HandleFunc("/qps_json", server.qpsJson)
-	// wsHub := newWsHub();
-	// http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-	// 	serveWs(wsHub, w, r)
-	// })
+
+	wsHub := newWsHub(vtSrv)
+	mux.HandleFunc("/ws", server.newWsHandler(wsHub))
+
 	server.mux = mux
 	if len(os.Args) <= 1 {
 		panic(http.ListenAndServe("127.0.0.1:5001", server))

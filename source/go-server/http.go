@@ -70,7 +70,7 @@ func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	room.PlaybackRate = floatParam(req, "playbackRate", p(1))
+	room.PlaybackRate = floatParam(req, "playbackRate", p(float64(1)))
 	room.CurrentTime = floatParam(req, "currentTime", nil)
 	room.Paused = req.URL.Query().Get("paused") != "false"
 	room.Url = req.URL.Query().Get("url")
