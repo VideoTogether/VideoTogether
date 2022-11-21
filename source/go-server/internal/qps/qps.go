@@ -1,5 +1,6 @@
+package qps
+
 // copied from https://github.com/zengming00/go-qps
-package main
 
 import (
 	"encoding/base64"

@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestGoServer(t *testing.T) {
+func TestVideoTogether(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "GoServer Suite")
+	RunSpecs(t, "Video Together Go Server Suite")
 }

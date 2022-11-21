@@ -1,0 +1,205 @@
+package main
+
+import (
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"strings"
+
+	"github.com/VideoTogether/VideoTogether/internal/qps"
+	"github.com/unrolled/render"
+)
+
+type slashFix struct {
+	render *render.Render
+	mux    http.Handler
+	vtSrv  *VideoTogetherService
+	qps    *qps.QP
+
+	krakenUrl string // https://github.com/MixinNetwork/kraken
+	rpClient  *http.Client
+}
+
+func (h *slashFix) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if e := recover(); e != nil {
+			h.handleError(w, e)
+		}
+	}()
+
+	r.URL.Path = strings.Replace(r.URL.Path, "//", "/", -1)
+	h.enableCors(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	h.qps.Count()
+	h.mux.ServeHTTP(w, r)
+}
+
+type TimestampResponse struct {
+	Timestamp float64 `json:"timestamp"`
+}
+
+type RoomResponse struct {
+	*Room
+	*TimestampResponse
+}
+
+func (h *slashFix) newRoomResponse(room *Room) *RoomResponse {
+	resp := &RoomResponse{
+		TimestampResponse: &TimestampResponse{Timestamp: h.vtSrv.Timestamp()},
+		Room:              room,
+	}
+	return resp
+}
+
+func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) {
+	tempUserId := req.URL.Query().Get("tempUser")
+	name := req.URL.Query().Get("name")
+	password := GetMD5Hash(req.URL.Query().Get("password"))
+
+	member := h.vtSrv.QueryUser(tempUserId)
+	room := h.vtSrv.LoadOrCreateRoom(name, password, member)
+	if room.HasAccess(password) {
+		h.respondError(res, "房名已存在，密码错误")
+		return
+	}
+	if !room.IsHost(member) {
+		h.respondError(res, "只有房主可以修改房间数据")
+		return
+	}
+
+	room.PlaybackRate = floatParam(req, "playbackRate", p(1))
+	room.CurrentTime = floatParam(req, "currentTime", nil)
+	room.Paused = req.URL.Query().Get("paused") != "false"
+	room.Url = req.URL.Query().Get("url")
+	room.LastUpdateClientTime = floatParam(req, "lastUpdateClientTime", nil)
+	room.Duration = floatParam(req, "duration", p(1e9))
+	room.LastUpdateServerTime = h.vtSrv.Timestamp()
+	room.Protected = req.URL.Query().Get("protected") == "true"
+	room.VideoTitle = req.URL.Query().Get("videoTitle")
+
+	h.JSON(res, 200, h.newRoomResponse(room))
+}
+
+func (h *slashFix) handleRoomGet(res http.ResponseWriter, req *http.Request) {
+	password := GetMD5Hash(req.URL.Query().Get("password"))
+	name := req.URL.Query().Get("name")
+	room := h.vtSrv.QueryRoom(name)
+	if room == nil {
+		h.respondError(res, "房间不存在")
+		return
+	}
+	if !room.HasAccess(password) {
+		h.respondError(res, "密码错误")
+		return
+	}
+	h.JSON(res, 200, h.newRoomResponse(room))
+}
+
+func (h *slashFix) handleTimestamp(res http.ResponseWriter, req *http.Request) {
+	h.JSON(res, 200, TimestampResponse{Timestamp: h.vtSrv.Timestamp()})
+}
+
+// A reverse proxy to Kraken which support real-time voice communication
+func (h *slashFix) handleKraken(res http.ResponseWriter, req *http.Request) {
+	if req.Method == "OPTIONS" {
+		return
+	}
+
+	proxyReq, err := http.NewRequest(req.Method, h.krakenUrl, req.Body)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// We may want to filter some headers, otherwise we could just use a shallow copy
+	proxyReq.Header = make(http.Header)
+	for key, val := range req.Header {
+		proxyReq.Header[key] = val
+	}
+
+	resp, err := h.rpClient.Do(proxyReq)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	defer resp.Body.Close()
+	responseData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	h.Text(res, 200, string(responseData))
+}
+
+func (h *slashFix) handleStatistics(res http.ResponseWriter, req *http.Request) {
+	h.JSON(res, 200, h.vtSrv.Statistics())
+}
+
+func (h *slashFix) qpsHtml(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// Get the raw HTML, you can gzip it
+	s, err := h.qps.Show()
+	if err != nil {
+		panic(err)
+	}
+	w.Write([]byte(s))
+}
+
+func (h *slashFix) qpsJson(w http.ResponseWriter, _ *http.Request) {
+	// Get the json report
+	bts, err := h.qps.GetJson()
+	if err != nil {
+		panic(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bts)
+}
+
+func (h *slashFix) Text(w io.Writer, status int, v string) {
+	if err := h.render.Text(w, status, v); err != nil {
+		panic(err)
+	}
+}
+
+func (h *slashFix) JSON(w io.Writer, status int, v interface{}) {
+	if err := h.render.JSON(w, status, v); err != nil {
+		panic(err)
+	}
+}
+
+func (h *slashFix) handleError(res http.ResponseWriter, e interface{}) {
+	switch e := e.(type) {
+	case string:
+		http.Error(res, e, http.StatusInternalServerError)
+	case interface{ String() string }:
+		http.Error(res, e.String(), http.StatusInternalServerError)
+	case error:
+		http.Error(res, e.Error(), http.StatusInternalServerError)
+	case []byte:
+		http.Error(res, string(e), http.StatusInternalServerError)
+	default:
+		http.Error(res, fmt.Sprintf("%v", e), http.StatusInternalServerError)
+	}
+}
+
+type ErrorResponse struct {
+	ErrorMessage string `json:"errorMessage"`
+}
+
+// TODO localization
+func (h *slashFix) respondError(w io.Writer, errorMessage string) {
+	h.JSON(w, 200, &ErrorResponse{
+		ErrorMessage: errorMessage,
+	})
+}
+
+func (h *slashFix) enableCors(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Max-Age", "86400")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,HEAD,POST,OPTIONS")
+}
