@@ -21,6 +21,37 @@ type slashFix struct {
 	rpClient  *http.Client
 }
 
+func newSlashFix(
+	render *render.Render,
+	vtSrv *VideoTogetherService,
+	qps *qps.QP,
+	krakenUrl string,
+	rpClient *http.Client,
+) *slashFix {
+	s := &slashFix{
+		render:    render,
+		vtSrv:     vtSrv,
+		qps:       qps,
+		krakenUrl: krakenUrl,
+		rpClient:  rpClient,
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/room/get", s.handleRoomGet)
+	mux.HandleFunc("/timestamp", s.handleTimestamp)
+	mux.HandleFunc("/room/update", s.handleRoomUpdate)
+	mux.HandleFunc("/statistics", s.handleStatistics)
+	mux.HandleFunc("/kraken", s.handleKraken)
+	mux.HandleFunc("/qps", s.qpsHtml)
+	mux.HandleFunc("/qps_json", s.qpsJson)
+
+	wsHub := newWsHub(vtSrv)
+	mux.HandleFunc("/ws", s.newWsHandler(wsHub))
+
+	s.mux = mux
+	return s
+}
+
 func (h *slashFix) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if e := recover(); e != nil {
