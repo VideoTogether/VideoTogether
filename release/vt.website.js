@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1667906827
+// @version      1669124974
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -208,6 +208,11 @@
             const rnameRPC = fixedEncodeURIComponent("VideoTogether_" + rname);
             if (rnameRPC.length > 256) {
                 Voice.errorMessage = "房间名太长";
+                Voice.status = VoiceStatus.ERROR;
+                return;
+            }
+            if (window.location.protocol != "https:") {
+                Voice.errorMessage = "仅支持https网站使用";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
@@ -1580,7 +1585,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1667906827';
+            this.version = '1669124974';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

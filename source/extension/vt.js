@@ -211,6 +211,11 @@
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
+            if (window.location.protocol != "https:") {
+                Voice.errorMessage = "{$only_support_https_website$}";
+                Voice.status = VoiceStatus.ERROR;
+                return;
+            }
             const unameRPC = fixedEncodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
             let ucid = "";
             console.log(rnameRPC, uid);
