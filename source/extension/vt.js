@@ -945,9 +945,11 @@
                 }
                 this.processReceivedMessage(message.data.type, message.data.data);
             });
-            window.addEventListener('click', message => {
-                setTimeout(this.ScheduledTask.bind(this), 200);
-            })
+
+            // if some element's click be invoked frequenctly, a lot of http request will be sent
+            // window.addEventListener('click', message => {
+            //     setTimeout(this.ScheduledTask.bind(this), 200);
+            // })
 
             if (this.isMain) {
                 try {
@@ -1057,8 +1059,54 @@
 
         async ForEachVideo(func) {
             try {
+                // disneyplus
+                if (window.location.hostname.endsWith("disneyplus.com")) {
+                    try {
+                        let ff = document.querySelector('.ff-10sec-icon');
+                        let rr = document.querySelector('.rwd-10sec-icon');
+                        let video = document.querySelector('video');
+                        if (ff && rr && video) {
+                            if (!video.videoTogetherVideoWrapper) {
+                                video.videoTogetherVideoWrapper = new VideoWrapper();
+                            }
+                            let videoWrapper = video.videoTogetherVideoWrapper;
+                            videoWrapper.play = async () => await video.play();
+                            videoWrapper.pause = async () => await video.pause();
+                            videoWrapper.paused = video.paused
+                            videoWrapper.currentTimeGetter = () => video.currentTime;
+                            videoWrapper.currentTimeSetter = (v) => {
+                                let isFf = v > video.currentTime;
+                                let d = Math.abs(v - video.currentTime);
+                                let clickTime = parseInt(d / 10);
+                                if (clickTime > 0) {
+                                    console.log(clickTime);
+                                }
+                                for (let i = 0; i < clickTime; i++) {
+                                    isFf ? ff.click() : rr.click();
+                                }
+                                setTimeout(() => {
+                                    isFf ? ff.click() : rr.click();
+                                    if (video.readyState != 4) {
+                                        console.log("loading");
+                                        ff.click();
+                                        rr.click();
+                                    }
+                                    setTimeout(() => {
+                                        if (video.readyState == 4) {
+                                            video.currentTime = v;
+                                        }
+                                    }, 100);
+                                }, 200);
+                            }
+                            videoWrapper.duration = video.duration;
+                            videoWrapper.playbackRateGetter = () => video.playbackRate;
+                            videoWrapper.playbackRateSetter = (v) => { video.playbackRate = v };
+                            await func(videoWrapper);
+                        }
+                    } catch (e) { }
+                }
                 // Netflix
-                if (window.location.host.includes("netflix")) {
+                if (window.location.hostname.endsWith("netflix.com")) {
                     try {
                         let videoPlayer = netflix.appContext.state.playerApp.getAPI().videoPlayer;
                         let player = videoPlayer.getVideoPlayerBySessionId(videoPlayer.getAllPlayerSessionIds()[0]);

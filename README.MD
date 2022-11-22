@@ -26,9 +26,7 @@ run `python script/build_extension.py` to build, the output directory is `./rele
 
 ### Service
 
-service code is `source/server/main.py` 
-
-`python source/server/main.py debug` to run a local service
+service code is in `source/`
 
 
 
