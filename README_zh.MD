@@ -34,9 +34,7 @@ QQ群: 170200260
 
 ### 服务端
 
-代码在 `source/server/main.py` 
-
-`python source/server/main.py debug` 运行一个本地服务器
+代码在 `source/go-server` 
 
 ## TODO
 
