@@ -273,15 +273,9 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	roomPw := GetMD5Hash(req.Password)
 	c.roomName = req.Room.Name
 
-	member := c.hub.vtSrv.QueryUser(req.UserId)
-	room := c.hub.vtSrv.LoadOrCreateRoom(req.Name, roomPw, member)
-	if room.HasAccess(roomPw) {
-		c.reply(rawReq.Method, nil, errors.New("房名已存在，密码错误"))
-		return
-	}
-
-	if !room.IsHost(member) {
-		c.reply(rawReq.Method, nil, errors.New("只有房主可以修改房间数据"))
+	room, _, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(req.Name, roomPw, req.UserId)
+	if err != nil {
+		c.reply(rawReq.Method, nil, err)
 		return
 	}
 

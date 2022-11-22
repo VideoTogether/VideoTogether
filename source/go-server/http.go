@@ -55,18 +55,13 @@ func (h *slashFix) newRoomResponse(room *Room) *RoomResponse {
 }
 
 func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) {
-	tempUserId := req.URL.Query().Get("tempUser")
+	userId := req.URL.Query().Get("tempUser")
 	name := req.URL.Query().Get("name")
 	password := GetMD5Hash(req.URL.Query().Get("password"))
 
-	member := h.vtSrv.QueryUser(tempUserId)
-	room := h.vtSrv.LoadOrCreateRoom(name, password, member)
-	if room.HasAccess(password) {
-		h.respondError(res, "房名已存在，密码错误")
-		return
-	}
-	if !room.IsHost(member) {
-		h.respondError(res, "只有房主可以修改房间数据")
+	room, _, err := h.vtSrv.GetAndCheckUpdatePermissionsOfRoom(name, password, userId)
+	if err != nil {
+		h.respondError(res, err.Error())
 		return
 	}
 

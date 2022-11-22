@@ -1,32 +1,53 @@
 package main
 
 import (
+	"errors"
 	"sync"
 	"time"
 )
 
-func NewVideoTogetherService() *VideoTogetherService {
+func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService {
 	return &VideoTogetherService{
-		rooms: sync.Map{},
-		users: sync.Map{},
+		rooms:          sync.Map{},
+		users:          sync.Map{},
+		roomExpireTime: roomExpireTime,
 	}
 }
 
 type VideoTogetherService struct {
-	rooms sync.Map
-	users sync.Map
+	rooms          sync.Map
+	users          sync.Map
+	roomExpireTime time.Duration
 }
 
 func (s *VideoTogetherService) Timestamp() float64 {
 	return float64(time.Now().UnixMilli()) / 1000
 }
 
-func (s *VideoTogetherService) LoadOrCreateRoom(name, password string, host *User) *Room {
-	room := s.QueryRoom(name)
-	if room == nil {
-		room = s.CreateRoom(name, password, host)
+var (
+	IncorrectPasswordErr = errors.New("房名已存在，密码错误")
+	NotHostErr           = errors.New("你不是房主")
+)
+
+func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(roomName, roomPassword string, userId string) (*Room, *User, error) {
+	user := s.QueryUser(userId)
+	if user == nil {
+		user = s.NewUser(userId)
 	}
-	return room
+
+	room := s.QueryRoom(roomName)
+	if room == nil {
+		room = s.CreateRoom(roomName, roomPassword, user)
+	}
+
+	if room.password != roomPassword {
+		return nil, nil, IncorrectPasswordErr
+	}
+	if !room.IsHost(user) {
+		return nil, nil, NotHostErr
+	}
+
+	return room, user, nil
 }
 
 func (s *VideoTogetherService) CreateRoom(name, password string, host *User) *Room {
@@ -48,21 +69,21 @@ func (s *VideoTogetherService) QueryRoom(name string) *Room {
 }
 
 func (s *VideoTogetherService) QueryUser(userId string) *User {
-	guest, _ := s.users.Load(userId)
-	if guest == nil {
+	u, _ := s.users.Load(userId)
+	if u == nil {
 		return nil
 	}
-	guest.(*User).LastSeen = s.Timestamp()
-	return guest.(*User)
+	u.(*User).LastSeen = s.Timestamp()
+	return u.(*User)
 }
 
 func (s *VideoTogetherService) NewUser(userId string) *User {
-	g := &User{
+	u := &User{
 		UserId:   userId,
 		LastSeen: s.Timestamp(),
 	}
-	s.users.Store(userId, g)
-	return g
+	s.users.Store(userId, u)
+	return u
 }
 
 type Statistics struct {
@@ -71,7 +92,7 @@ type Statistics struct {
 
 func (s *VideoTogetherService) Statistics() Statistics {
 	var stat Statistics
-	var expireTime = float64(time.Now().UnixMilli())/1000 - 60*3
+	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {
 			s.rooms.Delete(key)

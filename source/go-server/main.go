@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	vtSrv := NewVideoTogetherService()
+	vtSrv := NewVideoTogetherService(time.Minute * 3)
 	server := &slashFix{
 		render:    render.New(),
 		vtSrv:     vtSrv,
