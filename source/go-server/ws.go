@@ -168,20 +168,6 @@ type Client struct {
 	roomName string
 }
 
-type RoomUpdateRequest struct {
-	Name                 string `json:"name"`
-	Password             string `json:"password"`
-	PlaybackRate         string `json:"playbackRate"`
-	CurrentTime          string `json:"currentTime"`
-	Paused               string `json:"paused"`
-	Url                  string `json:"url"`
-	LastUpdateClientTime string `json:"lastUpdateClientTime"`
-	Duration             string `json:"duration"`
-	TempUserId           string `json:"tempUser"`
-	Protected            string `json:"protected"`
-	VideoTitle           string `json:"videoTitle"`
-}
-
 type WsRequestMessage struct {
 	Method string          `json:"method"`
 	Data   json.RawMessage `json:"data"`
