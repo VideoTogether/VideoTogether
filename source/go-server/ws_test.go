@@ -98,6 +98,25 @@ var _ = Describe("WebSocket", func() {
 			}
 		})
 	})
+
+	When("message is a valid json but with invalid data", func() {
+		It("returns invalid data error", func() {
+			messages := []string{
+				`{"method": "/room/update", "data": "update room"}`,
+				`{"method": "/room/update", "data": "my new room"}`,
+			}
+			for _, msg := range messages {
+				Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+				Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+				Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+				_, p, err := wsConn.ReadMessage()
+				Expect(err).ShouldNot(HaveOccurred())
+				resp := gjson.ParseBytes(p)
+				Expect(resp.Get("method").String()).To(Equal("/room/update"))
+				Expect(resp.Get("errorMessage").String()).To(Equal("invalid data"))
+			}
+		})
+	})
 	Context("when update room", func() {
 		Context("and the room does not exist", func() {
 			It("returns room info", func() {
