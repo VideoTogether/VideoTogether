@@ -46,6 +46,11 @@ type Broadcast struct {
 	Message  interface{}
 }
 
+type WsRoomResponse struct {
+	Method string       `json:"method"`
+	Data   RoomResponse `json:"data"`
+}
+
 type Hub struct {
 	// Registered clients.
 	clients map[*Client]bool
@@ -193,7 +198,7 @@ type JoinRoomRequest struct {
 
 type UpdateRoomRequest struct {
 	*Room
-	UserId   string `json:"userId"`
+	UserId   string `json:"tempUser"`
 	Password string `json:"password"`
 }
 
@@ -245,7 +250,7 @@ func (c *Client) joinRoom(rawReq *WsRequestMessage) {
 
 	room := c.hub.vtSrv.QueryRoom(req.RoomName)
 	if room == nil {
-		c.reply(rawReq.Method, nil, errors.New("房间不存在"))
+		c.reply(rawReq.Method, nil, RoomNotExist)
 		return
 	}
 	if !room.HasAccess(roomPw) {
@@ -255,7 +260,7 @@ func (c *Client) joinRoom(rawReq *WsRequestMessage) {
 
 	c.roomName = req.RoomName
 	c.hub.addClientToRoom(req.RoomName, c)
-	c.reply(rawReq.Method, &RoomResponse{
+	c.reply(rawReq.Method, RoomResponse{
 		TimestampResponse: &TimestampResponse{
 			Timestamp: c.hub.vtSrv.Timestamp(),
 		},
@@ -293,11 +298,14 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	c.hub.addClientToRoom(room.Name, c)
 	c.hub.broadcast <- Broadcast{
 		RoomName: room.Name,
-		Message: &RoomResponse{
-			TimestampResponse: &TimestampResponse{
-				Timestamp: c.hub.vtSrv.Timestamp(),
+		Message: WsRoomResponse{
+			Method: rawReq.Method,
+			Data: RoomResponse{
+				TimestampResponse: &TimestampResponse{
+					Timestamp: c.hub.vtSrv.Timestamp(),
+				},
+				Room: room,
 			},
-			Room: room,
 		},
 	}
 }

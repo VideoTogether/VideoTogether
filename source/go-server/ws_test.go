@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
+	"github.com/tidwall/gjson"
 	"github.com/unrolled/render"
 )
 
@@ -101,139 +101,258 @@ var _ = Describe("WebSocket", func() {
 			}
 		})
 	})
+	Context("when update room", func() {
+		Context("and the room does not exist", func() {
+			It("returns room info", func() {
+				msg := `{
+  "method": "/room/update",
+  "data": {
+    "name": "my room name",
+    "password": "my room password111",
+    "playbackRate": 1.0,
+    "currentTime": 1.0,
+    "paused": true,
+    "url": "https://www.youtube.com/watch?v=N000qglmmY0",
+    "lastUpdateClientTime": 1669197153.123,
+    "duration": 1.23,
+    "tempUser": "alice",
+    "protected": false,
+    "videoTitle": "Dua Lipa - Levitating (Official Animated Music Video)"
+  }
+}`
+				Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+				Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+				Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
-	// FIXME BELOW---
+				_, bodyBytes, err := wsConn.ReadMessage()
+				Expect(err).ToNot(HaveOccurred())
+
+				res := gjson.ParseBytes(bodyBytes)
+				Expect(res.Get("method").String()).To(Equal("/room/update"))
+				roomData := res.Get("data")
+
+				Expect(roomData.Get("password").Exists()).To(Equal(false))
+				Expect(roomData.Get("tempUser").Exists()).To(Equal(false))
+
+				Expect(roomData.Get("name").String()).To(Equal("my room name"))
+				Expect(roomData.Get("playbackRate").Float()).To(Equal(1.0))
+				Expect(roomData.Get("currentTime").Float()).To(Equal(1.0))
+				Expect(roomData.Get("paused").Bool()).To(Equal(true))
+				Expect(roomData.Get("url").String()).To(Equal("https://www.youtube.com/watch?v=N000qglmmY0"))
+				Expect(roomData.Get("lastUpdateClientTime").Float()).To(Equal(1669197153.123))
+				Expect(roomData.Get("lastUpdateServerTime").Float()).To(BeNumerically(">=", 1669197153.123))
+				Expect(roomData.Get("duration").Float()).To(Equal(1.23))
+				Expect(roomData.Get("protected").Bool()).To(Equal(false))
+				Expect(roomData.Get("videoTitle").String()).To(Equal("Dua Lipa - Levitating (Official Animated Music Video)"))
+			})
+		})
+	})
+
+	Context("when join room", func() {
+		Context("and it does not exist", func() {
+			It("returns not existent error", func() {
+				msg := `{
+  "method": "/room/join",
+  "data": {
+    "roomName": "my room name",
+    "roomPassword": "my room password111"
+  }
+}`
+				Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+				Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+				Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+				_, bodyBytes, err := wsConn.ReadMessage()
+				Expect(err).ToNot(HaveOccurred())
+
+				res := gjson.ParseBytes(bodyBytes)
+				Expect(res.Get("method").String()).To(Equal("/room/join"))
+				Expect(res.Get("errorMessage").String()).To(Equal("房间不存在"))
+			})
+		})
+
+		Context("When room is not protected and password is incorrect", func() {
+			BeforeEach(func() {
+				user := vtSrv.NewUser("alice")
+				room := vtSrv.CreateRoom("my room name", GetMD5Hash("my room password"), user)
+				Expect(user).ToNot(BeNil())
+				Expect(room).ToNot(BeNil())
+			})
+
+			It("returns room information", func() {
+				msg := `{
+  "method": "/room/join",
+  "data": {
+    "name": "my room name",
+    "password": "my room password111"
+  }
+}`
+				Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+				Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+				Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+				_, bodyBytes, err := wsConn.ReadMessage()
+				Expect(err).ToNot(HaveOccurred())
+
+				res := gjson.ParseBytes(bodyBytes)
+				Expect(res.Get("method").String()).To(Equal("/room/join"))
+				roomData := res.Get("data")
+				Expect(roomData.Get("timestamp").Float()).To(BeNumerically(">", 0))
+				Expect(roomData.Get("name").String()).To(Equal("my room name"))
+				Expect(roomData.Get("url").String()).To(Equal(""))
+			})
+		})
+
+		Context("When room is protected and password is incorrect", func() {
+			BeforeEach(func() {
+				user := vtSrv.NewUser("user-001")
+				room := vtSrv.CreateRoom("my room name", GetMD5Hash("roomPassword"), user)
+				room.Protected = true
+				Expect(user).ToNot(BeNil())
+				Expect(room).ToNot(BeNil())
+			})
+
+			It("returns incorrect password error", func() {
+				msg := `{
+  "method": "/room/join",
+  "data": {
+    "name": "my room name",
+    "password": "incorrect password"
+  }
+}`
+				Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+				Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+				Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+				_, bodyBytes, err := wsConn.ReadMessage()
+				Expect(err).ToNot(HaveOccurred())
+
+				res := gjson.ParseBytes(bodyBytes)
+				Expect(res.Get("method").String()).To(Equal("/room/join"))
+				Expect(res.Get("errorMessage").String()).To(Equal("密码错误"))
+			})
+		})
+	})
 
 	Context("When update room with incorrect password", func() {
 		BeforeEach(func() {
-			user := vtSrv.NewUser("user-001")
-			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
-			Expect(user).ToNot(BeNil())
-			Expect(room).ToNot(BeNil())
+			msg := `{
+  "method": "/room/update",
+  "data": {
+    "name": "my room name",
+    "password": "my room password",
+    "playbackRate": 1.0,
+    "currentTime": 1.0,
+    "paused": true,
+    "url": "https://www.youtube.com/watch?v=N000qglmmY0",
+    "lastUpdateClientTime": 1669197153.123,
+    "duration": 1.23,
+    "tempUser": "alice",
+    "protected": false,
+    "videoTitle": "Dua Lipa - Levitating (Official Animated Music Video)"
+  }
+}`
+			Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+			Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+			Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+			_, bodyBytes, err := wsConn.ReadMessage()
+			Expect(err).ToNot(HaveOccurred())
+
+			res := gjson.ParseBytes(bodyBytes)
+			Expect(res.Get("method").String()).To(Equal("/room/update"))
+			roomData := res.Get("data")
+			Expect(roomData.Get("name").String()).To(Equal("my room name"))
 		})
 
 		It("returns incorrect password error", func() {
-			beginAt := time.Now()
-			data := url.Values{}
-			data.Add("name", "roomName")
-			data.Add("password", "incorrect roomPassword")
-			data.Add("playbackRate", "1.0")
-			data.Add("currentTime", "1.00")
-			data.Add("paused", "true")
-			data.Add("url", "https://www.youtube.com/watch?v=N000qglmmY0")
-			data.Add("lastUpdateClientTime", fmt.Sprintf("%f", float64(beginAt.UnixMilli())/1000))
-			data.Add("duration", "1.23")
-			data.Add("tempUser", "user-001")
-			data.Add("protected", "false")
-			data.Add("videoTitle", "Dua Lipa - Levitating (Official Animated Music Video)")
-			req, err := http.NewRequest("PUT", server.URL()+"/room/update?"+data.Encode(), nil)
-			Expect(err).ShouldNot(HaveOccurred())
-			resp, err := http.DefaultClient.Do(req)
-			Expect(err).ShouldNot(HaveOccurred())
+			msg := `{
+  "method": "/room/update",
+  "data": {
+    "name": "my room name",
+    "password": "incorrect password",
+    "playbackRate": 1.0,
+    "currentTime": 1.0,
+    "paused": true,
+    "url": "https://www.youtube.com/watch?v=N000qglmmY0",
+    "lastUpdateClientTime": 1669197153.123,
+    "duration": 1.23,
+    "tempUser": "alice",
+    "protected": false,
+    "videoTitle": "Dua Lipa - Levitating (Official Animated Music Video)"
+  }
+}`
+			Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+			Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+			Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
-			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
-			bodyDecoder := json.NewDecoder(resp.Body)
-			var response ErrorResponse
-			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
-			Expect(response.ErrorMessage).To(Equal("房名已存在，密码错误"))
+			_, bodyBytes, err := wsConn.ReadMessage()
+			Expect(err).ToNot(HaveOccurred())
+
+			res := gjson.ParseBytes(bodyBytes)
+			Expect(res.Get("method").String()).To(Equal("/room/update"))
+			Expect(res.Get("errorMessage").String()).To(Equal("房名已存在，密码错误"))
 		})
 	})
 
-	Context("When room is not protected and password is incorrect", func() {
+	Context("and user is not the host", func() {
 		BeforeEach(func() {
-			user := vtSrv.NewUser("user-001")
-			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
-			Expect(user).ToNot(BeNil())
-			Expect(room).ToNot(BeNil())
+			msg := `{
+  "method": "/room/update",
+  "data": {
+    "name": "my room name",
+    "password": "my room password",
+    "playbackRate": 1.0,
+    "currentTime": 1.0,
+    "paused": true,
+    "url": "https://www.youtube.com/watch?v=N000qglmmY0",
+    "lastUpdateClientTime": 1669197153.123,
+    "duration": 1.23,
+    "tempUser": "alice alice",
+    "protected": false,
+    "videoTitle": "Dua Lipa - Levitating (Official Animated Music Video)"
+  }
+}`
+			Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+			Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+			Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+			_, bodyBytes, err := wsConn.ReadMessage()
+			Expect(err).ToNot(HaveOccurred())
+
+			res := gjson.ParseBytes(bodyBytes)
+			Expect(res.Get("method").String()).To(Equal("/room/update"))
+			roomData := res.Get("data")
+			Expect(roomData.Get("name").String()).To(Equal("my room name"))
 		})
 
-		It("returns room information", func() {
-			data := url.Values{}
-			data.Add("name", "roomName")
-			data.Add("password", "incorrect roomPassword")
-			resp, err := http.Get(server.URL() + "/room/get?" + data.Encode())
-			Expect(err).ShouldNot(HaveOccurred())
+		It("returns not host error", func() {
+			msg := `{
+  "method": "/room/update",
+  "data": {
+    "name": "my room name",
+    "password": "my room password",
+    "playbackRate": 1.0,
+    "currentTime": 1.0,
+    "paused": true,
+    "url": "https://www.youtube.com/watch?v=N000qglmmY0",
+    "lastUpdateClientTime": 1669197153.123,
+    "duration": 1.23,
+    "tempUser": "bob bob",
+    "protected": false,
+    "videoTitle": "Dua Lipa - Levitating (Official Animated Music Video)"
+  }
+}`
+			Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+			Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+			Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
-			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
-			bodyDecoder := json.NewDecoder(resp.Body)
-			var response RoomResponse
-			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
-			Expect(response.Name).To(Equal("roomName"))
-		})
-	})
+			_, bodyBytes, err := wsConn.ReadMessage()
+			Expect(err).ToNot(HaveOccurred())
 
-	Context("When room is protected and password is incorrect", func() {
-		BeforeEach(func() {
-			user := vtSrv.NewUser("user-001")
-			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
-			room.Protected = true
-			Expect(user).ToNot(BeNil())
-			Expect(room).ToNot(BeNil())
-		})
-
-		It("returns incorrect password error", func() {
-			data := url.Values{}
-			data.Add("name", "roomName")
-			data.Add("password", "incorrect roomPassword")
-			resp, err := http.Get(server.URL() + "/room/get?" + data.Encode())
-			Expect(err).ShouldNot(HaveOccurred())
-
-			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
-			bodyDecoder := json.NewDecoder(resp.Body)
-			var response ErrorResponse
-			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
-			Expect(response.ErrorMessage).To(Equal("密码错误"))
-		})
-	})
-
-	Context("When room does not exist", func() {
-		It("returns not existent error", func() {
-			data := url.Values{}
-			data.Add("name", "roomName")
-			data.Add("password", "roomPassword")
-			resp, err := http.Get(server.URL() + "/room/get?" + data.Encode())
-			Expect(err).ShouldNot(HaveOccurred())
-
-			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
-			bodyDecoder := json.NewDecoder(resp.Body)
-			var response ErrorResponse
-			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
-			Expect(response.ErrorMessage).To(Equal("房间不存在"))
-		})
-	})
-
-	Context("When update room and user is not the host", func() {
-		BeforeEach(func() {
-			user := vtSrv.NewUser("alice")
-			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
-			Expect(user).ToNot(BeNil())
-			Expect(room).ToNot(BeNil())
-		})
-
-		It("returns hot host error", func() {
-			beginAt := time.Now()
-			data := url.Values{}
-			data.Add("name", "roomName")
-			data.Add("password", "roomPassword")
-			data.Add("playbackRate", "1.0")
-			data.Add("currentTime", "1.00")
-			data.Add("paused", "true")
-			data.Add("url", "https://www.youtube.com/watch?v=N000qglmmY0")
-			data.Add("lastUpdateClientTime", fmt.Sprintf("%f", float64(beginAt.UnixMilli())/1000))
-			data.Add("duration", "1.23")
-			data.Add("tempUser", "bob")
-			data.Add("protected", "false")
-			data.Add("videoTitle", "Dua Lipa - Levitating (Official Animated Music Video)")
-			req, err := http.NewRequest("PUT", server.URL()+"/room/update?"+data.Encode(), nil)
-			Expect(err).ShouldNot(HaveOccurred())
-			resp, err := http.DefaultClient.Do(req)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
-			bodyDecoder := json.NewDecoder(resp.Body)
-			var response ErrorResponse
-			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
-			Expect(response.ErrorMessage).To(Equal("你不是房主"))
+			res := gjson.ParseBytes(bodyBytes)
+			Expect(res.Get("method").String()).To(Equal("/room/update"))
+			Expect(res.Get("errorMessage").String()).To(Equal("你不是房主"))
 		})
 	})
 })
