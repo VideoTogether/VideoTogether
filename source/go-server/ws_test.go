@@ -58,9 +58,6 @@ var _ = Describe("WebSocket", func() {
 			Expect(resp.Header.Get("Access-Control-Allow-Origin")).To(Equal("*"))
 			Expect(resp.Header.Get("Access-Control-Max-Age")).To(Equal("86400"))
 			Expect(resp.Header.Get("Access-Control-Allow-Methods")).To(Equal("GET,HEAD,POST,OPTIONS"))
-			body, err := ioutil.ReadAll(resp.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(body)).Should(HavePrefix("Bad Request\nwebsocket:"))
 		})
 	})
 
