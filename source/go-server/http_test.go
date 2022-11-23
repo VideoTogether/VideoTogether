@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/VideoTogether/VideoTogether/internal/qps"
@@ -135,5 +137,184 @@ var _ = Describe("Http Api", func() {
 		Expect(bodyDecoder.Decode(&timestampResp)).Should(Succeed())
 		Expect(timestampResp.Timestamp).Should(BeNumerically("<=", vtSrv.Timestamp()))
 		Expect(timestampResp.Timestamp).Should(BeNumerically(">=", beginTime))
+	})
+
+	It("Creates a new room", func() {
+		beginAt := time.Now()
+		data := url.Values{}
+		data.Add("name", "roomName")
+		data.Add("password", "roomPassword")
+		data.Add("playbackRate", "1.0")
+		data.Add("currentTime", "1.00")
+		data.Add("paused", "true")
+		data.Add("url", "https://www.youtube.com/watch?v=N000qglmmY0")
+		data.Add("lastUpdateClientTime", fmt.Sprintf("%f", float64(beginAt.UnixMilli())/1000))
+		data.Add("duration", "1.23")
+		data.Add("tempUser", "user-001")
+		data.Add("protected", "false")
+		data.Add("videoTitle", "Dua Lipa - Levitating (Official Animated Music Video)")
+		req, err := http.NewRequest("PUT", server.URL()+"/room/update?"+data.Encode(), nil)
+		Expect(err).ShouldNot(HaveOccurred())
+		resp, err := http.DefaultClient.Do(req)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		Expect(resp.StatusCode).Should(Equal(http.StatusOK))
+		bodyDecoder := json.NewDecoder(resp.Body)
+		var roomResponse RoomResponse
+		Expect(bodyDecoder.Decode(&roomResponse)).Should(Succeed())
+
+		Expect(roomResponse.Room.Name).To(Equal("roomName"))
+		Expect(roomResponse.Room.Paused).To(Equal(true))
+
+		user := vtSrv.QueryUser("user-001")
+		Expect(user.UserId).To(Equal("user-001"))
+		Expect(user.LastSeen).To(BeNumerically(">=", float64(beginAt.UnixMilli())/1000))
+		Expect(user.LastSeen).To(BeNumerically("<=", float64(time.Now().UnixMilli())/1000))
+
+		room := vtSrv.QueryRoom("roomName")
+		Expect(room.hostId).To(Equal(user.UserId))
+		Expect(room.password).To(Equal(GetMD5Hash("roomPassword")))
+		Expect(room.PlaybackRate).To(Equal(1.0))
+		Expect(room.CurrentTime).To(Equal(1.0))
+		Expect(room.Paused).To(Equal(true))
+		Expect(room.Url).To(Equal("https://www.youtube.com/watch?v=N000qglmmY0"))
+		Expect(room.LastUpdateClientTime).To(Equal(float64(beginAt.UnixMilli()) / 1000))
+		Expect(room.Protected).To(Equal(false))
+		Expect(room.VideoTitle).To(Equal("Dua Lipa - Levitating (Official Animated Music Video)"))
+		Expect(room.LastUpdateServerTime).To(BeNumerically(">=", float64(beginAt.UnixMilli())/1000))
+		Expect(room.LastUpdateServerTime).To(BeNumerically("<=", float64(time.Now().UnixMilli())/1000))
+	})
+
+	Context("When update room with incorrect password", func() {
+		BeforeEach(func() {
+			user := vtSrv.NewUser("user-001")
+			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
+			Expect(user).ToNot(BeNil())
+			Expect(room).ToNot(BeNil())
+		})
+
+		It("returns incorrect password error", func() {
+			beginAt := time.Now()
+			data := url.Values{}
+			data.Add("name", "roomName")
+			data.Add("password", "incorrect roomPassword")
+			data.Add("playbackRate", "1.0")
+			data.Add("currentTime", "1.00")
+			data.Add("paused", "true")
+			data.Add("url", "https://www.youtube.com/watch?v=N000qglmmY0")
+			data.Add("lastUpdateClientTime", fmt.Sprintf("%f", float64(beginAt.UnixMilli())/1000))
+			data.Add("duration", "1.23")
+			data.Add("tempUser", "user-001")
+			data.Add("protected", "false")
+			data.Add("videoTitle", "Dua Lipa - Levitating (Official Animated Music Video)")
+			req, err := http.NewRequest("PUT", server.URL()+"/room/update?"+data.Encode(), nil)
+			Expect(err).ShouldNot(HaveOccurred())
+			resp, err := http.DefaultClient.Do(req)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
+			bodyDecoder := json.NewDecoder(resp.Body)
+			var response ErrorResponse
+			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
+			Expect(response.ErrorMessage).To(Equal("房名已存在，密码错误"))
+		})
+	})
+
+	Context("When room is not protected and password is incorrect", func() {
+		BeforeEach(func() {
+			user := vtSrv.NewUser("user-001")
+			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
+			Expect(user).ToNot(BeNil())
+			Expect(room).ToNot(BeNil())
+		})
+
+		It("returns room information", func() {
+			data := url.Values{}
+			data.Add("name", "roomName")
+			data.Add("password", "incorrect roomPassword")
+			resp, err := http.Get(server.URL() + "/room/get?" + data.Encode())
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
+			bodyDecoder := json.NewDecoder(resp.Body)
+			var response RoomResponse
+			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
+			Expect(response.Name).To(Equal("roomName"))
+		})
+	})
+
+	Context("When room is protected and password is incorrect", func() {
+		BeforeEach(func() {
+			user := vtSrv.NewUser("user-001")
+			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
+			room.Protected = true
+			Expect(user).ToNot(BeNil())
+			Expect(room).ToNot(BeNil())
+		})
+
+		It("returns incorrect password error", func() {
+			data := url.Values{}
+			data.Add("name", "roomName")
+			data.Add("password", "incorrect roomPassword")
+			resp, err := http.Get(server.URL() + "/room/get?" + data.Encode())
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
+			bodyDecoder := json.NewDecoder(resp.Body)
+			var response ErrorResponse
+			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
+			Expect(response.ErrorMessage).To(Equal("密码错误"))
+		})
+	})
+
+	Context("When room does not exist", func() {
+		It("returns not existent error", func() {
+			data := url.Values{}
+			data.Add("name", "roomName")
+			data.Add("password", "roomPassword")
+			resp, err := http.Get(server.URL() + "/room/get?" + data.Encode())
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
+			bodyDecoder := json.NewDecoder(resp.Body)
+			var response ErrorResponse
+			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
+			Expect(response.ErrorMessage).To(Equal("房间不存在"))
+		})
+	})
+
+	Context("When update room and user is not the host", func() {
+		BeforeEach(func() {
+			user := vtSrv.NewUser("alice")
+			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
+			Expect(user).ToNot(BeNil())
+			Expect(room).ToNot(BeNil())
+		})
+
+		It("returns hot host error", func() {
+			beginAt := time.Now()
+			data := url.Values{}
+			data.Add("name", "roomName")
+			data.Add("password", "roomPassword")
+			data.Add("playbackRate", "1.0")
+			data.Add("currentTime", "1.00")
+			data.Add("paused", "true")
+			data.Add("url", "https://www.youtube.com/watch?v=N000qglmmY0")
+			data.Add("lastUpdateClientTime", fmt.Sprintf("%f", float64(beginAt.UnixMilli())/1000))
+			data.Add("duration", "1.23")
+			data.Add("tempUser", "bob")
+			data.Add("protected", "false")
+			data.Add("videoTitle", "Dua Lipa - Levitating (Official Animated Music Video)")
+			req, err := http.NewRequest("PUT", server.URL()+"/room/update?"+data.Encode(), nil)
+			Expect(err).ShouldNot(HaveOccurred())
+			resp, err := http.DefaultClient.Do(req)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(resp.StatusCode).Should(Equal(http.StatusOK))
+			bodyDecoder := json.NewDecoder(resp.Body)
+			var response ErrorResponse
+			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
+			Expect(response.ErrorMessage).To(Equal("你不是房主"))
+		})
 	})
 })

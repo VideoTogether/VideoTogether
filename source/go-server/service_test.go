@@ -216,7 +216,7 @@ var _ = Describe("Service", func() {
 				s.CreateRoom("roomName", "password", rootUser)
 				stat := s.Statistics()
 				Expect(stat.RoomCount).To(Equal(1))
-				time.Sleep(time.Millisecond * 50)
+				time.Sleep(time.Millisecond * 100)
 				stat = s.Statistics()
 				Expect(stat.RoomCount).To(Equal(0))
 			}, SpecTimeout(time.Second))

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -109,16 +110,21 @@ func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) 
 	h.JSON(res, 200, h.newRoomResponse(room))
 }
 
+var (
+	RoomNotExist                = errors.New("房间不存在")
+	GetRoomIncorrectPasswordErr = errors.New("密码错误")
+)
+
 func (h *slashFix) handleRoomGet(res http.ResponseWriter, req *http.Request) {
 	password := GetMD5Hash(req.URL.Query().Get("password"))
 	name := req.URL.Query().Get("name")
 	room := h.vtSrv.QueryRoom(name)
 	if room == nil {
-		h.respondError(res, "房间不存在")
+		h.respondError(res, RoomNotExist.Error())
 		return
 	}
 	if !room.HasAccess(password) {
-		h.respondError(res, "密码错误")
+		h.respondError(res, GetRoomIncorrectPasswordErr.Error())
 		return
 	}
 	h.JSON(res, 200, h.newRoomResponse(room))
