@@ -229,6 +229,258 @@ var _ = Describe("WebSocket", func() {
 				Expect(res.Get("errorMessage").String()).To(Equal("密码错误"))
 			})
 		})
+
+		Context("When room info changed", func() {
+			BeforeEach(func() {
+				msg := `{
+  "method": "/room/update",
+  "data": {
+    "name": "my room name",
+    "password": "my room password",
+    "playbackRate": 1.0,
+    "currentTime": 1.0,
+    "paused": true,
+    "url": "https://www.youtube.com/watch?v=N000qglmmY0",
+    "lastUpdateClientTime": 1669197153.123,
+    "duration": 1.23,
+    "tempUser": "alice",
+    "protected": false,
+    "videoTitle": "Dua Lipa - Levitating (Official Animated Music Video)"
+  }
+}`
+				Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+				Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+				Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+				_, bodyBytes, err := wsConn.ReadMessage()
+				Expect(err).ToNot(HaveOccurred())
+
+				res := gjson.ParseBytes(bodyBytes)
+				Expect(res.Get("method").String()).To(Equal("/room/update"))
+				roomData := res.Get("data")
+
+				Expect(roomData.Get("password").Exists()).To(Equal(false))
+				Expect(roomData.Get("tempUser").Exists()).To(Equal(false))
+
+				Expect(roomData.Get("name").String()).To(Equal("my room name"))
+			})
+
+			It("server should push latest room info to user", func() {
+				dialer := websocket.Dialer{}
+				guestWsConn, resp, err := dialer.Dial(wsUrl, nil)
+				Expect(err).ShouldNot(HaveOccurred())
+				body, err := ioutil.ReadAll(resp.Body)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(string(body)).To(Equal(""))
+				Expect(guestWsConn).ToNot(BeNil())
+
+				msg := `{
+  "method": "/room/join",
+  "data": {
+    "name": "my room name",
+    "password": "my room password"
+  }
+}`
+				Expect(guestWsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+				Expect(guestWsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+				Expect(guestWsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+				_, bodyBytes, err := guestWsConn.ReadMessage()
+				Expect(err).ToNot(HaveOccurred())
+
+				res := gjson.ParseBytes(bodyBytes)
+				Expect(res.Get("method").String()).To(Equal("/room/join"))
+				dataRes := res.Get("data")
+				Expect(dataRes.Get("name").String()).To(Equal("my room name"))
+				Expect(dataRes.Get("currentTime").Float()).To(Equal(1.0))
+				Expect(dataRes.Get("videoTitle").String()).To(Equal("Dua Lipa - Levitating (Official Animated Music Video)"))
+
+				go func() {
+					// Wait new updates
+					Expect(guestWsConn.SetReadDeadline(time.Now().Add(time.Second * 2))).Should(Succeed())
+
+					_, bodyBytes, err := guestWsConn.ReadMessage()
+					Expect(err).ToNot(HaveOccurred())
+
+					res := gjson.ParseBytes(bodyBytes)
+					Expect(res.Get("method").String()).To(Equal("/room/update"))
+					roomData := res.Get("data")
+					Expect(roomData.Get("name").String()).To(Equal("my room name"))
+					Expect(roomData.Get("currentTime").Float()).To(Equal(2.0))
+					Expect(roomData.Get("url").String()).To(Equal("https://www.youtube.com/watch?v=vFWv44Z4Jhk"))
+					Expect(roomData.Get("videoTitle").String()).To(Equal("Dua Lipa - Levitating ft. DaBaby / Don't Start Now (Live at the GRAMMYs 2021)"))
+					Expect(roomData.Get("paused").Bool()).To(Equal(false))
+
+					guestWsConn.Close()
+				}()
+
+				{
+					updateMsg := `{
+  "method": "/room/update",
+  "data": {
+    "name": "my room name",
+    "password": "my room password",
+    "playbackRate": 1.0,
+    "currentTime": 2.0,
+    "paused": false,
+    "url": "https://www.youtube.com/watch?v=vFWv44Z4Jhk",
+    "lastUpdateClientTime": 1669197153.123,
+    "duration": 1.23,
+    "tempUser": "alice",
+    "protected": false,
+    "videoTitle": "Dua Lipa - Levitating ft. DaBaby / Don't Start Now (Live at the GRAMMYs 2021)"
+  }
+}`
+					Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+					Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(updateMsg))).Should(Succeed())
+					Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+					_, bodyBytes, err = wsConn.ReadMessage()
+					Expect(err).ToNot(HaveOccurred())
+
+					res := gjson.ParseBytes(bodyBytes)
+					Expect(res.Get("method").String()).To(Equal("/room/update"))
+					roomData := res.Get("data")
+
+					Expect(roomData.Get("password").Exists()).To(Equal(false))
+					Expect(roomData.Get("tempUser").Exists()).To(Equal(false))
+
+					Expect(roomData.Get("name").String()).To(Equal("my room name"))
+					Expect(roomData.Get("currentTime").Float()).To(Equal(2.0))
+					Expect(roomData.Get("url").String()).To(Equal("https://www.youtube.com/watch?v=vFWv44Z4Jhk"))
+					Expect(roomData.Get("videoTitle").String()).To(Equal("Dua Lipa - Levitating ft. DaBaby / Don't Start Now (Live at the GRAMMYs 2021)"))
+					Expect(roomData.Get("paused").Bool()).To(Equal(false))
+				}
+			})
+
+			It("should push latest room info to users when some users disconnect", func() {
+				server.AppendHandlers(api.ServeHTTP, api.ServeHTTP)
+				{
+					// guest 1
+					dialer := websocket.Dialer{}
+					guestWsConn, resp, err := dialer.Dial(wsUrl, nil)
+					Expect(err).ShouldNot(HaveOccurred())
+					body, err := ioutil.ReadAll(resp.Body)
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(string(body)).To(Equal(""))
+					Expect(guestWsConn).ToNot(BeNil())
+
+					msg := `{
+  "method": "/room/join",
+  "data": {
+    "name": "my room name",
+    "password": "my room password"
+  }
+}`
+					Expect(guestWsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+					Expect(guestWsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+					Expect(guestWsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+					_, bodyBytes, err := guestWsConn.ReadMessage()
+					Expect(err).ToNot(HaveOccurred())
+
+					res := gjson.ParseBytes(bodyBytes)
+					Expect(res.Get("method").String()).To(Equal("/room/join"))
+					dataRes := res.Get("data")
+					Expect(dataRes.Get("name").String()).To(Equal("my room name"))
+					Expect(dataRes.Get("currentTime").Float()).To(Equal(1.0))
+					Expect(dataRes.Get("videoTitle").String()).To(Equal("Dua Lipa - Levitating (Official Animated Music Video)"))
+
+					go func() {
+						// Wait new updates
+						Expect(guestWsConn.SetReadDeadline(time.Now().Add(time.Second * 2))).Should(Succeed())
+
+						_, bodyBytes, err := guestWsConn.ReadMessage()
+						Expect(err).ToNot(HaveOccurred())
+
+						res := gjson.ParseBytes(bodyBytes)
+						Expect(res.Get("method").String()).To(Equal("/room/update"))
+						roomData := res.Get("data")
+						Expect(roomData.Get("name").String()).To(Equal("my room name"))
+						Expect(roomData.Get("currentTime").Float()).To(Equal(2.0))
+						Expect(roomData.Get("url").String()).To(Equal("https://www.youtube.com/watch?v=vFWv44Z4Jhk"))
+						Expect(roomData.Get("videoTitle").String()).To(Equal("Dua Lipa - Levitating ft. DaBaby / Don't Start Now (Live at the GRAMMYs 2021)"))
+						Expect(roomData.Get("paused").Bool()).To(Equal(false))
+
+						guestWsConn.Close()
+					}()
+				}
+				{
+					// guest 2
+					dialer := websocket.Dialer{}
+					guestWsConn, resp, err := dialer.Dial(wsUrl, nil)
+					Expect(err).ShouldNot(HaveOccurred())
+					body, err := ioutil.ReadAll(resp.Body)
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(string(body)).To(Equal(""))
+					Expect(guestWsConn).ToNot(BeNil())
+
+					msg := `{
+  "method": "/room/join",
+  "data": {
+    "name": "my room name",
+    "password": "my room password"
+  }
+}`
+					Expect(guestWsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+					Expect(guestWsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+					Expect(guestWsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+					_, bodyBytes, err := guestWsConn.ReadMessage()
+					Expect(err).ToNot(HaveOccurred())
+
+					res := gjson.ParseBytes(bodyBytes)
+					Expect(res.Get("method").String()).To(Equal("/room/join"))
+					dataRes := res.Get("data")
+					Expect(dataRes.Get("name").String()).To(Equal("my room name"))
+					Expect(dataRes.Get("currentTime").Float()).To(Equal(1.0))
+					Expect(dataRes.Get("videoTitle").String()).To(Equal("Dua Lipa - Levitating (Official Animated Music Video)"))
+
+					go func() {
+						guestWsConn.Close()
+					}()
+				}
+
+				{
+					updateMsg := `{
+  "method": "/room/update",
+  "data": {
+    "name": "my room name",
+    "password": "my room password",
+    "playbackRate": 1.0,
+    "currentTime": 2.0,
+    "paused": false,
+    "url": "https://www.youtube.com/watch?v=vFWv44Z4Jhk",
+    "lastUpdateClientTime": 1669197153.123,
+    "duration": 1.23,
+    "tempUser": "alice",
+    "protected": false,
+    "videoTitle": "Dua Lipa - Levitating ft. DaBaby / Don't Start Now (Live at the GRAMMYs 2021)"
+  }
+}`
+					Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+					Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(updateMsg))).Should(Succeed())
+					Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+					_, bodyBytes, err := wsConn.ReadMessage()
+					Expect(err).ToNot(HaveOccurred())
+
+					res := gjson.ParseBytes(bodyBytes)
+					Expect(res.Get("method").String()).To(Equal("/room/update"))
+					roomData := res.Get("data")
+
+					Expect(roomData.Get("password").Exists()).To(Equal(false))
+					Expect(roomData.Get("tempUser").Exists()).To(Equal(false))
+
+					Expect(roomData.Get("name").String()).To(Equal("my room name"))
+					Expect(roomData.Get("currentTime").Float()).To(Equal(2.0))
+					Expect(roomData.Get("url").String()).To(Equal("https://www.youtube.com/watch?v=vFWv44Z4Jhk"))
+					Expect(roomData.Get("videoTitle").String()).To(Equal("Dua Lipa - Levitating ft. DaBaby / Don't Start Now (Live at the GRAMMYs 2021)"))
+					Expect(roomData.Get("paused").Bool()).To(Equal(false))
+				}
+			})
+		})
+
 	})
 
 	Context("When update room with incorrect password", func() {
@@ -292,7 +544,7 @@ var _ = Describe("WebSocket", func() {
 		})
 	})
 
-	Context("and user is not the host", func() {
+	Context("when user is not the host", func() {
 		BeforeEach(func() {
 			msg := `{
   "method": "/room/update",
