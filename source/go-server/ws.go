@@ -17,8 +17,7 @@ func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Println(err)
-			return
+			panic(err)
 		}
 		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
 		client.hub.register <- client

@@ -47,6 +47,7 @@ func newSlashFix(
 	mux.HandleFunc("/qps_json", s.qpsJson)
 
 	wsHub := newWsHub(vtSrv)
+	go wsHub.run()
 	mux.HandleFunc("/ws", s.newWsHandler(wsHub))
 
 	s.mux = mux
