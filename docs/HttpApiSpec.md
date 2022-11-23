@@ -65,7 +65,7 @@ Submit realtime infomation, which helps peers in the room with synchronization.
 | url                  | video link        |
 | lastUpdateClientTime |                   |
 | duration             |                   |
-| tempUserId           |                   |
+| tempUser             |                   |
 | protected            |                   |
 | videoTitle           |                   |
 
