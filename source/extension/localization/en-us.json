@@ -27,5 +27,6 @@
     "ios_does_not_support_volume_adjustment": "iOS does not support volume adjustment",
     "connection_lost": "Connection lost",
     "unknown_error": "Unknown error",
-    "room_name_too_long": "Room name too long"
+    "room_name_too_long": "Room name too long",
+    "only_support_https_website": "Only support https website"
 }
