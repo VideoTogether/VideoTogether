@@ -26,12 +26,14 @@ func (s *VideoTogetherService) Timestamp() float64 {
 
 var (
 	IncorrectPasswordErr = errors.New("房名已存在，密码错误")
-	NotHostErr           = errors.New("你不是房主")
+	NotHostErr           = errors.New("其他房主正在同步")
 )
 
 func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(roomName, roomPassword string, userId string) (*Room, *User, error) {
 	user := s.QueryUser(userId)
+	isNewUser := false
 	if user == nil {
+		isNewUser = true
 		user = s.NewUser(userId)
 	}
 
@@ -43,8 +45,13 @@ func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(roomName, room
 	if room.password != roomPassword {
 		return nil, nil, IncorrectPasswordErr
 	}
+
 	if !room.IsHost(user) {
-		return nil, nil, NotHostErr
+		if isNewUser {
+			room.SetHost(user)
+		} else {
+			return nil, nil, NotHostErr
+		}
 	}
 
 	return room, user, nil
@@ -127,6 +134,10 @@ func (r *Room) HasAccess(password string) bool {
 
 func (r *Room) IsHost(u *User) bool {
 	return r.hostId == u.UserId
+}
+
+func (r *Room) SetHost(u *User) {
+	r.hostId = u.UserId
 }
 
 type User struct {

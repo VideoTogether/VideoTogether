@@ -592,6 +592,34 @@ var _ = Describe("WebSocket", func() {
 			Expect(res.Get("method").String()).To(Equal("/room/update"))
 			roomData := res.Get("data")
 			Expect(roomData.Get("name").String()).To(Equal("my room name"))
+
+			msg = `{
+				"method": "/room/update",
+				"data": {
+				  "name": "my room name",
+				  "password": "my room password",
+				  "playbackRate": 1.0,
+				  "currentTime": 1.0,
+				  "paused": true,
+				  "url": "https://www.youtube.com/watch?v=N000qglmmY0",
+				  "lastUpdateClientTime": 1669197153.123,
+				  "duration": 1.23,
+				  "tempUser": "bob bob",
+				  "protected": false,
+				  "videoTitle": "Dua Lipa - Levitating (Official Animated Music Video)"
+				}
+			  }`
+			Expect(wsConn.SetWriteDeadline(time.Now().Add(time.Second))).Should(Succeed())
+			Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
+			Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
+
+			_, bodyBytes, err = wsConn.ReadMessage()
+			Expect(err).ToNot(HaveOccurred())
+
+			res = gjson.ParseBytes(bodyBytes)
+			Expect(res.Get("method").String()).To(Equal("/room/update"))
+			roomData = res.Get("data")
+			Expect(roomData.Get("name").String()).To(Equal("my room name"))
 		})
 
 		It("returns not host error", func() {
@@ -606,7 +634,7 @@ var _ = Describe("WebSocket", func() {
     "url": "https://www.youtube.com/watch?v=N000qglmmY0",
     "lastUpdateClientTime": 1669197153.123,
     "duration": 1.23,
-    "tempUser": "bob bob",
+    "tempUser": "alice alice",
     "protected": false,
     "videoTitle": "Dua Lipa - Levitating (Official Animated Music Video)"
   }
@@ -620,7 +648,7 @@ var _ = Describe("WebSocket", func() {
 
 			res := gjson.ParseBytes(bodyBytes)
 			Expect(res.Get("method").String()).To(Equal("/room/update"))
-			Expect(res.Get("errorMessage").String()).To(Equal("你不是房主"))
+			Expect(res.Get("errorMessage").String()).To(Equal("其他房主正在同步"))
 		})
 	})
 })

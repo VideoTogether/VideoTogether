@@ -289,6 +289,8 @@ var _ = Describe("Http Api", func() {
 			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
 			Expect(user).ToNot(BeNil())
 			Expect(room).ToNot(BeNil())
+			user = vtSrv.NewUser("bob")
+			room.SetHost(user)
 		})
 
 		It("returns hot host error", func() {
@@ -302,7 +304,7 @@ var _ = Describe("Http Api", func() {
 			data.Add("url", "https://www.youtube.com/watch?v=N000qglmmY0")
 			data.Add("lastUpdateClientTime", fmt.Sprintf("%f", float64(beginAt.UnixMilli())/1000))
 			data.Add("duration", "1.23")
-			data.Add("tempUser", "bob")
+			data.Add("tempUser", "alice")
 			data.Add("protected", "false")
 			data.Add("videoTitle", "Dua Lipa - Levitating (Official Animated Music Video)")
 			req, err := http.NewRequest("PUT", server.URL()+"/room/update?"+data.Encode(), nil)
@@ -314,7 +316,7 @@ var _ = Describe("Http Api", func() {
 			bodyDecoder := json.NewDecoder(resp.Body)
 			var response ErrorResponse
 			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
-			Expect(response.ErrorMessage).To(Equal("你不是房主"))
+			Expect(response.ErrorMessage).To(Equal("其他房主正在同步"))
 		})
 	})
 })
