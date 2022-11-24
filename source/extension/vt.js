@@ -10,6 +10,7 @@
 // ==/UserScript==
 
 (function () {
+    const language = '{$language$}'
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
 
     function fixedEncodeURIComponent(str) {
@@ -994,6 +995,7 @@
             url = new URL(url);
             url.searchParams.set("version", this.version);
             try {
+                url.searchParams.set("language", language);
                 url.searchParams.set("voiceStatus", this.isMain ? Voice.status : this.voiceStatus);
                 url.searchParams.set("loaddingVersion", window.VideoTogetherStorage.LoaddingVersion);
                 url.searchParams.set("runtimeType", window.VideoTogetherStorage.UserscriptType);

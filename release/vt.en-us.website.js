@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1669125079
+// @version      1669293041
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -10,6 +10,7 @@
 // ==/UserScript==
 
 (function () {
+    const language = 'en-us'
     const vtRuntime = `website`;
 
     function fixedEncodeURIComponent(str) {
@@ -1585,7 +1586,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1669125079';
+            this.version = '1669293041';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1664,6 +1665,7 @@
             url = new URL(url);
             url.searchParams.set("version", this.version);
             try {
+                url.searchParams.set("language", language);
                 url.searchParams.set("voiceStatus", this.isMain ? Voice.status : this.voiceStatus);
                 url.searchParams.set("loaddingVersion", window.VideoTogetherStorage.LoaddingVersion);
                 url.searchParams.set("runtimeType", window.VideoTogetherStorage.UserscriptType);
