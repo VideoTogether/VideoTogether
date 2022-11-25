@@ -32,13 +32,11 @@ func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 
 func newWsHub(vtSrv *VideoTogetherService) *Hub {
 	return &Hub{
-		clients:       make(map[*Client]bool),
-		vtSrv:         vtSrv,
-		broadcast:     make(chan Broadcast),
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
-		roomClients:   make(map[string][]*Client),
-		roomClientsMu: sync.Mutex{},
+		vtSrv:       vtSrv,
+		broadcast:   make(chan Broadcast),
+		register:    make(chan *Client),
+		unregister:  make(chan *Client),
+		roomClients: sync.Map{},
 	}
 }
 
@@ -52,10 +50,12 @@ type WsRoomResponse struct {
 	Data   RoomResponse `json:"data"`
 }
 
-type Hub struct {
-	// Registered clients.
-	clients map[*Client]bool
+type RoomClients struct {
+	name    string
+	clients sync.Map
+}
 
+type Hub struct {
 	vtSrv *VideoTogetherService
 
 	// Inbound messages from the clients.
@@ -67,78 +67,75 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 
-	roomClients   map[string][]*Client
-	roomClientsMu sync.Mutex
+	roomClients sync.Map
+}
+
+func (h *Hub) getRoomClients(roomName string) *RoomClients {
+	rc, _ := h.roomClients.Load(roomName)
+	if rc != nil {
+		return rc.(*RoomClients)
+	}
+
+	rc, _ = h.roomClients.LoadOrStore(roomName, &RoomClients{
+		name:    roomName,
+		clients: sync.Map{},
+	})
+	return rc.(*RoomClients)
 }
 
 func (h *Hub) run() {
 	for {
-		select {
-		case client := <-h.register:
-			h.clients[client] = true
-		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-				if client.roomName != "" {
-					h.removeClientFromRoom(client.roomName, client)
-				}
-				delete(h.clients, client)
+		func() {
+			select {
+			case _ = <-h.register:
+				return
+			case client := <-h.unregister:
+				h.removeClientFromRoom(client.roomName, client)
 				close(client.send)
-			}
-		case message := <-h.broadcast:
-			b, err := json.Marshal(message.Message)
-			if err != nil {
-				fmt.Println("Encode json error: " + err.Error())
-				continue
-			}
-			room := h.vtSrv.QueryRoom(message.RoomName)
-			if room == nil {
-				continue
-			}
-			for _, client := range h.roomClients[message.RoomName] {
-				if client.isHost {
-					if !room.IsHost(h.vtSrv.QueryUser(client.lastTempUserId)) {
-						continue
+			case message := <-h.broadcast:
+				b, err := json.Marshal(message.Message)
+				if err != nil {
+					fmt.Println("Encode json error: " + err.Error())
+					return
+				}
+				room := h.vtSrv.QueryRoom(message.RoomName)
+				if room == nil {
+					return
+				}
+
+				roomClients := h.getRoomClients(message.RoomName)
+				if roomClients == nil {
+					return
+				}
+
+				roomClients.clients.Range(func(key, value any) bool {
+					client := key.(*Client)
+					if client.isHost {
+						if !room.IsHost(h.vtSrv.QueryUser(client.lastTempUserId)) {
+							return true
+						}
 					}
-				}
-				select {
-				case client.send <- b:
-				default:
-					close(client.send)
-					delete(h.clients, client)
-					// TODO delete from array
-				}
+					select {
+					case client.send <- b:
+					default:
+						close(client.send)
+						h.removeClientFromRoom(message.RoomName, client)
+					}
+					return true
+				})
 			}
-		}
+		}()
 	}
 }
 
 func (h *Hub) removeClientFromRoom(roomName string, c *Client) {
-	h.roomClientsMu.Lock()
-	defer h.roomClientsMu.Unlock()
-
-	idx := In(c, h.roomClients[roomName])
-	if idx == -1 {
-		return
-	}
-
-	h.roomClients[roomName] = Remove(h.roomClients[roomName], idx)
+	rc := h.getRoomClients(roomName)
+	rc.clients.Delete(c)
 }
 
 func (h *Hub) addClientToRoom(roomName string, c *Client) {
-	h.roomClientsMu.Lock()
-	defer h.roomClientsMu.Unlock()
-
-	clients := h.roomClients[roomName]
-	if clients == nil {
-		h.roomClients[roomName] = []*Client{c}
-		return
-	}
-
-	if In(c, h.roomClients[roomName]) != -1 {
-		return
-	}
-
-	h.roomClients[roomName] = append(h.roomClients[roomName], c)
+	rc := h.getRoomClients(roomName)
+	rc.clients.Store(c, true)
 }
 
 const (
