@@ -91,12 +91,13 @@ func (h *Hub) run() {
 				continue
 			}
 
-			for client := range h.clients {
+			for _, client := range h.roomClients[message.RoomName] {
 				select {
 				case client.send <- b:
 				default:
 					close(client.send)
 					delete(h.clients, client)
+					// TODO delete from array
 				}
 			}
 		}
@@ -154,6 +155,9 @@ var (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 // Client is a middleman between the websocket connection and the hub.

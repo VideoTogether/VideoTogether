@@ -20,7 +20,7 @@ func main() {
 		&http.Client{},
 	)
 	if len(os.Args) <= 1 {
-		panic(http.ListenAndServe("127.0.0.1:5001", server))
+		panic(http.ListenAndServe(":5001", server))
 	}
 
 	switch strings.TrimSpace(os.Args[1]) {
