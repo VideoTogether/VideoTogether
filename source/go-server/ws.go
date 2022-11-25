@@ -97,7 +97,7 @@ func (h *Hub) run() {
 			for _, client := range h.roomClients[message.RoomName] {
 				if client.isHost {
 					if !room.IsHost(h.vtSrv.QueryUser(client.lastTempUserId)) {
-						return
+						continue
 					}
 				}
 				select {
