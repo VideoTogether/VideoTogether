@@ -133,6 +133,9 @@ func (r *Room) HasAccess(password string) bool {
 }
 
 func (r *Room) IsHost(u *User) bool {
+	if u == nil {
+		return false
+	}
 	return r.hostId == u.UserId
 }
 

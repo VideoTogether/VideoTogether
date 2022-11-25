@@ -20,7 +20,7 @@ func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 			return
 		}
 
-		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), isHost: false}
 		client.hub.register <- client
 
 		// Allow collection of memory referenced by the caller by doing all work in
@@ -90,8 +90,16 @@ func (h *Hub) run() {
 				fmt.Println("Encode json error: " + err.Error())
 				continue
 			}
-
+			room := h.vtSrv.QueryRoom(message.RoomName)
+			if room == nil {
+				continue
+			}
 			for _, client := range h.roomClients[message.RoomName] {
+				if client.isHost {
+					if !room.IsHost(h.vtSrv.QueryUser(client.lastTempUserId)) {
+						return
+					}
+				}
 				select {
 				case client.send <- b:
 				default:
@@ -168,8 +176,10 @@ type Client struct {
 	conn *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	send     chan []byte
-	roomName string
+	send           chan []byte
+	roomName       string
+	lastTempUserId string
+	isHost         bool
 }
 
 type WsRequestMessage struct {
@@ -189,7 +199,7 @@ type JoinRoomRequest struct {
 
 type UpdateRoomRequest struct {
 	*Room
-	UserId   string `json:"tempUser"`
+	TempUser string `json:"tempUser"`
 	Password string `json:"password"`
 }
 
@@ -224,6 +234,7 @@ func (c *Client) readPump() {
 		case "/room/join":
 			c.joinRoom(&req)
 		case "/room/update":
+			// this api can only be called by host, don't call this api from member
 			c.updateRoom(&req)
 		default:
 			c.reply(req.Method, nil, errors.New("unknown method"))
@@ -268,11 +279,12 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	roomPw := GetMD5Hash(req.Password)
 	c.roomName = req.Room.Name
 
-	room, _, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(req.Name, roomPw, req.UserId)
+	room, _, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(req.Name, roomPw, req.TempUser)
 	if err != nil {
 		c.reply(rawReq.Method, nil, err)
 		return
 	}
+	c.lastTempUserId = req.TempUser
 
 	// Update room info
 	room.PlaybackRate = req.PlaybackRate
@@ -285,6 +297,7 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	room.Protected = req.Protected
 	room.VideoTitle = req.VideoTitle
 
+	c.isHost = true
 	c.roomName = room.Name
 	c.hub.addClientToRoom(room.Name, c)
 	c.hub.broadcast <- Broadcast{
