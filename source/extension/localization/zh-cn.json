@@ -1,4 +1,5 @@
 {
+    "language": "zh-cn",
     "room_input_lable": "房间",
     "room_input_placeholder": "请输入房间名",
     "password_input_lable": "密码",

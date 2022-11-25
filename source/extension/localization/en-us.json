@@ -1,4 +1,5 @@
 {
+    "language": "en-us",
     "room_input_lable": "Room",
     "room_input_placeholder": "Name of room",
     "password_input_lable": "Password",

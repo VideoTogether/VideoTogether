@@ -101,6 +101,119 @@
         });
     }
 
+    function WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration) {
+        return {
+            "method": "/room/update",
+            "data": {
+                "tempUser": this.tempUser,
+                "password": password,
+                "name": name,
+                "playbackRate": playbackRate,
+                "currentTime": currentTime,
+                "paused": paused,
+                "url": url,
+                "lastUpdateClientTime": extension.getLocalTimestamp(),
+                "duration": duration,
+                "protected": (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom),
+                "videoTitle": extension.isMain ? document.title : extension.videoTitle,
+            }
+        }
+    }
+
+    function WSJoinRoomRequest(name, password) {
+        return {
+            "method": "/room/join",
+            "data": {
+                "password": password,
+                "name": name,
+            }
+        }
+    }
+
+    class Room {
+        currentTime;
+        duration;
+        lastUpdateClientTime;
+        lastUpdateServerTime;
+        name;
+        paused;
+        playbackRate;
+        protected;
+        timestamp;
+        url;
+        videoTitle
+    }
+
+    const WS = {
+        // TODO delete this !!!!
+        // _socket: new WebSocket('ws://192.168.1.137:5001/ws'),
+        _socket: null,
+        _lastConnectTime: 0,
+        _connectTimeout: 10,
+        _lastUpdateTime: 0,
+        _lastRoom: new Room(),
+        async connect() {
+            return;
+            if (this._socket != null) {
+                try {
+                    if (this._socket.readyState == WebSocket.OPEN) {
+                        return;
+                    }
+                    if (this._socket.readyState == WebSocket.CONNECTING
+                        && this._lastConnectTime + this._connectTimeout > Date.now() / 1000) {
+                        return;
+                    }
+                } catch { }
+            }
+            console.log('ws connect');
+            this._lastConnectTime = Date.now() / 1000
+            try {
+                this.disconnect()
+                this._socket = new WebSocket('ws://192.168.1.137:5001/ws');
+                this._socket.onmessage = e => {
+                    this.onmessage(e.data);
+                }
+            } catch { }
+        },
+        async onmessage(str) {
+            data = JSON.parse(str);
+            if (data['method'] == "/room/join") {
+                this._joinedName = data['data']['name'];
+            }
+            if (data['method'] == "/room/join" || data['method'] == "/room/update") {
+                this._lastRoom = Object.assign(data['data'], Room);
+                this._lastUpdateTime = Date.now() / 1000;
+                console.log(WS._lastRoom);
+            }
+        },
+        async send(data) {
+            return;
+            try {
+                this._socket.send(JSON.stringify(data));
+            } catch { }
+        },
+        async updateRoom(name, password, url, playbackRate, currentTime, paused, duration) {
+            // TODO localtimestamp
+            this.send(WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration))
+        },
+        _joinedName: null,
+        async joinRoom(name, password) {
+            if (name == this._joinedName) {
+                return;
+            }
+            this.send(WSJoinRoomRequest(name, password));
+        },
+        async disconnect() {
+            if (this._socket != null) {
+                try {
+                    this._socket.close();
+                } catch { }
+            }
+            this._joinedName = null;
+            this._socket = null;
+        }
+    }
+
     const VoiceStatus = {
         STOP: 1,
         CONNECTTING: 5,
@@ -845,12 +958,6 @@
         ChangeVoiceVolume: 8,
         ChangeVideoVolume: 9,
 
-        // will be deprecated
-        LoadStorageData: 10,
-        SyncStorageData: 11,
-        SetStorageData: 12,
-        // --------------------
-
         FetchRequest: 13,
         FetchResponse: 14,
 
@@ -861,6 +968,8 @@
 
         SetTabStorage: 18,
         SetTabStorageSuccess: 19,
+
+        UpdateRoomRequest: 20,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -940,6 +1049,7 @@
                     this.tempUser = message.data.context.tempUser;
                     this.videoTitle = message.data.context.videoTitle;
                     this.voiceStatus = message.data.context.voiceStatus;
+                    this.timeOffset = message.data.context.timeOffset;
                     // sub frame has 2 storage data source, top frame or extension.js in this frame
                     // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
@@ -992,6 +1102,10 @@
 
 
         async Fetch(url, method = 'GET', data = null) {
+            if (!extension.isMain) {
+                console.error("fetch in child");
+                throw new Error("fetch in child");
+            }
             url = new URL(url);
             url.searchParams.set("version", this.version);
             try {
@@ -1203,7 +1317,8 @@
                         tempUser: this.tempUser,
                         videoTitle: this.isMain ? document.title : this.videoTitle,
                         voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
-                        VideoTogetherStorage: window.VideoTogetherStorage
+                        VideoTogetherStorage: window.VideoTogetherStorage,
+                        timeOffset: this.timeOffset
                     }
                 });
                 // console.info("send ", type, iframs[i].contentWindow, data)
@@ -1242,6 +1357,14 @@
                         }
                     })
                     this.sendMessageToSonWithContext(type, data);
+                    break;
+                case MessageType.UpdateRoomRequest:
+                    try {
+                        this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp);
+                        _this.UpdateStatusText("{$sync_success$} " + _this.GetDisplayTimeText(), "green");
+                    } catch (e) {
+                        this.UpdateStatusText(e, "red");
+                    }
                     break;
                 case MessageType.SyncMemberVideo:
                     this.ForEachVideo(async video => {
@@ -1470,7 +1593,6 @@
         async JoinRoom(name, password) {
             try {
                 this.tempUser = generateTempUserId();
-                let data = await this.RunWithRetry(async () => await this.GetRoom(name, password), 2);
                 this.roomName = name;
                 this.password = password;
                 this.setRole(this.RoleEnum.Member);
@@ -1481,6 +1603,7 @@
         }
 
         exitRoom() {
+            WS.disconnect();
             Voice.stop();
             show(select('#mainPannel'));
             hide(select('#voicePannel'));
@@ -1531,6 +1654,7 @@
 
 
             if (this.role != this.RoleEnum.Null) {
+                WS.connect();
                 try {
                     if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
                         this.allLinksTargetModified = true;
@@ -1544,7 +1668,7 @@
                             if (this.minTrip == 1e9) {
                                 this.SyncTimeWithServer(this.video_together_backup_host);
                             }
-                        }, 5000);
+                        }, 3000);
                     }
                 } catch { };
             }
@@ -1567,7 +1691,8 @@
                                 1,
                                 0,
                                 true,
-                                1e9);
+                                1e9,
+                                this.getLocalTimestamp());
                             throw new Error("{$no_video_in_this_page$}");
                         } else {
                             sendMessageToTop(MessageType.SyncMasterVideo, { video: video, password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
@@ -1614,7 +1739,7 @@
                         if (video == undefined) {
                             throw new Error("{$no_video_in_this_page$}");
                         } else {
-                            sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password })
+                            sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
                         }
                         break;
                     }
@@ -1683,13 +1808,16 @@
         // But we can sync when video event is traggered to enhance the performance
         // and reduce server workload
         async SyncMasterVideo(data, videoDom) {
-            await this.UpdateRoom(data.roomName,
-                data.password,
-                data.link,
-                videoDom.playbackRate,
-                videoDom.currentTime,
-                videoDom.paused,
-                videoDom.duration);
+            sendMessageToTop(MessageType.UpdateRoomRequest, {
+                name: data.roomName,
+                password: data.password,
+                url: data.link,
+                playbackRate: videoDom.playbackRate,
+                currentTime: videoDom.currentTime,
+                paused: videoDom.paused,
+                duration: videoDom.duration,
+                localTimestamp: this.getLocalTimestamp()
+            })
         }
 
         linkWithoutState(link) {
@@ -1778,7 +1906,7 @@
         }
 
         async SyncMemberVideo(data, videoDom) {
-            let room = await this.GetRoom(data.roomName, data.password);
+            let room = data.room;
             sendMessageToTop(MessageType.GetRoomData, room);
 
             // useless
@@ -1842,7 +1970,7 @@
             try {
                 this.tempUser = generateTempUserId();
                 let url = this.linkWithoutState(window.location);
-                let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0), 2);
+                let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0), 2, this.getLocalTimestamp());
                 this.setRole(this.RoleEnum.Master);
                 this.roomName = name;
                 this.password = password;
@@ -1850,7 +1978,8 @@
             } catch (e) { this.UpdateStatusText(e, "red") }
         }
 
-        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration) {
+        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
+            WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration);
             try {
                 if (window.location.pathname == "/page") {
                     let url = new URL(atob(new URL(window.location).searchParams.get("url")));
@@ -1864,7 +1993,7 @@
             apiUrl.searchParams.set("currentTime", currentTime);
             apiUrl.searchParams.set("paused", paused);
             apiUrl.searchParams.set("url", url);
-            apiUrl.searchParams.set("lastUpdateClientTime", this.getLocalTimestamp());
+            apiUrl.searchParams.set("lastUpdateClientTime", localTimestamp);
             apiUrl.searchParams.set("duration", duration);
             apiUrl.searchParams.set("tempUser", this.tempUser);
             apiUrl.searchParams.set("public", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PublicVideoRoom));
@@ -1888,6 +2017,7 @@
         }
 
         async GetRoom(name, password) {
+            WS.joinRoom(name, password);
             let url = new URL(this.video_together_host + "/room/get");
             url.searchParams.set("name", name);
             url.searchParams.set("tempUser", this.tempUser);
