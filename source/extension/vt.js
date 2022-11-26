@@ -191,6 +191,9 @@
             if (data['method'] == "/room/join" || data['method'] == "/room/update") {
                 this._lastRoom = Object.assign(data['data'], Room);
                 this._lastUpdateTime = Date.now() / 1000;
+                if (extension.role == extension.RoleEnum.Member) {
+                    extension.ScheduledTask();
+                }
             }
         },
         getRoom() {
@@ -984,6 +987,7 @@
         SetTabStorageSuccess: 19,
 
         UpdateRoomRequest: 20,
+        CallScheduledTask: 21
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1351,6 +1355,9 @@
             let _this = this;
             // console.info("get ", type, window.location, data);
             switch (type) {
+                case MessageType.CallScheduledTask:
+                    this.ScheduledTask();
+                    break;
                 case MessageType.ActivatedVideo:
                     if (this.activatedVideo == undefined || this.activatedVideo.activatedTime < data.activatedTime) {
                         this.activatedVideo = data;
@@ -1481,13 +1488,14 @@
             console.info("vide event: ", e.type);
             // maybe we need to check if the event is activated by user interaction
             this.setActivatedVideoDom(e.target);
+            sendMessageToTop(MessageType.CallScheduledTask, {});
         }
 
         AddVideoListener(videoDom) {
             if (this.VideoClickedListener == undefined) {
                 this.VideoClickedListener = this.VideoClicked.bind(this)
             }
-            this.addListenerMulti(videoDom, "play pause", this.VideoClickedListener);
+            this.addListenerMulti(videoDom, "play pause seeked", this.VideoClickedListener);
         }
 
         CreateVideoDomObserver() {
