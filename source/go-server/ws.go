@@ -91,7 +91,6 @@ func (h *Hub) run() {
 				return
 			case client := <-h.unregister:
 				h.removeClientFromRoom(client.roomName, client)
-				close(client.send)
 			case message := <-h.broadcast:
 				b, err := json.Marshal(message.Message)
 				if err != nil {
@@ -118,7 +117,6 @@ func (h *Hub) run() {
 					select {
 					case client.send <- b:
 					default:
-						close(client.send)
 						h.removeClientFromRoom(message.RoomName, client)
 					}
 					return true
