@@ -66,7 +66,7 @@ func (h *slashFix) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		return
 	}
-	h.qps.Count()
+	h.qps.Count(r.URL.Path)
 	h.mux.ServeHTTP(w, r)
 }
 
