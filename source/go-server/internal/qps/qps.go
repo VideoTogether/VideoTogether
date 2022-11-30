@@ -125,8 +125,10 @@ function show(data){
 		}
 	})
 	var methodYdataList = []
+	var legend = ['total']
 	for(const method in methodYdata){
-		methodYdataList.push([method,methodYdata[method]])
+		methodYdataList.push([method,methodYdata[method]]);
+		legend.push(method);
 	}
 	if(data.length){
 		var max = data[0];
@@ -152,6 +154,9 @@ function show(data){
 		},
 		yAxis: {
 			type: 'value'
+		},
+		legend:{
+			data:legend
 		},
 		tooltip: {
 			trigger: 'axis',
