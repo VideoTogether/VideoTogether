@@ -13,6 +13,22 @@
     const language = '{$language$}'
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
 
+    const lastRunQueue = []
+    // request can only be called up to 10 times in 5 seconds
+    const periodSec = 5;
+    const timeLimitation = 15;
+    function isLimited() {
+        while (lastRunQueue.length > 0 && lastRunQueue[0] < Date.now() / 1000 - periodSec) {
+            lastRunQueue.shift();
+        }
+        if (lastRunQueue.length > timeLimitation) {
+            console.error("limited")
+            return true;
+        }
+        lastRunQueue.push(Date.now() / 1000);
+        return false;
+    }
+
     function fixedEncodeURIComponent(str) {
         return encodeURIComponent(str).replace(
             /[!'()*]/g,
@@ -191,7 +207,7 @@
             if (data['method'] == "/room/join" || data['method'] == "/room/update") {
                 this._lastRoom = Object.assign(data['data'], Room);
                 this._lastUpdateTime = Date.now() / 1000;
-                if (extension.role == extension.RoleEnum.Member) {
+                if (!isLimited() && extension.role == extension.RoleEnum.Member) {
                     extension.ScheduledTask();
                 }
             }
@@ -1488,7 +1504,9 @@
             console.info("vide event: ", e.type);
             // maybe we need to check if the event is activated by user interaction
             this.setActivatedVideoDom(e.target);
-            sendMessageToTop(MessageType.CallScheduledTask, {});
+            if (!isLimited()) {
+                sendMessageToTop(MessageType.CallScheduledTask, {});
+            }
         }
 
         AddVideoListener(videoDom) {
