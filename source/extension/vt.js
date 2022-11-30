@@ -147,17 +147,19 @@
     }
 
     class Room {
-        currentTime;
-        duration;
-        lastUpdateClientTime;
-        lastUpdateServerTime;
-        name;
-        paused;
-        playbackRate;
-        protected;
-        timestamp;
-        url;
-        videoTitle
+        constructor() {
+            this.currentTime = null;
+            this.duration = null;
+            this.lastUpdateClientTime = null;
+            this.lastUpdateServerTime = null;
+            this.name = null;
+            this.paused = null;
+            this.playbackRate = null;
+            this.protected = null;
+            this.timestamp = null;
+            this.url = null;
+            this.videoTitle = null;
+        }
     }
 
     const WS = {

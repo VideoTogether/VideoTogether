@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1669821169
+// @version      1669826808
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -147,17 +147,19 @@
     }
 
     class Room {
-        currentTime;
-        duration;
-        lastUpdateClientTime;
-        lastUpdateServerTime;
-        name;
-        paused;
-        playbackRate;
-        protected;
-        timestamp;
-        url;
-        videoTitle
+        constructor() {
+            this.currentTime = null;
+            this.duration = null;
+            this.lastUpdateClientTime = null;
+            this.lastUpdateServerTime = null;
+            this.name = null;
+            this.paused = null;
+            this.playbackRate = null;
+            this.protected = null;
+            this.timestamp = null;
+            this.url = null;
+            this.videoTitle = null;
+        }
     }
 
     const WS = {
@@ -1729,7 +1731,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1669821169';
+            this.version = '1669826808';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
