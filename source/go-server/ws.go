@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VideoTogether/VideoTogether/internal/qps"
 	"github.com/gorilla/websocket"
 )
 
@@ -30,8 +31,9 @@ func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 	}
 }
 
-func newWsHub(vtSrv *VideoTogetherService) *Hub {
+func newWsHub(vtSrv *VideoTogetherService, qps *qps.QP) *Hub {
 	return &Hub{
+		qps:         qps,
 		vtSrv:       vtSrv,
 		broadcast:   make(chan Broadcast),
 		register:    make(chan *Client),
@@ -68,6 +70,7 @@ type Hub struct {
 	unregister chan *Client
 
 	roomClients sync.Map
+	qps         *qps.QP
 }
 
 func (h *Hub) getRoomClients(roomName string) *RoomClients {
@@ -225,6 +228,8 @@ func (c *Client) readPump() {
 		if err = json.Unmarshal(message, &req); err != nil {
 			// response error
 		}
+
+		c.hub.qps.Count("#WS#" + req.Method)
 		switch req.Method {
 		case "/room/join":
 			c.joinRoom(&req)
@@ -352,6 +357,7 @@ func (c *Client) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
+			c.hub.qps.Count("#WS#send")
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
