@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1669826808
+// @version      1669908357
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -175,10 +175,10 @@
         async connect() {
             if (this._socket != null) {
                 try {
-                    if (this._socket.readyState == WebSocket.OPEN) {
+                    if (this._socket.readyState == 1) {
                         return;
                     }
-                    if (this._socket.readyState == WebSocket.CONNECTING
+                    if (this._socket.readyState == 0
                         && this._lastConnectTime + this._connectTimeout > Date.now() / 1000) {
                         return;
                     }
@@ -1731,7 +1731,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1669826808';
+            this.version = '1669908357';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

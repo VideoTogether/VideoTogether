@@ -175,10 +175,10 @@
         async connect() {
             if (this._socket != null) {
                 try {
-                    if (this._socket.readyState == WebSocket.OPEN) {
+                    if (this._socket.readyState == 1) {
                         return;
                     }
-                    if (this._socket.readyState == WebSocket.CONNECTING
+                    if (this._socket.readyState == 0
                         && this._lastConnectTime + this._connectTimeout > Date.now() / 1000) {
                         return;
                     }
