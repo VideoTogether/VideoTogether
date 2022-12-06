@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1669908357
+// @version      1670331285
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -188,7 +188,7 @@
             this._lastConnectTime = Date.now() / 1000
             try {
                 this.disconnect()
-                this._socket = new WebSocket('wss://vt.panghair.com:5000/ws');
+                this._socket = new WebSocket(`wss://vt.panghair.com:5000/ws?language=${language}`);
                 this._socket.onmessage = e => {
                     this.onmessage(e.data);
                 }
@@ -1731,7 +1731,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1669908357';
+            this.version = '1670331285';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

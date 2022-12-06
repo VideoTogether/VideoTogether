@@ -188,7 +188,7 @@
             this._lastConnectTime = Date.now() / 1000
             try {
                 this.disconnect()
-                this._socket = new WebSocket('wss://vt.panghair.com:5000/ws');
+                this._socket = new WebSocket(`wss://vt.panghair.com:5000/ws?language=${language}`);
                 this._socket.onmessage = e => {
                     this.onmessage(e.data);
                 }
