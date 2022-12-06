@@ -207,6 +207,7 @@ var _ = Describe("Http Api", func() {
 			data.Add("tempUser", "user-001")
 			data.Add("protected", "false")
 			data.Add("videoTitle", "Dua Lipa - Levitating (Official Animated Music Video)")
+			data.Add("language", "zh-cn")
 			req, err := http.NewRequest("PUT", server.URL()+"/room/update?"+data.Encode(), nil)
 			Expect(err).ShouldNot(HaveOccurred())
 			resp, err := http.DefaultClient.Do(req)
@@ -216,7 +217,7 @@ var _ = Describe("Http Api", func() {
 			bodyDecoder := json.NewDecoder(resp.Body)
 			var response ErrorResponse
 			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
-			Expect(response.ErrorMessage).To(Equal("房名已存在，密码错误"))
+			Expect(response.ErrorMessage).To(Equal("密码错误"))
 		})
 	})
 
@@ -256,6 +257,7 @@ var _ = Describe("Http Api", func() {
 			data := url.Values{}
 			data.Add("name", "roomName")
 			data.Add("password", "incorrect roomPassword")
+			data.Add("language", "zh-cn")
 			resp, err := http.Get(server.URL() + "/room/get?" + data.Encode())
 			Expect(err).ShouldNot(HaveOccurred())
 
@@ -272,6 +274,7 @@ var _ = Describe("Http Api", func() {
 			data := url.Values{}
 			data.Add("name", "roomName")
 			data.Add("password", "roomPassword")
+			data.Add("language", "en-us")
 			resp, err := http.Get(server.URL() + "/room/get?" + data.Encode())
 			Expect(err).ShouldNot(HaveOccurred())
 
@@ -279,7 +282,7 @@ var _ = Describe("Http Api", func() {
 			bodyDecoder := json.NewDecoder(resp.Body)
 			var response ErrorResponse
 			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
-			Expect(response.ErrorMessage).To(Equal("房间不存在"))
+			Expect(response.ErrorMessage).To(Equal("Room Not Exists"))
 		})
 	})
 
@@ -307,6 +310,7 @@ var _ = Describe("Http Api", func() {
 			data.Add("tempUser", "alice")
 			data.Add("protected", "false")
 			data.Add("videoTitle", "Dua Lipa - Levitating (Official Animated Music Video)")
+			data.Add("language", "en-us")
 			req, err := http.NewRequest("PUT", server.URL()+"/room/update?"+data.Encode(), nil)
 			Expect(err).ShouldNot(HaveOccurred())
 			resp, err := http.DefaultClient.Do(req)
@@ -316,7 +320,7 @@ var _ = Describe("Http Api", func() {
 			bodyDecoder := json.NewDecoder(resp.Body)
 			var response ErrorResponse
 			Expect(bodyDecoder.Decode(&response)).Should(Succeed())
-			Expect(response.ErrorMessage).To(Equal("其他房主正在同步"))
+			Expect(response.ErrorMessage).To(Equal("Other Host Is Syncing"))
 		})
 	})
 })

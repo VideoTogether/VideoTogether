@@ -183,7 +183,7 @@ var _ = Describe("WebSocket", func() {
 
 				res := gjson.ParseBytes(bodyBytes)
 				Expect(res.Get("method").String()).To(Equal("/room/join"))
-				Expect(res.Get("errorMessage").String()).To(Equal("房间不存在"))
+				Expect(res.Get("errorMessage").String()).To(Equal((GetErrorMessage("").RoomNotExist)))
 			})
 		})
 
@@ -245,7 +245,7 @@ var _ = Describe("WebSocket", func() {
 
 				res := gjson.ParseBytes(bodyBytes)
 				Expect(res.Get("method").String()).To(Equal("/room/join"))
-				Expect(res.Get("errorMessage").String()).To(Equal("密码错误"))
+				Expect(res.Get("errorMessage").String()).To(Equal("Wrong Password"))
 			})
 		})
 
@@ -559,7 +559,7 @@ var _ = Describe("WebSocket", func() {
 
 			res := gjson.ParseBytes(bodyBytes)
 			Expect(res.Get("method").String()).To(Equal("/room/update"))
-			Expect(res.Get("errorMessage").String()).To(Equal("房名已存在，密码错误"))
+			Expect(res.Get("errorMessage").String()).To(Equal("Wrong Password"))
 		})
 	})
 
@@ -648,7 +648,7 @@ var _ = Describe("WebSocket", func() {
 
 			res := gjson.ParseBytes(bodyBytes)
 			Expect(res.Get("method").String()).To(Equal("/room/update"))
-			Expect(res.Get("errorMessage").String()).To(Equal("其他房主正在同步"))
+			Expect(res.Get("errorMessage").String()).To(Equal(GetErrorMessage("").OtherHostSyncing))
 		})
 	})
 })

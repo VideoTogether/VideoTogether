@@ -46,7 +46,7 @@ var _ = Describe("Service", func() {
 		Describe("Gets and checks permission of room", func() {
 			Context("When user and room do not exist", func() {
 				It("Creates a new new and creates a new room for the new user", func() {
-					r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom("roomName", "password", "user-001")
+					r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{}, "roomName", "password", "user-001")
 					Expect(err).To(BeNil())
 					Expect(r.Name).To(Equal("roomName"))
 					Expect(r.password).To(Equal("password"))
@@ -56,7 +56,7 @@ var _ = Describe("Service", func() {
 
 			Context("When user exist but room does not exist", func() {
 				It("Creates a new room for the existent user", func() {
-					r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom("roomName", "password", rootUser.UserId)
+					r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{}, "roomName", "password", rootUser.UserId)
 					Expect(err).To(BeNil())
 					Expect(r.Name).To(Equal("roomName"))
 					Expect(r.password).To(Equal("password"))
@@ -67,7 +67,7 @@ var _ = Describe("Service", func() {
 			Context("When user and room  both exist", func() {
 				It("Gets the room and user", func() {
 					room := srv.CreateRoom("roomName", "password", rootUser)
-					r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom("roomName", "password", rootUser.UserId)
+					r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{}, "roomName", "password", rootUser.UserId)
 					Expect(err).To(BeNil())
 					Expect(fmt.Sprintf("%p", u)).To(Equal(fmt.Sprintf("%p", rootUser)))
 					Expect(fmt.Sprintf("%p", r)).To(Equal(fmt.Sprintf("%p", room)))
@@ -79,8 +79,8 @@ var _ = Describe("Service", func() {
 					It("returns incorrect password error", func() {
 						room := srv.CreateRoom("roomName", "password", rootUser)
 						bob := srv.NewUser("bob")
-						r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(room.Name, "incorrect "+room.password, bob.UserId)
-						Expect(err).To(Equal(IncorrectPasswordErr))
+						r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{}, room.Name, "incorrect "+room.password, bob.UserId)
+						Expect(err.Error()).To(Equal(GetErrorMessage("").WrongPassword))
 						Expect(r).To(BeNil())
 						Expect(u).To(BeNil())
 					})
@@ -89,8 +89,8 @@ var _ = Describe("Service", func() {
 				Context("When user is the host of the room and with incorrect password", func() {
 					It("returns incorrect password error", func() {
 						room := srv.CreateRoom("roomName", "password", rootUser)
-						r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(room.Name, "incorrect "+room.password, rootUser.UserId)
-						Expect(err).To(Equal(IncorrectPasswordErr))
+						r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{}, room.Name, "incorrect "+room.password, rootUser.UserId)
+						Expect(err.Error()).To(Equal(GetErrorMessage("").WrongPassword))
 						Expect(r).To(BeNil())
 						Expect(u).To(BeNil())
 					})
@@ -100,8 +100,8 @@ var _ = Describe("Service", func() {
 					It("returns not host error", func() {
 						room := srv.CreateRoom("roomName", "password", rootUser)
 						bob := srv.NewUser("bob")
-						r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(room.Name, room.password, bob.UserId)
-						Expect(err).To(Equal(NotHostErr))
+						r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{}, room.Name, room.password, bob.UserId)
+						Expect(err.Error()).To(Equal(GetErrorMessage("").OtherHostSyncing))
 						Expect(r).To(BeNil())
 						Expect(u).To(BeNil())
 					})
@@ -110,7 +110,7 @@ var _ = Describe("Service", func() {
 				Context("When user is the host of the room and with correct password", func() {
 					It("returns user and room with no error", func() {
 						room := srv.CreateRoom("roomName", "password", rootUser)
-						r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(room.Name, room.password, rootUser.UserId)
+						r, u, err := srv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{}, room.Name, room.password, rootUser.UserId)
 						Expect(err).To(BeNil())
 						Expect(r).ToNot(BeNil())
 						Expect(u).ToNot(BeNil())

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -93,8 +92,9 @@ func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) 
 	userId := req.URL.Query().Get("tempUser")
 	name := req.URL.Query().Get("name")
 	password := GetMD5Hash(req.URL.Query().Get("password"))
+	language := req.URL.Query().Get("language")
 
-	room, _, err := h.vtSrv.GetAndCheckUpdatePermissionsOfRoom(name, password, userId)
+	room, _, err := h.vtSrv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{Language: language}, name, password, userId)
 	if err != nil {
 		h.respondError(res, err.Error())
 		return
@@ -113,21 +113,17 @@ func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) 
 	h.JSON(res, 200, h.newRoomResponse(room))
 }
 
-var (
-	RoomNotExist                = errors.New("房间不存在")
-	GetRoomIncorrectPasswordErr = errors.New("密码错误")
-)
-
 func (h *slashFix) handleRoomGet(res http.ResponseWriter, req *http.Request) {
 	password := GetMD5Hash(req.URL.Query().Get("password"))
 	name := req.URL.Query().Get("name")
+	language := req.URL.Query().Get("language")
 	room := h.vtSrv.QueryRoom(name)
 	if room == nil {
-		h.respondError(res, RoomNotExist.Error())
+		h.respondError(res, GetErrorMessage(language).RoomNotExist)
 		return
 	}
 	if !room.HasAccess(password) {
-		h.respondError(res, GetRoomIncorrectPasswordErr.Error())
+		h.respondError(res, GetErrorMessage(language).WrongPassword)
 		return
 	}
 	h.JSON(res, 200, h.newRoomResponse(room))

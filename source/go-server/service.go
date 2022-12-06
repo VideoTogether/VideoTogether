@@ -24,12 +24,7 @@ func (s *VideoTogetherService) Timestamp() float64 {
 	return float64(time.Now().UnixMilli()) / 1000
 }
 
-var (
-	IncorrectPasswordErr = errors.New("房名已存在，密码错误")
-	NotHostErr           = errors.New("其他房主正在同步")
-)
-
-func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(roomName, roomPassword string, userId string) (*Room, *User, error) {
+func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(ctx *VtContext, roomName, roomPassword string, userId string) (*Room, *User, error) {
 	user := s.QueryUser(userId)
 	isNewUser := false
 	if user == nil {
@@ -43,14 +38,14 @@ func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(roomName, room
 	}
 
 	if room.password != roomPassword {
-		return nil, nil, IncorrectPasswordErr
+		return nil, nil, errors.New(GetErrorMessage(ctx.Language).WrongPassword)
 	}
 
 	if !room.IsHost(user) {
 		if isNewUser {
 			room.SetHost(user)
 		} else {
-			return nil, nil, NotHostErr
+			return nil, nil, errors.New(GetErrorMessage(ctx.Language).OtherHostSyncing)
 		}
 	}
 

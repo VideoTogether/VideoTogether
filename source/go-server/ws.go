@@ -20,8 +20,9 @@ func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 		if err != nil {
 			return
 		}
+		language := r.URL.Query().Get("language")
 
-		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), isHost: false}
+		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), isHost: false, ctx: &VtContext{Language: language}}
 		client.hub.register <- client
 
 		// Allow collection of memory referenced by the caller by doing all work in
@@ -178,6 +179,7 @@ type Client struct {
 	roomName       string
 	lastTempUserId string
 	isHost         bool
+	ctx            *VtContext
 }
 
 type WsRequestMessage struct {
@@ -252,11 +254,11 @@ func (c *Client) joinRoom(rawReq *WsRequestMessage) {
 
 	room := c.hub.vtSrv.QueryRoom(req.RoomName)
 	if room == nil {
-		c.reply(rawReq.Method, nil, RoomNotExist)
+		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).RoomNotExist))
 		return
 	}
 	if !room.HasAccess(roomPw) {
-		c.reply(rawReq.Method, nil, errors.New("密码错误"))
+		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).WrongPassword))
 		return
 	}
 
@@ -279,7 +281,7 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	roomPw := GetMD5Hash(req.Password)
 	c.roomName = req.Room.Name
 
-	room, _, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(req.Name, roomPw, req.TempUser)
+	room, _, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(c.ctx, req.Name, roomPw, req.TempUser)
 	if err != nil {
 		c.reply(rawReq.Method, nil, err)
 		return
