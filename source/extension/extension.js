@@ -336,7 +336,7 @@
             } catch (e) {
                 data["VideoTogetherTabStorageEnabled"] = false;
             }
-            window.top.postMessage({
+            window.postMessage({
                 source: "VideoTogether",
                 type: 16,
                 data: data
