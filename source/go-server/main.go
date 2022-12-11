@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -11,21 +10,7 @@ import (
 	"github.com/unrolled/render"
 )
 
-func openLogFile(logfile string) {
-	if logfile != "" {
-		lf, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640)
-
-		if err != nil {
-			log.Fatal("OpenLogfile: os.OpenFile:", err)
-		}
-
-		log.SetOutput(lf)
-	}
-}
-
 func main() {
-	logPath := "server.log"
-	openLogFile(logPath)
 
 	vtSrv := NewVideoTogetherService(time.Minute * 3)
 	server := newSlashFix(
