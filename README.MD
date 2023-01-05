@@ -26,7 +26,7 @@ run `python script/build_extension.py` to build, the output directory is `./rele
 
 ### Service
 
-service code is in `source/`
+service code is in `source/go-server`
 
 
 
