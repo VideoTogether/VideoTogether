@@ -146,6 +146,13 @@
         }
     }
 
+    function popupError(msg) {
+        let x = select("#snackbar");
+        x.innerHTML = msg;
+        x.className = "show";
+        setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
+    }
+
     class Room {
         constructor() {
             this.currentTime = null;
@@ -216,7 +223,7 @@
         },
         getRoom() {
             if (this._lastUpdateTime + this._expriedTime > Date.now() / 1000) {
-                if(this._lastErrorMessage != null){
+                if (this._lastErrorMessage != null) {
                     throw new Error(this._lastErrorMessage);
                 }
                 return this._lastRoom;
@@ -1066,7 +1073,6 @@
             this.UserId = undefined;
 
             this.callbackMap = new Map;
-
             this.allLinksTargetModified = false;
             this.voiceVolume = 1;
             // we need a common callback function to deal with all message
@@ -1632,6 +1638,10 @@
         }
 
         async JoinRoom(name, password) {
+            if (name == "") {
+                popupError("{$please_input_room_name$}")
+                return;
+            }
             try {
                 this.tempUser = generateTempUserId();
                 this.roomName = name;
@@ -2008,6 +2018,10 @@
         }
 
         async CreateRoom(name, password) {
+            if (name == "") {
+                popupError("{$please_input_room_name$}")
+                return;
+            }
             try {
                 this.tempUser = generateTempUserId();
                 let url = this.linkWithoutState(window.location);
