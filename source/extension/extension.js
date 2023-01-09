@@ -159,7 +159,10 @@
     if (isExtension) {
         let vtEnabled = await getGM().getValue('vtEnabled');
         if (vtEnabled === false) {
+            getBrowser().runtime.sendMessage(JSON.stringify({ type: 4, enabled: false }));
             return;
+        } else {
+            getBrowser().runtime.sendMessage(JSON.stringify({ type: 4, enabled: true }));
         }
     }
 

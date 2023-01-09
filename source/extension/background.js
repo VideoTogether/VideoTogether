@@ -51,5 +51,18 @@ getBrowser().runtime.onMessage.addListener(function (msgText, sender, sendRespon
                 .then(text => sendResponse({ responseText: text }))
                 .catch(e => sendResponse({ error: e }));
             return true;
+        case 4:
+            if (msg.enabled) {
+                getBrowser().action.setIcon({
+                    path: "/icon/vt_64x64.png",
+                    tabId: sender.tab.id
+                });
+            } else {
+                getBrowser().action.setIcon({
+                    path: "/icon/vt_gray_64x64.png",
+                    tabId: sender.tab.id
+                });
+            }
+            sendResponse();
     }
 });
