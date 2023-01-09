@@ -155,12 +155,14 @@
             }
         }
     }
-    // if (type == 'Chrome') {
-    //     let vtEnabled = await getGM().getValue('vtEnabled');
-    //     if (vtEnabled === false) {
-    //         return;
-    //     }
-    // }
+
+    if (isExtension) {
+        let vtEnabled = await getGM().getValue('vtEnabled');
+        if (vtEnabled === false) {
+            return;
+        }
+    }
+
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
     let prefixLen = 0;

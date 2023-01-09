@@ -5,13 +5,20 @@
     <meta charset="utf-8">
 </head>
 
-<body>
-    <p style="font-size: 15px;text-align:center;" class="switch_label">启用</p>
+<body style="width: 200px;">
 
-    <label class="switch">
-        <input id="extensionSwitch" type="checkbox">
-        <span class="slider round"></span>
-    </label>
+    <p id="refreshAfterChange" style="font-size: 15px;text-align:center;" class="switch_label"></p>
+    <div style="display: flex; justify-content: center;align-items: center; ">
+        <p id="status" style="font-size: 15px;text-align:center;display:inline;margin-right: 30px;"
+            class="switch_label"></p>
+
+        <label class="switch">
+            <input id="extensionSwitch" type="checkbox">
+            <span class="slider round"></span>
+        </label>
+
+    </div>
+
     <script src="./popup.js">
     </script>
     <style>

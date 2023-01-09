@@ -29,5 +29,6 @@
     "connection_lost": "连接断开",
     "unknown_error": "未知错误",
     "room_name_too_long": "房间名太长",
-    "only_support_https_website": "仅支持https网站使用"
+    "only_support_https_website": "仅支持https网站使用",
+    "please_input_room_name": "请输入房间名"
 }

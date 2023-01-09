@@ -29,5 +29,6 @@
     "connection_lost": "Connection lost",
     "unknown_error": "Unknown error",
     "room_name_too_long": "Room name too long",
-    "only_support_https_website": "Only support https website"
+    "only_support_https_website": "Only support https website",
+    "please_input_room_name": "Please input room name"
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1666089671
+// @version      1673269597
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1666089671'
+    let version = '1673269597'
     let type = 'Chrome'
     function getBrowser() {
         switch (type) {
@@ -155,12 +155,14 @@
             }
         }
     }
-    // if (type == 'Chrome') {
-    //     let vtEnabled = await getGM().getValue('vtEnabled');
-    //     if (vtEnabled === false) {
-    //         return;
-    //     }
-    // }
+
+    if (isExtension) {
+        let vtEnabled = await getGM().getValue('vtEnabled');
+        if (vtEnabled === false) {
+            return;
+        }
+    }
+
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
     let prefixLen = 0;
@@ -336,7 +338,7 @@
             } catch (e) {
                 data["VideoTogetherTabStorageEnabled"] = false;
             }
-            window.top.postMessage({
+            window.postMessage({
                 source: "VideoTogether",
                 type: 16,
                 data: data
