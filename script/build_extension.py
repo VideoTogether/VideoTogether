@@ -112,6 +112,10 @@ if __name__ == '__main__':
                     rootPath.joinpath("source/chrome/vt.en-us.user.js"))
     shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
                     rootPath.joinpath("source/chrome/vt.zh-cn.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.debug.en-us.user.js"),
+                    rootPath.joinpath("source/chrome/vt.debug.en-us.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.debug.zh-cn.user.js"),
+                    rootPath.joinpath("source/chrome/vt.debug.zh-cn.user.js"))
     shutil.copyfile(rootPath.joinpath("release/vt.en-us.user.js"),
                     rootPath.joinpath("source/firefox/vt.en-us.user.js"))
     shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1673192889
+// @version      1673439674
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1508,6 +1508,7 @@
                 });
                 this.videoTogetherRoleText = wrapper.querySelector("#videoTogetherRoleText")
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
+                hide(this.videoTogetherSetting);
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPasswordInput");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
@@ -1738,7 +1739,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1673192889';
+            this.version = '1673439674';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2137,6 +2138,7 @@
                     if (window.VideoTogetherSettingEnabled == undefined && !isWeb(window.VideoTogetherStorage.UserscriptType)) {
                         try {
                             window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
+                            show(select('#videoTogetherSetting'));
                         } catch (e) { }
                     }
                     window.VideoTogetherSettingEnabled = true;
