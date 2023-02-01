@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1673439674
+// @version      1675248183
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -275,6 +275,12 @@
         set errorMessage(m) {
             this._errorMessage = m;
             select("#snackbar").innerHTML = m;
+            let voiceConnErrBtn = select('#voiceConnErrBtn');
+            if (voiceConnErrBtn != undefined) {
+                voiceConnErrBtn.onclick = () => {
+                    alert('If you have installed uBlock and other adblock extensions, please disable those extensions and try again.')
+                }
+            }
         },
         set status(s) {
             this._status = s;
@@ -409,7 +415,7 @@
             } catch (e) {
                 if (Voice.status == VoiceStatus.CONNECTTING) {
                     Voice.status = VoiceStatus.ERROR;
-                    Voice.errorMessage = "Connection error";
+                    Voice.errorMessage = "Connection error (<a id='voiceConnErrBtn' style='color:inherit' href='#''>Help</a>)";
                 }
             }
 
@@ -1739,7 +1745,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1673439674';
+            this.version = '1675248183';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

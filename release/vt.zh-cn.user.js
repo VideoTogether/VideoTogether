@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1673439674
+// @version      1675248183
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -275,6 +275,12 @@
         set errorMessage(m) {
             this._errorMessage = m;
             select("#snackbar").innerHTML = m;
+            let voiceConnErrBtn = select('#voiceConnErrBtn');
+            if (voiceConnErrBtn != undefined) {
+                voiceConnErrBtn.onclick = () => {
+                    alert('如果你安装了uBlock等去广告插件,请停用这些去广告插件后再试')
+                }
+            }
         },
         set status(s) {
             this._status = s;
@@ -409,7 +415,7 @@
             } catch (e) {
                 if (Voice.status == VoiceStatus.CONNECTTING) {
                     Voice.status = VoiceStatus.ERROR;
-                    Voice.errorMessage = "连接失败";
+                    Voice.errorMessage = "连接失败 (<a id='voiceConnErrBtn' style='color:inherit' href='#''>帮助</a>)";
                 }
             }
 
@@ -1739,7 +1745,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1673439674';
+            this.version = '1675248183';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

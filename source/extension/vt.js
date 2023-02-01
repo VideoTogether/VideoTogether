@@ -275,6 +275,12 @@
         set errorMessage(m) {
             this._errorMessage = m;
             select("#snackbar").innerHTML = m;
+            let voiceConnErrBtn = select('#voiceConnErrBtn');
+            if (voiceConnErrBtn != undefined) {
+                voiceConnErrBtn.onclick = () => {
+                    alert('{$voice_connection_error_help$}')
+                }
+            }
         },
         set status(s) {
             this._status = s;
