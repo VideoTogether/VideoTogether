@@ -2126,6 +2126,7 @@
 
                 document.onmousemove = dr;
                 document.ontouchmove = dr;
+                document.onpointermove = dr;
 
                 function dr(event) {
 
@@ -2158,9 +2159,11 @@
                 }
                 target.onmouseup = endDrag;
                 target.ontouchend = endDrag;
+                target.onpointerup = endDrag;
             }
             window.videoTogetherFlyPannel.videoTogetherHeader.onmousedown = filter;
             window.videoTogetherFlyPannel.videoTogetherHeader.ontouchstart = filter;
+            window.videoTogetherFlyPannel.videoTogetherHeader.onpointerdown = filter;
         }
     }
 
