@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1675248183
+// @version      1676383413
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1745,7 +1745,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1675248183';
+            this.version = '1676383413';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2773,6 +2773,7 @@
 
         EnableDraggable() {
             function filter(e) {
+                console.log(e);
                 let target = undefined;
                 if (window.videoTogetherFlyPannel.videoTogetherHeader.contains(e.target)) {
                     target = window.videoTogetherFlyPannel.videoTogetherFlyPannel;
@@ -2796,6 +2797,7 @@
 
                 document.onmousemove = dr;
                 document.ontouchmove = dr;
+                document.onpointermove = dr;
 
                 function dr(event) {
 
@@ -2828,9 +2830,11 @@
                 }
                 target.onmouseup = endDrag;
                 target.ontouchend = endDrag;
+                target.onpointerup = endDrag;
             }
             window.videoTogetherFlyPannel.videoTogetherHeader.onmousedown = filter;
             window.videoTogetherFlyPannel.videoTogetherHeader.ontouchstart = filter;
+            window.videoTogetherFlyPannel.videoTogetherHeader.onpointerdown = filter;
         }
     }
 
