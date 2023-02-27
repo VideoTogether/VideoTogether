@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1676383413
+// @version      1677495812
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -761,6 +761,7 @@
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
+                this.minimized = false;
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
                 let wrapper;
@@ -1447,6 +1448,18 @@
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
+                document.addEventListener("fullscreenchange", (event) => {
+                    if (document.fullscreenElement) {
+                        hide(this.videoTogetherFlyPannel);
+                        hide(this.videoTogetherSamllIcon);
+                    } else {
+                        if (this.minimized) {
+                            this.Minimize();
+                        } else {
+                            this.Maximize();
+                        }
+                    }
+                });
 
                 this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
                 this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
@@ -1544,6 +1557,7 @@
         }
 
         Minimize(isDefault = false) {
+            this.minimized = true;
             if (!isDefault) {
                 this.SaveIsMinimized(true);
             }
@@ -1553,6 +1567,7 @@
         }
 
         Maximize(isDefault = false) {
+            this.minimized = false;
             if (!isDefault) {
                 this.SaveIsMinimized(false);
             }
@@ -1745,7 +1760,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1676383413';
+            this.version = '1677495812';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2773,7 +2788,6 @@
 
         EnableDraggable() {
             function filter(e) {
-                console.log(e);
                 let target = undefined;
                 if (window.videoTogetherFlyPannel.videoTogetherHeader.contains(e.target)) {
                     target = window.videoTogetherFlyPannel.videoTogetherFlyPannel;
