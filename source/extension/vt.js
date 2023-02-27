@@ -761,6 +761,7 @@
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
+                this.minimized = false;
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
                 let wrapper;
@@ -777,6 +778,18 @@
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
+                document.addEventListener("fullscreenchange", (event) => {
+                    if (document.fullscreenElement) {
+                        hide(this.videoTogetherFlyPannel);
+                        hide(this.videoTogetherSamllIcon);
+                    } else {
+                        if (this.minimized) {
+                            this.Minimize();
+                        } else {
+                            this.Maximize();
+                        }
+                    }
+                });
 
                 this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
                 this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
@@ -874,6 +887,7 @@
         }
 
         Minimize(isDefault = false) {
+            this.minimized = true;
             if (!isDefault) {
                 this.SaveIsMinimized(true);
             }
@@ -883,6 +897,7 @@
         }
 
         Maximize(isDefault = false) {
+            this.minimized = false;
             if (!isDefault) {
                 this.SaveIsMinimized(false);
             }
@@ -2126,6 +2141,7 @@
 
                 document.onmousemove = dr;
                 document.ontouchmove = dr;
+                document.onpointermove = dr;
 
                 function dr(event) {
 
@@ -2158,9 +2174,11 @@
                 }
                 target.onmouseup = endDrag;
                 target.ontouchend = endDrag;
+                target.onpointerup = endDrag;
             }
             window.videoTogetherFlyPannel.videoTogetherHeader.onmousedown = filter;
             window.videoTogetherFlyPannel.videoTogetherHeader.ontouchstart = filter;
+            window.videoTogetherFlyPannel.videoTogetherHeader.onpointerdown = filter;
         }
     }
 
