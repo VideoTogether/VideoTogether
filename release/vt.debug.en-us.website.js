@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1677495812
+// @version      1677598834
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -782,6 +782,17 @@
       <div class="vt-modal-title">VideoTogether</div>
     </div>
 
+    <a href="https://afdian.net/a/videotogether" target="_blank" id="vtDonate" type="button"
+      class="vt-modal-donate vt-modal-title-button">
+      <span class="vt-modal-close-x">
+        <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+            <path fill="currentColor"
+              d="M12 4.435c-1.989-5.399-12-4.597-12 3.568 0 4.068 3.06 9.481 12 14.997 8.94-5.516 12-10.929 12-14.997 0-8.118-10-8.999-12-3.568z" />
+          </svg>
+        </span>
+      </span>
+    </a>
 
     <a href="https://setting.2gether.video/" target="_blank" id="videoTogetherSetting" type="button"
       aria-label="Setting" class="vt-modal-setting vt-modal-title-button">
@@ -1008,6 +1019,12 @@
   }
 
   .vt-modal-setting {
+    position: absolute;
+    top: -1px;
+    right: 65px;
+  }
+
+  .vt-modal-donate {
     position: absolute;
     top: -1px;
     right: 40px;
@@ -1760,7 +1777,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1677495812';
+            this.version = '1677598834';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
