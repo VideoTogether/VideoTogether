@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1677689131
+// @version      1677690324
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -912,6 +912,7 @@
     <div id="snackbar"></div>
 
     <div class="vt-modal-footer">
+
       <div id="lobbyBtnGroup">
         <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
           <span>建 房</span>
@@ -1476,9 +1477,9 @@
     color: #fff;
     text-align: center;
     padding: 16px 0px 16px 0px;
-    position: sticky;
+    position: relative;
     z-index: 999999;
-    bottom: 0px;
+    top: -56px;
   }
 
   #snackbar.show {
@@ -1824,7 +1825,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1677689131';
+            this.version = '1677690324';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
