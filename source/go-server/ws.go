@@ -298,7 +298,6 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	room.LastUpdateServerTime = c.hub.vtSrv.Timestamp()
 	room.Protected = req.Protected
 	room.VideoTitle = req.VideoTitle
-	room.BackgroundUrl = c.hub.vtSrv.GetRoomBackgroundUrl(room.Name)
 
 	c.isHost = true
 	c.roomName = room.Name

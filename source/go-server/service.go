@@ -89,6 +89,8 @@ func (s *VideoTogetherService) CreateRoom(name, password string, host *User) *Ro
 	room.password = password
 	room.LastUpdateClientTime = s.Timestamp()
 	room.hostId = host.UserId
+	room.BackgroundUrl = s.GetRoomBackgroundUrl(name)
+	room.Uuid = "VideoTogether"
 	s.rooms.Store(name, room)
 	return room
 }
@@ -150,6 +152,7 @@ type Room struct {
 	Protected            bool    `json:"protected"`
 	VideoTitle           string  `json:"videoTitle"`
 	BackgroundUrl        string  `json:"backgroundUrl"`
+	Uuid                 string  `json:"uuid"`
 
 	hostId   string
 	password string

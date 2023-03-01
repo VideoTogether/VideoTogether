@@ -109,7 +109,6 @@ func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) 
 	room.LastUpdateServerTime = h.vtSrv.Timestamp()
 	room.Protected = req.URL.Query().Get("protected") == "true"
 	room.VideoTitle = req.URL.Query().Get("videoTitle")
-	room.BackgroundUrl = h.vtSrv.GetRoomBackgroundUrl(room.Name)
 
 	h.JSON(res, 200, h.newRoomResponse(room))
 }
