@@ -1,13 +1,36 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"log"
 	"sync"
 	"time"
 )
 
+type Sponsor struct {
+	Room          string `json:"room"`
+	BackgroundUrl string `json:"backgroundUrl"`
+}
+
 func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService {
+	sponsorStr, err := ioutil.ReadFile("./sponsor.json")
+	if err != nil {
+		log.Fatal("Error when opening file: ", err)
+	}
+	var sponsorList []Sponsor
+	err = json.Unmarshal(sponsorStr, &sponsorList)
+	if err != nil {
+		log.Fatal("Error during Unmarshal(): ", err)
+	}
+	sponsorMap := make(map[string]Sponsor)
+	for _, sponsor := range sponsorList {
+		sponsorMap[sponsor.Room] = sponsor
+	}
+
 	return &VideoTogetherService{
+		sponsors:       sponsorMap,
 		rooms:          sync.Map{},
 		users:          sync.Map{},
 		roomExpireTime: roomExpireTime,
@@ -15,6 +38,7 @@ func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService
 }
 
 type VideoTogetherService struct {
+	sponsors       map[string]Sponsor
 	rooms          sync.Map
 	users          sync.Map
 	roomExpireTime time.Duration
@@ -22,6 +46,13 @@ type VideoTogetherService struct {
 
 func (s *VideoTogetherService) Timestamp() float64 {
 	return float64(time.Now().UnixMilli()) / 1000
+}
+
+func (s *VideoTogetherService) GetRoomBackgroundUrl(room string) string {
+	if sponsor, ok := s.sponsors[room]; ok {
+		return sponsor.BackgroundUrl
+	}
+	return ""
 }
 
 func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(ctx *VtContext, roomName, roomPassword string, userId string) (*Room, *User, error) {
@@ -118,6 +149,7 @@ type Room struct {
 	Public               bool    `json:"public"`
 	Protected            bool    `json:"protected"`
 	VideoTitle           string  `json:"videoTitle"`
+	BackgroundUrl        string  `json:"backgroundUrl"`
 
 	hostId   string
 	password string

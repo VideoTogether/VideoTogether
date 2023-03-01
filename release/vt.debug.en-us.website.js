@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1677598834
+// @version      1677680682
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -47,7 +47,7 @@
      * @returns {Element}
      */
     function select(query) {
-        e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
+        let e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
         return e;
     }
 
@@ -57,6 +57,19 @@
 
     function show(e) {
         if (e) e.style.display = null;
+    }
+
+    function changeBackground(url) {
+        let e = select('.vt-modal-body');
+        if (e) {
+            if (url == null || url == "") {
+                e.style.backgroundImage = 'none';
+            } else if (e.style.backgroundImage != `url("${url}")`) {
+                e.style.backgroundImage= `url("${url}")`
+                console.log(e.style.backgroundImage );
+
+            }
+        }
     }
 
     function dsply(e, _show = true) {
@@ -1097,13 +1110,15 @@
   }
 
   .vt-modal-body {
-    height: 100px;
+    height: 164px;
     display: flex;
     flex-direction: column;
     align-items: center;
     overflow-y: auto;
     font-size: 16px;
     color: black;
+    border-radius: 0 0 10px 10px;
+    background-size: cover;
   }
 
   .vt-modal-footer {
@@ -1721,7 +1736,9 @@
         SetTabStorageSuccess: 19,
 
         UpdateRoomRequest: 20,
-        CallScheduledTask: 21
+        CallScheduledTask: 21,
+
+        RoomDateNotification: 22
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1761,7 +1778,7 @@
             }
             this.cspBlockedHost = {};
 
-            this.video_together_host = 'http://127.0.0.1:5000/';
+            this.video_together_host = 'http://127.0.0.1:5001/';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video"]
 
@@ -1777,7 +1794,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1677598834';
+            this.version = '1677680682';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2186,6 +2203,10 @@
                     this.SetTabStorageSuccessCallback();
                     break;
                 }
+                case MessageType.RoomDateNotification: {
+                    changeBackground(data['backgroundUrl']);
+                    break;
+                }
                 default:
                     // console.info("unhandled message:", type, data)
                     break;
@@ -2462,6 +2483,7 @@
                     }
                     case this.RoleEnum.Member: {
                         let room = await this.GetRoom(this.roomName, this.password);
+                        sendMessageToTop(MessageType.RoomDateNotification, room);
                         this.duration = room["duration"];
                         if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
@@ -2747,6 +2769,7 @@
             WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp);
             let WSRoom = WS.getRoom();
             if (WSRoom != null) {
+                sendMessageToTop(MessageType.RoomDateNotification, WSRoom);
                 return WSRoom;
             }
             try {
@@ -2771,6 +2794,7 @@
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
+            sendMessageToTop(MessageType.RoomDateNotification, data);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
