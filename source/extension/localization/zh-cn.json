@@ -25,11 +25,12 @@
     "please_join_again_after_jump": "请在跳转后再次加入",
     "no_micphone_access": "麦克风权限获取失败",
     "connection_error": "连接失败 (<a id='voiceConnErrBtn' style='color:inherit' href='#''>帮助</a>)",
-    "voice_connection_error_help":"如果你安装了uBlock等去广告插件,请停用这些去广告插件后再试",
+    "voice_connection_error_help": "如果你安装了uBlock等去广告插件,请停用这些去广告插件后再试",
     "ios_does_not_support_volume_adjustment": "IOS不支持音量调节",
     "connection_lost": "连接断开",
     "unknown_error": "未知错误",
     "room_name_too_long": "房间名太长",
     "only_support_https_website": "仅支持https网站使用",
-    "please_input_room_name": "请输入房间名"
+    "please_input_room_name": "请输入房间名",
+    "room_uuid_missing": "uuid缺失"
 }

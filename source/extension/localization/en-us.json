@@ -25,11 +25,12 @@
     "please_join_again_after_jump": "Please join again after jump",
     "no_micphone_access": "No microphone access",
     "connection_error": "Connection error (<a id='voiceConnErrBtn' style='color:inherit' href='#''>Help</a>)",
-    "voice_connection_error_help":"If you have installed uBlock and other adblock extensions, please disable those extensions and try again.",
+    "voice_connection_error_help": "If you have installed uBlock and other adblock extensions, please disable those extensions and try again.",
     "ios_does_not_support_volume_adjustment": "iOS does not support volume adjustment",
     "connection_lost": "Connection lost",
     "unknown_error": "Unknown error",
     "room_name_too_long": "Room name too long",
     "only_support_https_website": "Only support https website",
-    "please_input_room_name": "Please input room name"
+    "please_input_room_name": "Please input room name",
+    "room_uuid_missing": "uuid is missing"
 }

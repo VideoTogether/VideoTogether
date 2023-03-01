@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1677680682
+// @version      1677689131
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -12,6 +12,8 @@
 (function () {
     const language = 'en-us'
     const vtRuntime = `extension`;
+
+    let roomUuid = null;
 
     const lastRunQueue = []
     // request can only be called up to 10 times in 5 seconds
@@ -59,15 +61,21 @@
         if (e) e.style.display = null;
     }
 
+    function isRoomProtected() {
+        try {
+            return window.VideoTogetherStorage == undefined || window.VideoTogetherStorage.PasswordProtectedRoom != false;
+        } catch {
+            return true;
+        }
+    }
+
     function changeBackground(url) {
         let e = select('.vt-modal-body');
         if (e) {
             if (url == null || url == "") {
                 e.style.backgroundImage = 'none';
             } else if (e.style.backgroundImage != `url("${url}")`) {
-                e.style.backgroundImage= `url("${url}")`
-                console.log(e.style.backgroundImage );
-
+                e.style.backgroundImage = `url("${url}")`
             }
         }
     }
@@ -143,7 +151,7 @@
                 "url": url,
                 "lastUpdateClientTime": localTimestamp,
                 "duration": duration,
-                "protected": (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom),
+                "protected": isRoomProtected(),
                 "videoTitle": extension.isMain ? document.title : extension.videoTitle,
             }
         }
@@ -164,6 +172,20 @@
         x.innerHTML = msg;
         x.className = "show";
         setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
+    }
+
+    async function waitForRoomUuid(timeout = 10000) {
+        return new Promise((res, rej) => {
+            let id = setInterval(() => {
+                if (roomUuid != null) {
+                    res(roomUuid);
+                }
+            }, 200)
+            setTimeout(() => {
+                clearInterval(id);
+                rej(null);
+            }, timeout);
+        });
     }
 
     class Room {
@@ -380,7 +402,15 @@
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
             let uid = generateUUID();
-            const rnameRPC = fixedEncodeURIComponent("VideoTogether_" + rname);
+            let notNullUuid;
+            try {
+                notNullUuid = await waitForRoomUuid();
+            } catch {
+                Voice.errorMessage = "uuid is missing";
+                Voice.status = VoiceStatus.ERROR;
+                return;
+            }
+            const rnameRPC = fixedEncodeURIComponent(notNullUuid + "_" + rname);
             if (rnameRPC.length > 256) {
                 Voice.errorMessage = "Room name too long";
                 Voice.status = VoiceStatus.ERROR;
@@ -1794,7 +1824,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1677680682';
+            this.version = '1677689131';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2204,6 +2234,9 @@
                     break;
                 }
                 case MessageType.RoomDateNotification: {
+                    if (data['uuid'] != "") {
+                        roomUuid = data['uuid'];
+                    }
                     changeBackground(data['backgroundUrl']);
                     break;
                 }
@@ -2385,6 +2418,7 @@
         }
 
         exitRoom() {
+            roomUuid = null;
             WS.disconnect();
             Voice.stop();
             show(select('#mainPannel'));
@@ -2788,7 +2822,7 @@
             apiUrl.searchParams.set("lastUpdateClientTime", localTimestamp);
             apiUrl.searchParams.set("duration", duration);
             apiUrl.searchParams.set("tempUser", this.tempUser);
-            apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
+            apiUrl.searchParams.set("protected", isRoomProtected());
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
