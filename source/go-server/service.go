@@ -7,6 +7,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Sponsor struct {
@@ -52,6 +54,9 @@ func (s *VideoTogetherService) GetRoomBackgroundUrl(room string) string {
 	if sponsor, ok := s.sponsors[room]; ok {
 		return sponsor.BackgroundUrl
 	}
+	if sponsor, ok := s.sponsors[""]; ok {
+		return sponsor.BackgroundUrl
+	}
 	return ""
 }
 
@@ -90,7 +95,7 @@ func (s *VideoTogetherService) CreateRoom(name, password string, host *User) *Ro
 	room.LastUpdateClientTime = s.Timestamp()
 	room.hostId = host.UserId
 	room.BackgroundUrl = s.GetRoomBackgroundUrl(name)
-	room.Uuid = "VideoTogether"
+	room.Uuid = uuid.New().String()
 	s.rooms.Store(name, room)
 	return room
 }
