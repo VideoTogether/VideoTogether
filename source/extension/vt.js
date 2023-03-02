@@ -960,32 +960,6 @@
             } else if (VideoTogetherMinimizedHere == 1) {
                 this.Minimize(true);
             }
-            const data = this.GetSavedRoomInfo()
-            if (data) {
-                if (data.roomName) {
-                    this.inputRoomName.value = data.roomName;
-                }
-                if (data.password) {
-                    this.inputRoomPassword.value = data.roomName;
-                }
-            }
-        }
-
-        GetSavedRoomInfo() {
-            try {
-                const data = JSON.parse(sessionStorage.getItem(this.sessionKey) || '');
-                if (data && (data.roomName || data.password)) {
-                    return data;
-                }
-                return null;
-            } catch {
-                return null;
-            }
-        }
-
-        SaveRoomInfo(roomName, password) {
-            const data = JSON.stringify({ roomName, password });
-            sessionStorage.setItem(this.sessionKey, data);
         }
 
         InRoom() {
@@ -1017,7 +991,6 @@
             this.Maximize();
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
-            this.SaveRoomInfo(roomName, password);
             window.videoTogetherExtension.CreateRoom(roomName, password);
         }
 
@@ -1025,7 +998,6 @@
             this.Maximize();
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
-            this.SaveRoomInfo(roomName, password);
             window.videoTogetherExtension.JoinRoom(roomName, password);
         }
 
