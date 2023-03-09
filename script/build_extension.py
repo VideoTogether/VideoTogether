@@ -11,12 +11,12 @@ current_path = os.path.dirname(__file__)
 
 
 def ReadSource(path):
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return f.read()
 
 
 def WriteSource(path, content):
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(content)
 
 
@@ -36,7 +36,7 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
                 newContent = content
                 newSubNameList = deepcopy(subNameList)
                 newSubNameList.append({"name": lan, "order": 99})
-                with open(rootPath.joinpath(languages[lan])) as f:
+                with open(rootPath.joinpath(languages[lan]), encoding="utf-8") as f:
                     strings = json.load(f)
                     for key in strings:
                         newContent = newContent.replace(
@@ -80,7 +80,7 @@ def build():
             sourceContent = ""
             if not sourceFile.endswith("js"):
                 continue
-            with open(Path(sourceSubDir).joinpath(sourceFile)) as f:
+            with open(Path(sourceSubDir).joinpath(sourceFile), encoding="utf-8") as f:
                 sourceContent = f.read()
             if r"{{{" not in sourceContent and '{$' not in sourceContent:
                 continue
