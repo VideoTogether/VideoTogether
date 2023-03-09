@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1677756346
+// @version      1678356521
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1262,6 +1262,12 @@
     width: 76px;
   }
 
+  #videoTogetherRoomNameInput:disabled{
+    border: none ;
+    background-color: transparent;
+    color: black;
+  }
+
   #videoTogetherRoomNameInput,
   #videoTogetherRoomPasswordInput {
     width: 150px !important;
@@ -1271,8 +1277,8 @@
     display: inline-block;
     padding: 0 !important;
     color: #00000073;
-    background-color: #ffffff !important;
-    border: 1px solid #e9e9e9 !important;
+    background-color: #ffffff;
+    border: 1px solid #e9e9e9;
     margin: 0 !important;
   }
 
@@ -1797,7 +1803,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1677756346';
+            this.version = '1678356521';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
