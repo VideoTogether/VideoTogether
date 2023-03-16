@@ -2090,13 +2090,20 @@
                 throw new Error("{$need_to_play_manually$}");
             }
             sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" });
-            let isLoadding = false;
-            try {
-                if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
-                    isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
-                }
-            } catch { };
-            sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
+
+            setTimeout(() => {
+                let isLoadding = false;
+                try {
+                    if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
+                        isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
+                        // if (isLoadding) {
+                        //     console.log(isLoadding, videoDom.readyState, videoDom);
+                        // }
+                    }
+                } catch {
+                };
+                sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
+            }, 3000);
         }
 
         async CheckResponse(response) {
