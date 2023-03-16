@@ -105,7 +105,9 @@ func (s *VideoTogetherService) QueryRoom(name string) *Room {
 	if room == nil {
 		return nil
 	}
-	return room.(*Room)
+	pRoom := room.(*Room)
+	pRoom.WaitForLoadding = pRoom.LastLoaddingTimestamp+10 > s.Timestamp()
+	return pRoom
 }
 
 func (s *VideoTogetherService) QueryUser(userId string) *User {
@@ -158,6 +160,10 @@ type Room struct {
 	VideoTitle           string  `json:"videoTitle"`
 	BackgroundUrl        string  `json:"backgroundUrl"`
 	Uuid                 string  `json:"uuid"`
+	// last timestamp that member reported his video is loadding
+	// this is a server timestamp, don't check this in client
+	LastLoaddingTimestamp float64 `json:"lastLoaddingTimestamp"`
+	WaitForLoadding       bool    `json:"waitForLoadding"`
 
 	hostId   string
 	password string

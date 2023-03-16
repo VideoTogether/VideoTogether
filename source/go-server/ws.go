@@ -197,6 +197,11 @@ type JoinRoomRequest struct {
 	RoomPassword string `json:"password"`
 }
 
+type RoomMemberLoaddingRequest struct {
+	RoomName     string `json:"name"`
+	RoomPassword string `json:"password"`
+}
+
 type UpdateRoomRequest struct {
 	*Room
 	TempUser string `json:"tempUser"`
@@ -238,6 +243,8 @@ func (c *Client) readPump() {
 		case "/room/update":
 			// this api can only be called by host, don't call this api from member
 			c.updateRoom(&req)
+		case "/room/member_loadding":
+			c.waitMemberLoadding(&req)
 		default:
 			c.reply(req.Method, nil, errors.New("unknown method"))
 		}
@@ -270,6 +277,26 @@ func (c *Client) joinRoom(rawReq *WsRequestMessage) {
 		},
 		Room: room,
 	}, nil)
+}
+
+func (c *Client) waitMemberLoadding(rawReq *WsRequestMessage) {
+	var req RoomMemberLoaddingRequest
+	if err := json.Unmarshal(rawReq.Data, &req); err != nil {
+		c.reply(rawReq.Method, nil, errors.New("invalid data"))
+		return
+	}
+	roomPw := GetMD5Hash(req.RoomPassword)
+	room := c.hub.vtSrv.QueryRoom(req.RoomName)
+	if room == nil {
+		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).RoomNotExist))
+		return
+	}
+	if !room.HasAccess(roomPw) {
+		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).WrongPassword))
+		return
+	}
+	room.LastLoaddingTimestamp = c.hub.vtSrv.Timestamp()
+	room.WaitForLoadding = true
 }
 
 func (c *Client) updateRoom(rawReq *WsRequestMessage) {
