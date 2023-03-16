@@ -1891,7 +1891,16 @@
                     }
                 }
             } catch { }
-
+            try {
+                if (window.location.hostname.endsWith('v.qq.com')) {
+                    let adCtrls = document.querySelectorAll('.txp_ad_control:not(.txp_none)');
+                    for (let i = 0; i < adCtrls.length; i++) {
+                        if (adCtrls[i].getAttribute('data-role') == 'creative-player-video-ad-control') {
+                            return true;
+                        }
+                    }
+                }
+            } catch { }
             return false;
         }
 

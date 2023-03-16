@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1678983185
+// @version      1678985406
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1818,7 +1818,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1678983185';
+            this.version = '1678985406';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2587,7 +2587,16 @@
                     }
                 }
             } catch { }
-
+            try {
+                if (window.location.hostname.endsWith('v.qq.com')) {
+                    let adCtrls = document.querySelectorAll('.txp_ad_control:not(.txp_none)');
+                    for (let i = 0; i < adCtrls.length; i++) {
+                        if (adCtrls[i].getAttribute('data-role') == 'creative-player-video-ad-control') {
+                            return true;
+                        }
+                    }
+                }
+            } catch { }
             return false;
         }
 
