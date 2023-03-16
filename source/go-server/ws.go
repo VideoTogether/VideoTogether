@@ -243,6 +243,8 @@ func (c *Client) readPump() {
 		case "/room/update":
 			// this api can only be called by host, don't call this api from member
 			c.updateRoom(&req)
+		// TODO if more member status needs to be synced in future,
+		// make a general api to replace this
 		case "/room/member_loadding":
 			c.waitMemberLoadding(&req)
 		default:

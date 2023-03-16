@@ -106,7 +106,7 @@ func (s *VideoTogetherService) QueryRoom(name string) *Room {
 		return nil
 	}
 	pRoom := room.(*Room)
-	pRoom.WaitForLoadding = pRoom.LastLoaddingTimestamp+10 > s.Timestamp()
+	pRoom.WaitForLoadding = pRoom.LastLoaddingTimestamp+5 > s.Timestamp()
 	return pRoom
 }
 

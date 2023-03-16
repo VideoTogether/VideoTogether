@@ -167,6 +167,16 @@
         }
     }
 
+    function WSMemberLoaddingRequest(name, password) {
+        return {
+            "method": "/room/member_loadding",
+            "data": {
+                "password": password,
+                "name": name,
+            }
+        }
+    }
+
     function popupError(msg) {
         let x = select("#snackbar");
         x.innerHTML = msg;
@@ -279,6 +289,9 @@
                 return;
             }
             this.send(WSJoinRoomRequest(name, password));
+        },
+        async memberLoadding(name, password) {
+            this.send(WSMemberLoaddingRequest(name, password));
         },
         async disconnect() {
             if (this._socket != null) {
@@ -1051,7 +1064,8 @@
         UpdateRoomRequest: 20,
         CallScheduledTask: 21,
 
-        RoomDateNotification: 22
+        RoomDateNotification: 22,
+        UpdateMemberStatus: 23
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1101,7 +1115,8 @@
             this.role = this.RoleEnum.Null
             this.url = ""
             this.duration = undefined
-
+            this.waitForLoadding = false;
+            this.playAfterLoadding = false;
             this.minTrip = 1e9;
             this.timeOffset = 0;
 
@@ -1444,7 +1459,11 @@
                 case MessageType.UpdateRoomRequest:
                     try {
                         await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp);
-                        _this.UpdateStatusText("{$sync_success$} " + _this.GetDisplayTimeText(), "green");
+                        if (this.waitForLoadding) {
+                            this.UpdateStatusText("{$wait_for_memeber_loadding$}", "red");
+                        } else {
+                            _this.UpdateStatusText("{$sync_success$} " + _this.GetDisplayTimeText(), "green");
+                        }
                     } catch (e) {
                         this.UpdateStatusText(e, "red");
                     }
@@ -1522,6 +1541,11 @@
                     }
                     changeBackground(data['backgroundUrl']);
                     break;
+                }
+                case MessageType.UpdateMemberStatus: {
+                    if (data.isLoadding) {
+                        WS.memberLoadding(this.roomName, this.password);
+                    }
                 }
                 default:
                     // console.info("unhandled message:", type, data)
@@ -1794,7 +1818,13 @@
                                 this.getLocalTimestamp());
                             throw new Error("{$no_video_in_this_page$}");
                         } else {
-                            sendMessageToTop(MessageType.SyncMasterVideo, { video: video, password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
+                            sendMessageToTop(MessageType.SyncMasterVideo, {
+                                waitForLoadding: this.waitForLoadding,
+                                video: video,
+                                password: this.password,
+                                roomName: this.roomName,
+                                link: this.linkWithoutState(window.location)
+                            });
                         }
                         break;
                     }
@@ -1904,10 +1934,18 @@
             return closestVideo;
         }
 
-        // TODO The poll task works really good currently.
-        // But we can sync when video event is traggered to enhance the performance
-        // and reduce server workload
         async SyncMasterVideo(data, videoDom) {
+            if (data.waitForLoadding) {
+                if (!videoDom.paused) {
+                    videoDom.pause();
+                    this.playAfterLoadding = true;
+                }
+            } else {
+                if (this.playAfterLoadding) {
+                    videoDom.play();
+                }
+                this.playAfterLoadding = false;
+            }
             sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
                 password: data.password,
@@ -2051,7 +2089,10 @@
             if (isNaN(videoDom.duration)) {
                 throw new Error("{$need_to_play_manually$}");
             }
-            sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" })
+            sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" });
+            let isLoadding = false;
+            try { isLoadding = (videoDom.readyState != 4) } catch { };
+            sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
         }
 
         async CheckResponse(response) {
@@ -2092,6 +2133,7 @@
             WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp);
             let WSRoom = WS.getRoom();
             if (WSRoom != null) {
+                this.waitForLoadding = WSRoom['waitForLoadding'];
                 sendMessageToTop(MessageType.RoomDateNotification, WSRoom);
                 return WSRoom;
             }
