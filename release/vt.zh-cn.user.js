@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1678978818
+// @version      1678981346
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1818,7 +1818,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1678978818';
+            this.version = '1678981346';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2787,7 +2787,11 @@
             }
             sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" });
             let isLoadding = false;
-            try { isLoadding = (videoDom.readyState != 4) } catch { };
+            try {
+                if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
+                    isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
+                }
+            } catch { };
             sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
         }
 

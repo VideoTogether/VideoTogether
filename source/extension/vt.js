@@ -2091,7 +2091,11 @@
             }
             sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" });
             let isLoadding = false;
-            try { isLoadding = (videoDom.readyState != 4) } catch { };
+            try {
+                if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
+                    isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
+                }
+            } catch { };
             sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
         }
 
