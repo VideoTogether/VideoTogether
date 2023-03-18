@@ -1901,6 +1901,11 @@
                     }
                 }
             } catch { }
+            try {
+                if (document.querySelector('.advertise-layer').querySelector('div')) {
+                    return true;
+                }
+            } catch { }
             return false;
         }
 

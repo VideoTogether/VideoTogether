@@ -32,5 +32,6 @@
     "room_name_too_long": "房间名太长",
     "only_support_https_website": "仅支持https网站使用",
     "please_input_room_name": "请输入房间名",
-    "room_uuid_missing": "uuid缺失"
+    "room_uuid_missing": "uuid缺失",
+    "wait_for_memeber_loadding": "等待成员加载视频"
 }
