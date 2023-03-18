@@ -34,7 +34,7 @@
     } catch (e) { };
 
     let version = '{{timestamp}}'
-    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
+    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","test":"./config/type_userscript_test","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
     function getBrowser() {
         switch (type) {
             case 'Safari':
@@ -257,6 +257,7 @@
                         && !url.hostname.endsWith("chizhou.in")
                         && !url.hostname.endsWith("panghair.com")
                         && !url.hostname.endsWith("rpc.kraken.fm")
+                        && false
                         && !url.hostname.endsWith("aliyuncs.com")) {
                         console.error("permission error", e.data);
                         return;
@@ -397,10 +398,13 @@
                 }
             });
             // script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
-            script.src = getBrowser().runtime.getURL(`load.${language}.js`);
+            script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             break;
         case "userscript_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
+            break;
+        case "userscript_test":
+            script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.test.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "userscript_beta":
             script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());

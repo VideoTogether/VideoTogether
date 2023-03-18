@@ -1105,7 +1105,7 @@
             }
             this.cspBlockedHost = {};
 
-            this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
+            this.video_together_host = '{{{ {"":"./config/release_host","test":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video"]
 
@@ -1117,6 +1117,7 @@
             this.duration = undefined
             this.waitForLoadding = false;
             this.playAfterLoadding = false;
+            this.needToPlayManually = false;
             this.minTrip = 1e9;
             this.timeOffset = 0;
 
@@ -2065,8 +2066,11 @@
 
             if (room["paused"] == false) {
                 videoDom.videoTogetherPaused = false;
-                if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
+
+                if (!this.needToPlayManually && Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
+                    console.log("prev time: ", videoDom.currentTime);
                     videoDom.currentTime = this.CalculateRealCurrent(room);
+                    console.log("nxt time: ", videoDom.currentTime);
                 }
             } else {
                 videoDom.videoTogetherPaused = true;
@@ -2080,12 +2084,21 @@
                     videoDom.pause();
                 } else {
                     try {
+                        if (!videoDom.paused) {
+                            this.needToPlayManually = false;
+                        }
+                        if (this.needToPlayManually) {
+                            // is there any way we can check this directly, without try-catch?
+                            // don't call play, it will cause infinite loop
+                            throw new Error("{$need_to_play_manually$}");
+                        }
                         console.info("play");
                         await videoDom.play();
                         if (videoDom.paused) {
                             throw new Error("{$need_to_play_manually$}");
                         }
                     } catch (e) {
+                        this.needToPlayManually = true;
                         throw new Error("{$need_to_play_manually$}");
                     }
                 }
@@ -2105,9 +2118,9 @@
                 try {
                     if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
                         isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
-                        // if (isLoadding) {
-                        //     console.log(isLoadding, videoDom.readyState, videoDom);
-                        // }
+                        if (isLoadding) {
+                            console.log(isLoadding, videoDom.readyState, videoDom);
+                        }
                     }
                 } catch {
                 };
