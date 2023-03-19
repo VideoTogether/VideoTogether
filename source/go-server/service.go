@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -140,11 +141,13 @@ func (s *VideoTogetherService) NewUser(userId string) *User {
 type Statistics struct {
 	RoomCount        int       `json:"roomCount"`
 	LoaddingTimeList []float64 `json:"loaddingTimeList"`
+	LoaddingRooms    []Room    `json:"loaddingRooms"`
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
 	var stat Statistics
 	stat.LoaddingTimeList = make([]float64, 0)
+	stat.LoaddingRooms = make([]Room, 0)
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {
@@ -153,10 +156,15 @@ func (s *VideoTogetherService) Statistics() Statistics {
 			stat.RoomCount++
 			if room.BeginLoaddingTimestamp != 0 {
 				stat.LoaddingTimeList = append(stat.LoaddingTimeList, s.Timestamp()-room.BeginLoaddingTimestamp)
+				stat.LoaddingRooms = append(stat.LoaddingRooms, *room)
 			}
 		}
 		return true
 	})
+	statStr, _ := json.Marshal(stat)
+	// for loadding bug investigation
+	_ = os.WriteFile("stat.json", statStr, 0644)
+	stat.LoaddingRooms = nil
 	sort.Float64s(stat.LoaddingTimeList)
 	return stat
 }
