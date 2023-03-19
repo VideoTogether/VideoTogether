@@ -2115,7 +2115,7 @@
             setTimeout(() => {
                 let isLoadding = false;
                 try {
-                    if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
+                    if (document.hasFocus() && Math.abs(room["duration"] - videoDom.duration) < 0.5) {
                         isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
                         // if (isLoadding) {
                         //     console.log(isLoadding, videoDom.readyState, videoDom);

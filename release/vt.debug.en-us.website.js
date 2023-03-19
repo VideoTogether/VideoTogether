@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679240140
+// @version      1679244430
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1818,7 +1818,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1679240140';
+            this.version = '1679244430';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2811,7 +2811,7 @@
             setTimeout(() => {
                 let isLoadding = false;
                 try {
-                    if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
+                    if (document.hasFocus() && Math.abs(room["duration"] - videoDom.duration) < 0.5) {
                         isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
                         // if (isLoadding) {
                         //     console.log(isLoadding, videoDom.readyState, videoDom);
