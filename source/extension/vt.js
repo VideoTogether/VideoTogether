@@ -1271,6 +1271,13 @@
 
         async ForEachVideo(func) {
             try {
+                if (window.location.hostname.endsWith("iqiyi.com")) {
+                    let video = document.querySelector('.iqp-player-videolayer-inner > video');
+                    if (video != null) {
+                        video.VideoTogetherChoosed = true;
+                        try { await func(video) } catch { };
+                    }
+                }
                 // disneyplus
                 if (window.location.hostname.endsWith("disneyplus.com")) {
                     try {
@@ -1761,7 +1768,7 @@
                     if (video.VideoTogetherVideoId == undefined) {
                         video.VideoTogetherVideoId = generateUUID();
                     }
-                    if (video instanceof VideoWrapper) {
+                    if (video instanceof VideoWrapper || video.VideoTogetherChoosed == true) {
                         // ad hoc
                         sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
                     } else {

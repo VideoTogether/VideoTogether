@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679120153
+// @version      1679240140
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1818,7 +1818,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1679120153';
+            this.version = '1679240140';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1967,6 +1967,13 @@
 
         async ForEachVideo(func) {
             try {
+                if (window.location.hostname.endsWith("iqiyi.com")) {
+                    let video = document.querySelector('.iqp-player-videolayer-inner > video');
+                    if (video != null) {
+                        video.VideoTogetherChoosed = true;
+                        try { await func(video) } catch { };
+                    }
+                }
                 // disneyplus
                 if (window.location.hostname.endsWith("disneyplus.com")) {
                     try {
@@ -2457,7 +2464,7 @@
                     if (video.VideoTogetherVideoId == undefined) {
                         video.VideoTogetherVideoId = generateUUID();
                     }
-                    if (video instanceof VideoWrapper) {
+                    if (video instanceof VideoWrapper || video.VideoTogetherChoosed == true) {
                         // ad hoc
                         sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
                     } else {
