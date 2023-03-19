@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"sort"
 	"sync"
 	"time"
 
@@ -137,13 +138,13 @@ func (s *VideoTogetherService) NewUser(userId string) *User {
 }
 
 type Statistics struct {
-	RoomCount               int       `json:"roomCount"`
-	BeginLoaddingTimestamps []float64 `json:"beginLoaddingTimestamps"`
+	RoomCount        int       `json:"roomCount"`
+	LoaddingTimeList []float64 `json:"loaddingTimeList"`
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
 	var stat Statistics
-	stat.BeginLoaddingTimestamps = make([]float64, 0)
+	stat.LoaddingTimeList = make([]float64, 0)
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {
@@ -151,11 +152,12 @@ func (s *VideoTogetherService) Statistics() Statistics {
 		} else {
 			stat.RoomCount++
 			if room.BeginLoaddingTimestamp != 0 {
-				stat.BeginLoaddingTimestamps = append(stat.BeginLoaddingTimestamps, room.BeginLoaddingTimestamp)
+				stat.LoaddingTimeList = append(stat.LoaddingTimeList, s.Timestamp()-room.BeginLoaddingTimestamp)
 			}
 		}
 		return true
 	})
+	sort.Float64s(stat.LoaddingTimeList)
 	return stat
 }
 
