@@ -106,7 +106,15 @@ func (s *VideoTogetherService) QueryRoom(name string) *Room {
 		return nil
 	}
 	pRoom := room.(*Room)
-	pRoom.WaitForLoadding = pRoom.LastLoaddingTimestamp+2 > s.Timestamp()
+	pRoom.WaitForLoadding = pRoom.LastLoaddingTimestamp+4 > s.Timestamp()
+	if pRoom.WaitForLoadding {
+		if pRoom.BeginLoaddingTimestamp == 0 {
+			pRoom.BeginLoaddingTimestamp = s.Timestamp()
+		}
+	} else {
+		pRoom.BeginLoaddingTimestamp = 0
+	}
+	pRoom.WaitForLoadding = false
 	return pRoom
 }
 
@@ -129,17 +137,22 @@ func (s *VideoTogetherService) NewUser(userId string) *User {
 }
 
 type Statistics struct {
-	RoomCount int `json:"roomCount"`
+	RoomCount               int       `json:"roomCount"`
+	BeginLoaddingTimestamps []float64 `json:"beginLoaddingTimestamps"`
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
 	var stat Statistics
+	stat.BeginLoaddingTimestamps = make([]float64, 0)
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {
 			s.rooms.Delete(key)
 		} else {
 			stat.RoomCount++
+			if room.BeginLoaddingTimestamp != 0 {
+				stat.BeginLoaddingTimestamps = append(stat.BeginLoaddingTimestamps, room.BeginLoaddingTimestamp)
+			}
 		}
 		return true
 	})
@@ -162,8 +175,9 @@ type Room struct {
 	Uuid                 string  `json:"uuid"`
 	// last timestamp that member reported his video is loadding
 	// this is a server timestamp, don't check this in client
-	LastLoaddingTimestamp float64 `json:"lastLoaddingTimestamp"`
-	WaitForLoadding       bool    `json:"waitForLoadding"`
+	LastLoaddingTimestamp  float64 `json:"lastLoaddingTimestamp"`
+	WaitForLoadding        bool    `json:"waitForLoadding"`
+	BeginLoaddingTimestamp float64 `json:"beginLoaddingTimestamp"`
 
 	hostId   string
 	password string
