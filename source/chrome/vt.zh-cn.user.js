@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1673273138
+// @version      1679235031
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -12,6 +12,8 @@
 (function () {
     const language = 'zh-cn'
     const vtRuntime = `extension`;
+
+    let roomUuid = null;
 
     const lastRunQueue = []
     // request can only be called up to 10 times in 5 seconds
@@ -47,7 +49,7 @@
      * @returns {Element}
      */
     function select(query) {
-        e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
+        let e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
         return e;
     }
 
@@ -57,6 +59,25 @@
 
     function show(e) {
         if (e) e.style.display = null;
+    }
+
+    function isRoomProtected() {
+        try {
+            return window.VideoTogetherStorage == undefined || window.VideoTogetherStorage.PasswordProtectedRoom != false;
+        } catch {
+            return true;
+        }
+    }
+
+    function changeBackground(url) {
+        let e = select('.vt-modal-body');
+        if (e) {
+            if (url == null || url == "") {
+                e.style.backgroundImage = 'none';
+            } else if (e.style.backgroundImage != `url("${url}")`) {
+                e.style.backgroundImage = `url("${url}")`
+            }
+        }
     }
 
     function dsply(e, _show = true) {
@@ -130,7 +151,7 @@
                 "url": url,
                 "lastUpdateClientTime": localTimestamp,
                 "duration": duration,
-                "protected": (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom),
+                "protected": isRoomProtected(),
                 "videoTitle": extension.isMain ? document.title : extension.videoTitle,
             }
         }
@@ -146,11 +167,35 @@
         }
     }
 
+    function WSMemberLoaddingRequest(name, password) {
+        return {
+            "method": "/room/member_loadding",
+            "data": {
+                "password": password,
+                "name": name,
+            }
+        }
+    }
+
     function popupError(msg) {
         let x = select("#snackbar");
         x.innerHTML = msg;
         x.className = "show";
         setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
+    }
+
+    async function waitForRoomUuid(timeout = 10000) {
+        return new Promise((res, rej) => {
+            let id = setInterval(() => {
+                if (roomUuid != null) {
+                    res(roomUuid);
+                }
+            }, 200)
+            setTimeout(() => {
+                clearInterval(id);
+                rej(null);
+            }, timeout);
+        });
     }
 
     class Room {
@@ -245,6 +290,9 @@
             }
             this.send(WSJoinRoomRequest(name, password));
         },
+        async memberLoadding(name, password) {
+            this.send(WSMemberLoaddingRequest(name, password));
+        },
         async disconnect() {
             if (this._socket != null) {
                 try {
@@ -275,6 +323,12 @@
         set errorMessage(m) {
             this._errorMessage = m;
             select("#snackbar").innerHTML = m;
+            let voiceConnErrBtn = select('#voiceConnErrBtn');
+            if (voiceConnErrBtn != undefined) {
+                voiceConnErrBtn.onclick = () => {
+                    alert('如果你安装了uBlock等去广告插件,请停用这些去广告插件后再试')
+                }
+            }
         },
         set status(s) {
             this._status = s;
@@ -361,7 +415,15 @@
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
             let uid = generateUUID();
-            const rnameRPC = fixedEncodeURIComponent("VideoTogether_" + rname);
+            let notNullUuid;
+            try {
+                notNullUuid = await waitForRoomUuid();
+            } catch {
+                Voice.errorMessage = "uuid缺失";
+                Voice.status = VoiceStatus.ERROR;
+                return;
+            }
+            const rnameRPC = fixedEncodeURIComponent(notNullUuid + "_" + rname);
             if (rnameRPC.length > 256) {
                 Voice.errorMessage = "房间名太长";
                 Voice.status = VoiceStatus.ERROR;
@@ -409,7 +471,7 @@
             } catch (e) {
                 if (Voice.status == VoiceStatus.CONNECTTING) {
                     Voice.status = VoiceStatus.ERROR;
-                    Voice.errorMessage = "连接失败";
+                    Voice.errorMessage = "连接失败 (<a id='voiceConnErrBtn' style='color:inherit' href='#''>帮助</a>)";
                 }
             }
 
@@ -755,6 +817,7 @@
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
+                this.minimized = false;
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
                 let wrapper;
@@ -775,6 +838,17 @@
       <div class="vt-modal-title">VideoTogether</div>
     </div>
 
+    <a href="https://afdian.net/a/videotogether" target="_blank" id="vtDonate" type="button"
+      class="vt-modal-donate vt-modal-title-button">
+      <span class="vt-modal-close-x">
+        <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+            <path fill="currentColor"
+              d="M12 4.435c-1.989-5.399-12-4.597-12 3.568 0 4.068 3.06 9.481 12 14.997 8.94-5.516 12-10.929 12-14.997 0-8.118-10-8.999-12-3.568z" />
+          </svg>
+        </span>
+      </span>
+    </a>
 
     <a href="https://setting.2gether.video/" target="_blank" id="videoTogetherSetting" type="button"
       aria-label="Setting" class="vt-modal-setting vt-modal-title-button">
@@ -851,6 +925,7 @@
     <div id="snackbar"></div>
 
     <div class="vt-modal-footer">
+
       <div id="lobbyBtnGroup">
         <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
           <span>建 房</span>
@@ -1003,6 +1078,12 @@
   .vt-modal-setting {
     position: absolute;
     top: -1px;
+    right: 65px;
+  }
+
+  .vt-modal-donate {
+    position: absolute;
+    top: -1px;
     right: 40px;
   }
 
@@ -1073,13 +1154,15 @@
   }
 
   .vt-modal-body {
-    height: 100px;
+    height: 164px;
     display: flex;
     flex-direction: column;
     align-items: center;
     overflow-y: auto;
     font-size: 16px;
     color: black;
+    border-radius: 0 0 10px 10px;
+    background-size: cover;
   }
 
   .vt-modal-footer {
@@ -1192,6 +1275,12 @@
     width: 76px;
   }
 
+  #videoTogetherRoomNameInput:disabled{
+    border: none ;
+    background-color: transparent;
+    color: black;
+  }
+
   #videoTogetherRoomNameInput,
   #videoTogetherRoomPasswordInput {
     width: 150px !important;
@@ -1201,8 +1290,8 @@
     display: inline-block;
     padding: 0 !important;
     color: #00000073;
-    background-color: #ffffff !important;
-    border: 1px solid #e9e9e9 !important;
+    background-color: #ffffff;
+    border: 1px solid #e9e9e9;
     margin: 0 !important;
   }
 
@@ -1407,9 +1496,9 @@
     color: #fff;
     text-align: center;
     padding: 16px 0px 16px 0px;
-    position: sticky;
+    position: relative;
     z-index: 999999;
-    bottom: 0px;
+    top: -56px;
   }
 
   #snackbar.show {
@@ -1441,6 +1530,18 @@
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
+                document.addEventListener("fullscreenchange", (event) => {
+                    if (document.fullscreenElement) {
+                        hide(this.videoTogetherFlyPannel);
+                        hide(this.videoTogetherSamllIcon);
+                    } else {
+                        if (this.minimized) {
+                            this.Minimize();
+                        } else {
+                            this.Maximize();
+                        }
+                    }
+                });
 
                 this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
                 this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
@@ -1508,6 +1609,7 @@
                 });
                 this.videoTogetherRoleText = wrapper.querySelector("#videoTogetherRoleText")
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
+                hide(this.videoTogetherSetting);
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPasswordInput");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
@@ -1537,6 +1639,7 @@
         }
 
         Minimize(isDefault = false) {
+            this.minimized = true;
             if (!isDefault) {
                 this.SaveIsMinimized(true);
             }
@@ -1546,6 +1649,7 @@
         }
 
         Maximize(isDefault = false) {
+            this.minimized = false;
             if (!isDefault) {
                 this.SaveIsMinimized(false);
             }
@@ -1565,32 +1669,6 @@
             } else if (VideoTogetherMinimizedHere == 1) {
                 this.Minimize(true);
             }
-            const data = this.GetSavedRoomInfo()
-            if (data) {
-                if (data.roomName) {
-                    this.inputRoomName.value = data.roomName;
-                }
-                if (data.password) {
-                    this.inputRoomPassword.value = data.roomName;
-                }
-            }
-        }
-
-        GetSavedRoomInfo() {
-            try {
-                const data = JSON.parse(sessionStorage.getItem(this.sessionKey) || '');
-                if (data && (data.roomName || data.password)) {
-                    return data;
-                }
-                return null;
-            } catch {
-                return null;
-            }
-        }
-
-        SaveRoomInfo(roomName, password) {
-            const data = JSON.stringify({ roomName, password });
-            sessionStorage.setItem(this.sessionKey, data);
         }
 
         InRoom() {
@@ -1622,7 +1700,6 @@
             this.Maximize();
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
-            this.SaveRoomInfo(roomName, password);
             window.videoTogetherExtension.CreateRoom(roomName, password);
         }
 
@@ -1630,7 +1707,6 @@
             this.Maximize();
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
-            this.SaveRoomInfo(roomName, password);
             window.videoTogetherExtension.JoinRoom(roomName, password);
         }
 
@@ -1682,7 +1758,10 @@
         SetTabStorageSuccess: 19,
 
         UpdateRoomRequest: 20,
-        CallScheduledTask: 21
+        CallScheduledTask: 21,
+
+        RoomDateNotification: 22,
+        UpdateMemberStatus: 23
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1732,13 +1811,14 @@
             this.role = this.RoleEnum.Null
             this.url = ""
             this.duration = undefined
-
+            this.waitForLoadding = false;
+            this.playAfterLoadding = false;
             this.minTrip = 1e9;
             this.timeOffset = 0;
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1673273138';
+            this.version = '1679235031';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2075,7 +2155,11 @@
                 case MessageType.UpdateRoomRequest:
                     try {
                         await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp);
-                        _this.UpdateStatusText("同步成功 " + _this.GetDisplayTimeText(), "green");
+                        if (this.waitForLoadding) {
+                            this.UpdateStatusText("等待成员加载视频", "red");
+                        } else {
+                            _this.UpdateStatusText("同步成功 " + _this.GetDisplayTimeText(), "green");
+                        }
                     } catch (e) {
                         this.UpdateStatusText(e, "red");
                     }
@@ -2137,6 +2221,7 @@
                     if (window.VideoTogetherSettingEnabled == undefined && !isWeb(window.VideoTogetherStorage.UserscriptType)) {
                         try {
                             window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
+                            show(select('#videoTogetherSetting'));
                         } catch (e) { }
                     }
                     window.VideoTogetherSettingEnabled = true;
@@ -2145,6 +2230,18 @@
                 case MessageType.SetTabStorageSuccess: {
                     this.SetTabStorageSuccessCallback();
                     break;
+                }
+                case MessageType.RoomDateNotification: {
+                    if (data['uuid'] != "") {
+                        roomUuid = data['uuid'];
+                    }
+                    changeBackground(data['backgroundUrl']);
+                    break;
+                }
+                case MessageType.UpdateMemberStatus: {
+                    if (data.isLoadding) {
+                        WS.memberLoadding(this.roomName, this.password);
+                    }
                 }
                 default:
                     // console.info("unhandled message:", type, data)
@@ -2324,6 +2421,7 @@
         }
 
         exitRoom() {
+            roomUuid = null;
             WS.disconnect();
             Voice.stop();
             show(select('#mainPannel'));
@@ -2416,12 +2514,19 @@
                                 this.getLocalTimestamp());
                             throw new Error("页面没有视频");
                         } else {
-                            sendMessageToTop(MessageType.SyncMasterVideo, { video: video, password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
+                            sendMessageToTop(MessageType.SyncMasterVideo, {
+                                waitForLoadding: this.waitForLoadding,
+                                video: video,
+                                password: this.password,
+                                roomName: this.roomName,
+                                link: this.linkWithoutState(window.location)
+                            });
                         }
                         break;
                     }
                     case this.RoleEnum.Member: {
                         let room = await this.GetRoom(this.roomName, this.password);
+                        sendMessageToTop(MessageType.RoomDateNotification, room);
                         this.duration = room["duration"];
                         if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
@@ -2482,7 +2587,21 @@
                     }
                 }
             } catch { }
-
+            try {
+                if (window.location.hostname.endsWith('v.qq.com')) {
+                    let adCtrls = document.querySelectorAll('.txp_ad_control:not(.txp_none)');
+                    for (let i = 0; i < adCtrls.length; i++) {
+                        if (adCtrls[i].getAttribute('data-role') == 'creative-player-video-ad-control') {
+                            return true;
+                        }
+                    }
+                }
+            } catch { }
+            try {
+                if (document.querySelector('.advertise-layer').querySelector('div')) {
+                    return true;
+                }
+            } catch { }
             return false;
         }
 
@@ -2525,10 +2644,18 @@
             return closestVideo;
         }
 
-        // TODO The poll task works really good currently.
-        // But we can sync when video event is traggered to enhance the performance
-        // and reduce server workload
         async SyncMasterVideo(data, videoDom) {
+            if (data.waitForLoadding) {
+                if (!videoDom.paused) {
+                    videoDom.pause();
+                    this.playAfterLoadding = true;
+                }
+            } else {
+                if (this.playAfterLoadding) {
+                    videoDom.play();
+                }
+                this.playAfterLoadding = false;
+            }
             sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
                 password: data.password,
@@ -2672,7 +2799,21 @@
             if (isNaN(videoDom.duration)) {
                 throw new Error("请手动点击播放");
             }
-            sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" })
+            sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" });
+
+            setTimeout(() => {
+                let isLoadding = false;
+                try {
+                    if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
+                        isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
+                        // if (isLoadding) {
+                        //     console.log(isLoadding, videoDom.readyState, videoDom);
+                        // }
+                    }
+                } catch {
+                };
+                sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
+            }, 3000);
         }
 
         async CheckResponse(response) {
@@ -2704,17 +2845,19 @@
         }
 
         async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
-            WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp);
-            let WSRoom = WS.getRoom();
-            if (WSRoom != null) {
-                return WSRoom;
-            }
             try {
                 if (window.location.pathname == "/page") {
                     let url = new URL(atob(new URL(window.location).searchParams.get("url")));
                     window.location = url;
                 }
             } catch { }
+            WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp);
+            let WSRoom = WS.getRoom();
+            if (WSRoom != null) {
+                this.waitForLoadding = WSRoom['waitForLoadding'];
+                sendMessageToTop(MessageType.RoomDateNotification, WSRoom);
+                return WSRoom;
+            }
             let apiUrl = new URL(this.video_together_host + "/room/update");
             apiUrl.searchParams.set("name", name);
             apiUrl.searchParams.set("password", password);
@@ -2725,12 +2868,13 @@
             apiUrl.searchParams.set("lastUpdateClientTime", localTimestamp);
             apiUrl.searchParams.set("duration", duration);
             apiUrl.searchParams.set("tempUser", this.tempUser);
-            apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
+            apiUrl.searchParams.set("protected", isRoomProtected());
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
+            sendMessageToTop(MessageType.RoomDateNotification, data);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
@@ -2788,6 +2932,7 @@
 
                 document.onmousemove = dr;
                 document.ontouchmove = dr;
+                document.onpointermove = dr;
 
                 function dr(event) {
 
@@ -2820,9 +2965,11 @@
                 }
                 target.onmouseup = endDrag;
                 target.ontouchend = endDrag;
+                target.onpointerup = endDrag;
             }
             window.videoTogetherFlyPannel.videoTogetherHeader.onmousedown = filter;
             window.videoTogetherFlyPannel.videoTogetherHeader.ontouchstart = filter;
+            window.videoTogetherFlyPannel.videoTogetherHeader.onpointerdown = filter;
         }
     }
 

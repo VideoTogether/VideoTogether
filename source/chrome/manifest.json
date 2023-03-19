@@ -1,7 +1,7 @@
 {
     "name": "VideoTogether",
     "description": "Watch video together",
-    "version": "1.3.85",
+    "version": "1.4.0",
     "manifest_version": 3,
     "content_scripts": [
         {
@@ -22,6 +22,17 @@
             ],
             "run_at": "document_start",
             "all_frames": true
+        },
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "preInjected.js"
+            ],
+            "run_at": "document_start",
+            "all_frames": true,
+            "world": "MAIN"
         }
     ],
     "web_accessible_resources": [
