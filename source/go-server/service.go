@@ -122,7 +122,7 @@ func (s *VideoTogetherService) QueryRoom(name string) *Room {
 		pRoom.BeginLoaddingTimestamp = 0
 	}
 
-	pRoom.WaitForLoadding = false
+	// pRoom.WaitForLoadding = false
 	return pRoom
 }
 
