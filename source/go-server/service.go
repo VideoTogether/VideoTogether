@@ -159,7 +159,11 @@ func (s *VideoTogetherService) Statistics() Statistics {
 			s.rooms.Delete(key)
 		} else {
 			stat.RoomCount++
-			stat.MemberCountList[room.MemberCount]++
+			idx := room.MemberCount
+			if idx >= len(stat.MemberCountList) {
+				idx = len(stat.MemberCountList) - 1
+			}
+			stat.MemberCountList[idx]++
 			if room.BeginLoaddingTimestamp != 0 {
 				stat.LoaddingTimeList = append(stat.LoaddingTimeList, s.Timestamp()-room.BeginLoaddingTimestamp)
 				stat.LoaddingRooms = append(stat.LoaddingRooms, *room)
