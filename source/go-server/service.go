@@ -145,18 +145,21 @@ type Statistics struct {
 	RoomCount        int       `json:"roomCount"`
 	LoaddingTimeList []float64 `json:"loaddingTimeList"`
 	LoaddingRooms    []Room    `json:"loaddingRooms"`
+	MemberCountList  []int64   `json:"memberCountList"`
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
 	var stat Statistics
 	stat.LoaddingTimeList = make([]float64, 0)
 	stat.LoaddingRooms = make([]Room, 0)
+	stat.MemberCountList = make([]int64, 10)
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {
 			s.rooms.Delete(key)
 		} else {
 			stat.RoomCount++
+			stat.MemberCountList[room.MemberCount]++
 			if room.BeginLoaddingTimestamp != 0 {
 				stat.LoaddingTimeList = append(stat.LoaddingTimeList, s.Timestamp()-room.BeginLoaddingTimestamp)
 				stat.LoaddingRooms = append(stat.LoaddingRooms, *room)
