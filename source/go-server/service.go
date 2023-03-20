@@ -36,7 +36,6 @@ func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService
 	return &VideoTogetherService{
 		sponsors:       sponsorMap,
 		rooms:          sync.Map{},
-		users:          sync.Map{},
 		roomExpireTime: roomExpireTime,
 	}
 }
@@ -44,8 +43,11 @@ func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService
 type VideoTogetherService struct {
 	sponsors       map[string]Sponsor
 	rooms          sync.Map
-	users          sync.Map
 	roomExpireTime time.Duration
+}
+
+func Timestamp() float64 {
+	return float64(time.Now().UnixMilli()) / 1000
 }
 
 func (s *VideoTogetherService) Timestamp() float64 {
@@ -62,42 +64,43 @@ func (s *VideoTogetherService) GetRoomBackgroundUrl(room string) string {
 	return ""
 }
 
-func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(ctx *VtContext, roomName, roomPassword string, userId string) (*Room, *User, error) {
-	user := s.QueryUser(userId)
-	isNewUser := false
-	if user == nil {
-		isNewUser = true
-		user = s.NewUser(userId)
-	}
+func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(ctx *VtContext, roomName, roomPassword string, userId string) (*Room, error) {
 
 	room := s.QueryRoom(roomName)
 	if room == nil {
-		room = s.CreateRoom(roomName, roomPassword, user)
+		room = s.CreateRoom(roomName, roomPassword, userId)
+	}
+
+	isNewUser := !room.QueryUser(userId)
+	if isNewUser {
+		room.NewUser(userId)
 	}
 
 	if room.password != roomPassword {
-		return nil, nil, errors.New(GetErrorMessage(ctx.Language).WrongPassword)
+		return nil, errors.New(GetErrorMessage(ctx.Language).WrongPassword)
 	}
 
-	if !room.IsHost(user) {
+	if !room.IsHost(userId) {
 		if isNewUser {
-			room.SetHost(user)
+			room.setHost(userId)
 		} else {
-			return nil, nil, errors.New(GetErrorMessage(ctx.Language).OtherHostSyncing)
+			return nil, errors.New(GetErrorMessage(ctx.Language).OtherHostSyncing)
 		}
 	}
 
-	return room, user, nil
+	return room, nil
 }
 
-func (s *VideoTogetherService) CreateRoom(name, password string, host *User) *Room {
+func (s *VideoTogetherService) CreateRoom(name, password string, hostId string) *Room {
 	room := &Room{}
 	room.Name = name
 	room.password = password
 	room.LastUpdateClientTime = s.Timestamp()
-	room.hostId = host.UserId
+	room.hostId = hostId
 	room.BackgroundUrl = s.GetRoomBackgroundUrl(name)
 	room.Uuid = uuid.New().String()
+	room.members = sync.Map{}
+	room.userIds = sync.Map{}
 	s.rooms.Store(name, room)
 	return room
 }
@@ -108,7 +111,9 @@ func (s *VideoTogetherService) QueryRoom(name string) *Room {
 		return nil
 	}
 	pRoom := room.(*Room)
-	pRoom.WaitForLoadding = pRoom.LastLoaddingTimestamp+4 > s.Timestamp()
+
+	pRoom.UpdateMemberData()
+
 	if pRoom.WaitForLoadding {
 		if pRoom.BeginLoaddingTimestamp == 0 {
 			pRoom.BeginLoaddingTimestamp = s.Timestamp()
@@ -116,26 +121,24 @@ func (s *VideoTogetherService) QueryRoom(name string) *Room {
 	} else {
 		pRoom.BeginLoaddingTimestamp = 0
 	}
+
 	pRoom.WaitForLoadding = false
 	return pRoom
 }
 
-func (s *VideoTogetherService) QueryUser(userId string) *User {
-	u, _ := s.users.Load(userId)
-	if u == nil {
-		return nil
-	}
-	u.(*User).LastSeen = s.Timestamp()
-	return u.(*User)
+func (r *Room) QueryUser(userId string) bool {
+	_, ok := r.userIds.Load(userId)
+	return ok
 }
 
-func (s *VideoTogetherService) NewUser(userId string) *User {
-	u := &User{
-		UserId:   userId,
-		LastSeen: s.Timestamp(),
-	}
-	s.users.Store(userId, u)
-	return u
+func (r *Room) NewUser(userId string) {
+	r.userIds.Store(userId, true)
+}
+
+func (r *Room) UpdateMember(m Member) {
+	m.lastUpdateTimestamp = Timestamp()
+	m.room = r
+	r.members.Store(m.UserId, &m)
 }
 
 type Statistics struct {
@@ -182,30 +185,60 @@ type Room struct {
 	Protected            bool    `json:"protected"`
 	VideoTitle           string  `json:"videoTitle"`
 	BackgroundUrl        string  `json:"backgroundUrl"`
-	Uuid                 string  `json:"uuid"`
+
+	// id for room not host
+	Uuid string `json:"uuid"`
+
 	// last timestamp that member reported his video is loadding
 	// this is a server timestamp, don't check this in client
-	LastLoaddingTimestamp  float64 `json:"lastLoaddingTimestamp"`
 	WaitForLoadding        bool    `json:"waitForLoadding"`
 	BeginLoaddingTimestamp float64 `json:"beginLoaddingTimestamp"`
+	MemberCount            int     `json:"memberCount"`
 
+	userIds  sync.Map
+	members  sync.Map
 	hostId   string
 	password string
+}
+
+type Member struct {
+	UserId              string `json:"userId"`
+	IsLoadding          bool   `json:"isLoadding"`
+	CurrentUrl          string `json:"currentUrl"`
+	lastUpdateTimestamp float64
+
+	room *Room
+}
+
+func (m *Member) IsJoined() bool {
+	return m.lastUpdateTimestamp+10 > Timestamp() && m.CurrentUrl == m.room.Url
+}
+
+func (r *Room) UpdateMemberData() {
+	count := 0
+	waitForLoadding := false
+	r.members.Range(func(key, value any) bool {
+		member := value.(*Member)
+		if member != nil && member.IsJoined() {
+			count++
+			waitForLoadding = waitForLoadding || member.IsLoadding
+		}
+		return true
+	})
+	r.MemberCount = count
+	r.WaitForLoadding = waitForLoadding
 }
 
 func (r *Room) HasAccess(password string) bool {
 	return !r.Protected || r.password == password
 }
 
-func (r *Room) IsHost(u *User) bool {
-	if u == nil {
-		return false
-	}
-	return r.hostId == u.UserId
+func (r *Room) IsHost(userId string) bool {
+	return r.hostId == userId
 }
 
-func (r *Room) SetHost(u *User) {
-	r.hostId = u.UserId
+func (r *Room) setHost(userId string) {
+	r.hostId = userId
 }
 
 type User struct {

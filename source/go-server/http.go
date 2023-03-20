@@ -80,6 +80,12 @@ type RoomResponse struct {
 	*TimestampResponse
 }
 
+type TimestampV2Response struct {
+	SendLocalTimestamp     float64 `json:"sendLocalTimestamp"`
+	ReceiveServerTimestamp float64 `json:"receiveServerTimestamp"`
+	SendServerTimestamp    float64 `json:"sendServerTimestamp"`
+}
+
 func (h *slashFix) newRoomResponse(room *Room) *RoomResponse {
 	resp := &RoomResponse{
 		TimestampResponse: &TimestampResponse{Timestamp: h.vtSrv.Timestamp()},
@@ -94,7 +100,7 @@ func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) 
 	password := GetMD5Hash(req.URL.Query().Get("password"))
 	language := req.URL.Query().Get("language")
 
-	room, _, err := h.vtSrv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{Language: language}, name, password, userId)
+	room, err := h.vtSrv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{Language: language}, name, password, userId)
 	if err != nil {
 		h.respondError(res, err.Error())
 		return

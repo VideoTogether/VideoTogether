@@ -114,7 +114,7 @@ func (h *Hub) run() {
 				roomClients.clients.Range(func(key, value any) bool {
 					client := key.(*Client)
 					if client.isHost {
-						if !room.IsHost(h.vtSrv.QueryUser(client.lastTempUserId)) {
+						if !room.IsHost(client.lastTempUserId) {
 							return true
 						}
 					}
@@ -197,15 +197,18 @@ type JoinRoomRequest struct {
 	RoomPassword string `json:"password"`
 }
 
-type RoomMemberLoaddingRequest struct {
-	RoomName     string `json:"name"`
-	RoomPassword string `json:"password"`
+type UpdateMemberRequest struct {
+	*Member
+	RoomName           string  `json:"roomName"`
+	RoomPassword       string  `json:"password"`
+	SendLocalTimestamp float64 `json:"sendLocalTimestamp"`
 }
 
 type UpdateRoomRequest struct {
 	*Room
-	TempUser string `json:"tempUser"`
-	Password string `json:"password"`
+	TempUser           string  `json:"tempUser"`
+	Password           string  `json:"password"`
+	SendLocalTimestamp float64 `json:"sendLocalTimestamp"`
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -243,10 +246,8 @@ func (c *Client) readPump() {
 		case "/room/update":
 			// this api can only be called by host, don't call this api from member
 			c.updateRoom(&req)
-		// TODO if more member status needs to be synced in future,
-		// make a general api to replace this
-		case "/room/member_loadding":
-			c.waitMemberLoadding(&req)
+		case "/room/update_member":
+			c.updateMember(&req)
 		default:
 			c.reply(req.Method, nil, errors.New("unknown method"))
 		}
@@ -281,8 +282,9 @@ func (c *Client) joinRoom(rawReq *WsRequestMessage) {
 	}, nil)
 }
 
-func (c *Client) waitMemberLoadding(rawReq *WsRequestMessage) {
-	var req RoomMemberLoaddingRequest
+func (c *Client) updateMember(rawReq *WsRequestMessage) {
+	var startTime = Timestamp()
+	var req UpdateMemberRequest
 	if err := json.Unmarshal(rawReq.Data, &req); err != nil {
 		c.reply(rawReq.Method, nil, errors.New("invalid data"))
 		return
@@ -297,11 +299,14 @@ func (c *Client) waitMemberLoadding(rawReq *WsRequestMessage) {
 		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).WrongPassword))
 		return
 	}
-	room.LastLoaddingTimestamp = c.hub.vtSrv.Timestamp()
-	room.WaitForLoadding = true
+	room.UpdateMember(*req.Member)
+	var endTime = Timestamp()
+
+	c.replyTimestamp(req.SendLocalTimestamp, startTime, endTime)
 }
 
 func (c *Client) updateRoom(rawReq *WsRequestMessage) {
+	var startTime = Timestamp()
 	var req UpdateRoomRequest
 	if err := json.Unmarshal(rawReq.Data, &req); err != nil {
 		c.reply(rawReq.Method, nil, errors.New("invalid data"))
@@ -310,7 +315,7 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	roomPw := GetMD5Hash(req.Password)
 	c.roomName = req.Room.Name
 
-	room, _, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(c.ctx, req.Name, roomPw, req.TempUser)
+	room, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(c.ctx, req.Name, roomPw, req.TempUser)
 	if err != nil {
 		c.reply(rawReq.Method, nil, err)
 		return
@@ -343,11 +348,21 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 			},
 		},
 	}
+	var endTime = Timestamp()
+	c.replyTimestamp(req.SendLocalTimestamp, startTime, endTime)
 }
 
 type WsErrorResponse struct {
 	Method       string `json:"method"`
 	ErrorMessage string `json:"errorMessage"`
+}
+
+func (c *Client) replyTimestamp(sl float64, rs float64, ss float64) {
+	c.reply("replay_timestamp", TimestampV2Response{
+		SendLocalTimestamp:     sl,
+		ReceiveServerTimestamp: rs,
+		SendServerTimestamp:    ss,
+	}, nil)
 }
 
 func (c *Client) reply(method string, data interface{}, err error) {

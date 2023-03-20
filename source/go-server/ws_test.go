@@ -141,9 +141,11 @@ var _ = Describe("WebSocket", func() {
 				Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
 				_, bodyBytes, err := wsConn.ReadMessage()
+				_, bodyBytes, err = wsConn.ReadMessage()
 				Expect(err).ToNot(HaveOccurred())
 
 				res := gjson.ParseBytes(bodyBytes)
+
 				Expect(res.Get("method").String()).To(Equal("/room/update"))
 				roomData := res.Get("data")
 
@@ -189,7 +191,7 @@ var _ = Describe("WebSocket", func() {
 
 		Context("When room is not protected and password is incorrect", func() {
 			BeforeEach(func() {
-				user := vtSrv.NewUser("alice")
+				user := "alice"
 				room := vtSrv.CreateRoom("my room name", GetMD5Hash("my room password"), user)
 				Expect(user).ToNot(BeNil())
 				Expect(room).ToNot(BeNil())
@@ -221,7 +223,7 @@ var _ = Describe("WebSocket", func() {
 
 		Context("When room is protected and password is incorrect", func() {
 			BeforeEach(func() {
-				user := vtSrv.NewUser("user-001")
+				user := "user-001"
 				room := vtSrv.CreateRoom("my room name", GetMD5Hash("roomPassword"), user)
 				room.Protected = true
 				Expect(user).ToNot(BeNil())
@@ -272,6 +274,7 @@ var _ = Describe("WebSocket", func() {
 				Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
 				_, bodyBytes, err := wsConn.ReadMessage()
+				_, bodyBytes, err = wsConn.ReadMessage()
 				Expect(err).ToNot(HaveOccurred())
 
 				res := gjson.ParseBytes(bodyBytes)
@@ -354,6 +357,7 @@ var _ = Describe("WebSocket", func() {
 					Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(updateMsg))).Should(Succeed())
 					Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
+					_, bodyBytes, err = wsConn.ReadMessage()
 					_, bodyBytes, err = wsConn.ReadMessage()
 					Expect(err).ToNot(HaveOccurred())
 
@@ -482,6 +486,7 @@ var _ = Describe("WebSocket", func() {
 					Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
 					_, bodyBytes, err := wsConn.ReadMessage()
+					_, bodyBytes, err = wsConn.ReadMessage()
 					Expect(err).ToNot(HaveOccurred())
 
 					res := gjson.ParseBytes(bodyBytes)
@@ -525,6 +530,7 @@ var _ = Describe("WebSocket", func() {
 			Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
 			_, bodyBytes, err := wsConn.ReadMessage()
+			_, bodyBytes, err = wsConn.ReadMessage()
 			Expect(err).ToNot(HaveOccurred())
 
 			res := gjson.ParseBytes(bodyBytes)
@@ -586,6 +592,7 @@ var _ = Describe("WebSocket", func() {
 			Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
 			_, bodyBytes, err := wsConn.ReadMessage()
+			_, bodyBytes, err = wsConn.ReadMessage()
 			Expect(err).ToNot(HaveOccurred())
 
 			res := gjson.ParseBytes(bodyBytes)
@@ -613,6 +620,7 @@ var _ = Describe("WebSocket", func() {
 			Expect(wsConn.WriteMessage(websocket.TextMessage, []byte(msg))).Should(Succeed())
 			Expect(wsConn.SetReadDeadline(time.Now().Add(time.Second))).Should(Succeed())
 
+			_, bodyBytes, err = wsConn.ReadMessage()
 			_, bodyBytes, err = wsConn.ReadMessage()
 			Expect(err).ToNot(HaveOccurred())
 

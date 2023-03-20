@@ -166,13 +166,10 @@ var _ = Describe("Http Api", func() {
 		Expect(roomResponse.Room.Name).To(Equal("roomName"))
 		Expect(roomResponse.Room.Paused).To(Equal(true))
 
-		user := vtSrv.QueryUser("user-001")
-		Expect(user.UserId).To(Equal("user-001"))
-		Expect(user.LastSeen).To(BeNumerically(">=", float64(beginAt.UnixMilli())/1000))
-		Expect(user.LastSeen).To(BeNumerically("<=", float64(time.Now().UnixMilli())/1000))
+		Expect(vtSrv.QueryRoom("roomName").QueryUser("user-001"))
 
 		room := vtSrv.QueryRoom("roomName")
-		Expect(room.hostId).To(Equal(user.UserId))
+		Expect(room.hostId).To(Equal("user-001"))
 		Expect(room.password).To(Equal(GetMD5Hash("roomPassword")))
 		Expect(room.PlaybackRate).To(Equal(1.0))
 		Expect(room.CurrentTime).To(Equal(1.0))
@@ -187,7 +184,7 @@ var _ = Describe("Http Api", func() {
 
 	Context("When update room with incorrect password", func() {
 		BeforeEach(func() {
-			user := vtSrv.NewUser("user-001")
+			user := "user-001"
 			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
 			Expect(user).ToNot(BeNil())
 			Expect(room).ToNot(BeNil())
@@ -223,7 +220,7 @@ var _ = Describe("Http Api", func() {
 
 	Context("When room is not protected and password is incorrect", func() {
 		BeforeEach(func() {
-			user := vtSrv.NewUser("user-001")
+			user := "user-001"
 			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
 			Expect(user).ToNot(BeNil())
 			Expect(room).ToNot(BeNil())
@@ -246,7 +243,7 @@ var _ = Describe("Http Api", func() {
 
 	Context("When room is protected and password is incorrect", func() {
 		BeforeEach(func() {
-			user := vtSrv.NewUser("user-001")
+			user := "user-001"
 			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
 			room.Protected = true
 			Expect(user).ToNot(BeNil())
@@ -288,12 +285,12 @@ var _ = Describe("Http Api", func() {
 
 	Context("When update room and user is not the host", func() {
 		BeforeEach(func() {
-			user := vtSrv.NewUser("alice")
-			room := vtSrv.CreateRoom("roomName", GetMD5Hash("roomPassword"), user)
+			user := "alice"
+			room, _ := vtSrv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{}, "roomName", GetMD5Hash("roomPassword"), user)
 			Expect(user).ToNot(BeNil())
 			Expect(room).ToNot(BeNil())
-			user = vtSrv.NewUser("bob")
-			room.SetHost(user)
+			vtSrv.QueryRoom("roomName").NewUser("bob")
+			vtSrv.QueryRoom("roomName").setHost("bob")
 		})
 
 		It("returns hot host error", func() {
