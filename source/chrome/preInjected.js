@@ -28,7 +28,7 @@
                 // Android Chrome hls player is shit!
                 return "";
             }
-            return HTMLVideoElement.prototype._vt_preCanPlayType(type);
+            return this._vt_preCanPlayType(type);
         };
     }
 

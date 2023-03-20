@@ -153,6 +153,7 @@
                 "duration": duration,
                 "protected": isRoomProtected(),
                 "videoTitle": extension.isMain ? document.title : extension.videoTitle,
+                "sendLocalTimestamp": Date.now() / 1000
             }
         }
     }
@@ -167,12 +168,16 @@
         }
     }
 
-    function WSMemberLoaddingRequest(name, password) {
+    function WsUpdateMemberRequest(name, password, isLoadding, currentUrl) {
         return {
-            "method": "/room/member_loadding",
+            "method": "/room/update_member",
             "data": {
                 "password": password,
-                "name": name,
+                "roomName": name,
+                "sendLocalTimestamp": Date.now() / 1000,
+                "userId": extension.tempUser,
+                "isLoadding": isLoadding,
+                "currentUrl": currentUrl
             }
         }
     }
@@ -215,8 +220,6 @@
     }
 
     const WS = {
-        // TODO delete this !!!!
-        // _socket: new WebSocket('ws://192.168.1.137:5001/ws'),
         _socket: null,
         _lastConnectTime: 0,
         _connectTimeout: 10,
@@ -241,8 +244,13 @@
             try {
                 this.disconnect()
                 this._socket = new WebSocket(`wss://vt.panghair.com:5000/ws?language=${language}`);
-                this._socket.onmessage = e => {
-                    this.onmessage(e.data);
+                this._socket.onmessage = async e => {
+                    let lines = e.data.split('\n');
+                    for (let i = 0; i < lines.length; i++) {
+                        try {
+                            await this.onmessage(lines[i]);
+                        } catch (err) { console.log(err, lines[i]) }
+                    }
                 }
             } catch { }
         },
@@ -265,6 +273,9 @@
                     extension.ScheduledTask();
                 }
             }
+            if (data['method'] == 'replay_timestamp') {
+                sendMessageToTop(MessageType.TimestampV2Resp, { ts: Date.now() / 1000, data: data['data'] })
+            }
         },
         getRoom() {
             if (this._lastUpdateTime + this._expriedTime > Date.now() / 1000) {
@@ -281,7 +292,10 @@
         },
         async updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
             // TODO localtimestamp
-            this.send(WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp))
+            this.send(WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp));
+        },
+        async updateMember(name, password, isLoadding, currentUrl) {
+            this.send(WsUpdateMemberRequest(name, password, isLoadding, currentUrl));
         },
         _joinedName: null,
         async joinRoom(name, password) {
@@ -289,9 +303,6 @@
                 return;
             }
             this.send(WSJoinRoomRequest(name, password));
-        },
-        async memberLoadding(name, password) {
-            this.send(WSMemberLoaddingRequest(name, password));
         },
         async disconnect() {
             if (this._socket != null) {
@@ -1065,7 +1076,8 @@
         CallScheduledTask: 21,
 
         RoomDateNotification: 22,
-        UpdateMemberStatus: 23
+        UpdateMemberStatus: 23,
+        TimestampV2Resp: 24,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1119,6 +1131,7 @@
             this.playAfterLoadding = false;
             this.minTrip = 1e9;
             this.timeOffset = 0;
+            this.lastScheduledTaskTs = 0;
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
@@ -1138,7 +1151,7 @@
             try {
                 this.CreateVideoDomObserver();
             } catch { }
-            this.timer = setInterval(this.ScheduledTask.bind(this), 2 * 1000);
+            this.timer = setInterval(() => this.ScheduledTask(true), 2 * 1000);
             this.videoMap = new Map();
             window.addEventListener('message', message => {
                 if (message.data.context) {
@@ -1501,6 +1514,7 @@
                         video.volume = data.volume;
                     });
                     this.sendMessageToSonWithContext(type, data);
+                    break;
                 case MessageType.FetchResponse: {
                     try {
                         this.callbackMap.get(data.id)(data);
@@ -1550,9 +1564,16 @@
                     break;
                 }
                 case MessageType.UpdateMemberStatus: {
-                    if (data.isLoadding) {
-                        WS.memberLoadding(this.roomName, this.password);
-                    }
+                    WS.updateMember(this.roomName, this.password, data.isLoadding, this.url);
+                    break;
+                }
+                case MessageType.TimestampV2Resp: {
+                    let l1 = data['data']['sendLocalTimestamp'];
+                    let s1 = data['data']['receiveServerTimestamp'];
+                    let s2 = data['data']['sendServerTimestamp'];
+                    let l2 = data['ts']
+                    this.UpdateTimestampIfneeded(s1, l1, l2 - s2 + s1);
+                    break;
                 }
                 default:
                     // console.info("unhandled message:", type, data)
@@ -1748,7 +1769,11 @@
             this.SaveStateToSessionStorageWhenSameOrigin("");
         }
 
-        async ScheduledTask() {
+        async ScheduledTask(scheduled = false) {
+            if (scheduled && this.lastScheduledTaskTs + 2 > Date.now() / 1000) {
+                return;
+            }
+            this.lastScheduledTaskTs = Date.now()/1000;
             try {
                 if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
                     alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
@@ -2117,9 +2142,6 @@
                 try {
                     if (document.hasFocus() && Math.abs(room["duration"] - videoDom.duration) < 0.5) {
                         isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
-                        // if (isLoadding) {
-                        //     console.log(isLoadding, videoDom.readyState, videoDom);
-                        // }
                     }
                 } catch {
                 };
