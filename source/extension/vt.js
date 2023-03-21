@@ -2182,6 +2182,12 @@
             } catch (e) { this.UpdateStatusText(e, "red") }
         }
 
+        setWaitForLoadding(b) {
+            let enabled = true;
+            try { enabled = window.VideoTogetherStorage.WaitForLoadding } catch { }
+            this.waitForLoadding = enabled && b;
+        }
+
         async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
             try {
                 if (window.location.pathname == "/page") {
@@ -2192,7 +2198,7 @@
             WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp);
             let WSRoom = WS.getRoom();
             if (WSRoom != null) {
-                this.waitForLoadding = WSRoom['waitForLoadding'];
+                this.setWaitForLoadding(WSRoom['waitForLoadding']);
                 sendMessageToTop(MessageType.RoomDataNotification, WSRoom);
                 return WSRoom;
             }
