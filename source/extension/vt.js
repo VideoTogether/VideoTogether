@@ -2184,7 +2184,7 @@
 
         setWaitForLoadding(b) {
             let enabled = true;
-            try { enabled = window.VideoTogetherStorage.WaitForLoadding } catch { }
+            try { enabled = (window.VideoTogetherStorage.WaitForLoadding != false) } catch { }
             this.waitForLoadding = enabled && b;
         }
 

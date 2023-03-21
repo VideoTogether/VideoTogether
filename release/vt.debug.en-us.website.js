@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679408746
+// @version      1679409353
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1839,7 +1839,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1679408746';
+            this.version = '1679409353';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2884,7 +2884,7 @@
 
         setWaitForLoadding(b) {
             let enabled = true;
-            try { enabled = window.VideoTogetherStorage.WaitForLoadding } catch { }
+            try { enabled = (window.VideoTogetherStorage.WaitForLoadding != false) } catch { }
             this.waitForLoadding = enabled && b;
         }
 
