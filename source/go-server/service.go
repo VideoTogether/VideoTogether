@@ -232,6 +232,9 @@ func (r *Room) UpdateMemberData() {
 		}
 		return true
 	})
+	if r.LastUpdateServerTime+10 > Timestamp() {
+		count++
+	}
 	r.MemberCount = count
 	r.WaitForLoadding = waitForLoadding
 }

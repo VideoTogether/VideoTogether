@@ -80,6 +80,10 @@
         }
     }
 
+    function changeMemberCount(c) {
+        select('#memberCount').innerHTML = String.fromCodePoint("0x1f465") + " " + c
+    }
+
     function dsply(e, _show = true) {
         _show ? show(e) : hide(e);
     }
@@ -1075,7 +1079,7 @@
         UpdateRoomRequest: 20,
         CallScheduledTask: 21,
 
-        RoomDateNotification: 22,
+        RoomDataNotification: 22,
         UpdateMemberStatus: 23,
         TimestampV2Resp: 24,
     }
@@ -1556,11 +1560,12 @@
                     this.SetTabStorageSuccessCallback();
                     break;
                 }
-                case MessageType.RoomDateNotification: {
+                case MessageType.RoomDataNotification: {
                     if (data['uuid'] != "") {
                         roomUuid = data['uuid'];
                     }
                     changeBackground(data['backgroundUrl']);
+                    changeMemberCount(data['memberCount'])
                     break;
                 }
                 case MessageType.UpdateMemberStatus: {
@@ -1862,7 +1867,7 @@
                     }
                     case this.RoleEnum.Member: {
                         let room = await this.GetRoom(this.roomName, this.password);
-                        sendMessageToTop(MessageType.RoomDateNotification, room);
+                        sendMessageToTop(MessageType.RoomDataNotification, room);
                         this.duration = room["duration"];
                         if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
@@ -2188,7 +2193,7 @@
             let WSRoom = WS.getRoom();
             if (WSRoom != null) {
                 this.waitForLoadding = WSRoom['waitForLoadding'];
-                sendMessageToTop(MessageType.RoomDateNotification, WSRoom);
+                sendMessageToTop(MessageType.RoomDataNotification, WSRoom);
                 return WSRoom;
             }
             let apiUrl = new URL(this.video_together_host + "/room/update");
@@ -2207,7 +2212,7 @@
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
-            sendMessageToTop(MessageType.RoomDateNotification, data);
+            sendMessageToTop(MessageType.RoomDataNotification, data);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }

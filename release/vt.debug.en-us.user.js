@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679312469
+// @version      1679399636
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -78,6 +78,10 @@
                 e.style.backgroundImage = `url("${url}")`
             }
         }
+    }
+
+    function changeMemberCount(c) {
+        select('#memberCount').innerHTML = String.fromCodePoint("0x1f465") + " " + c
     }
 
     function dsply(e, _show = true) {
@@ -889,7 +893,10 @@
 
     <div class="vt-modal-body">
       <div id="mainPannel" class="content">
-        <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
+        <div style="height: 22.5px;">
+          <span id="videoTogetherRoleText"></span>
+          <span id="memberCount"></span>
+        </div>
         <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
         <div style="margin-bottom: 10px;">
           <span id="videoTogetherRoomNameLabel">Room</span>
@@ -1771,7 +1778,7 @@
         UpdateRoomRequest: 20,
         CallScheduledTask: 21,
 
-        RoomDateNotification: 22,
+        RoomDataNotification: 22,
         UpdateMemberStatus: 23,
         TimestampV2Resp: 24,
     }
@@ -1831,7 +1838,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1679312469';
+            this.version = '1679399636';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2252,11 +2259,12 @@
                     this.SetTabStorageSuccessCallback();
                     break;
                 }
-                case MessageType.RoomDateNotification: {
+                case MessageType.RoomDataNotification: {
                     if (data['uuid'] != "") {
                         roomUuid = data['uuid'];
                     }
                     changeBackground(data['backgroundUrl']);
+                    changeMemberCount(data['memberCount'])
                     break;
                 }
                 case MessageType.UpdateMemberStatus: {
@@ -2558,7 +2566,7 @@
                     }
                     case this.RoleEnum.Member: {
                         let room = await this.GetRoom(this.roomName, this.password);
-                        sendMessageToTop(MessageType.RoomDateNotification, room);
+                        sendMessageToTop(MessageType.RoomDataNotification, room);
                         this.duration = room["duration"];
                         if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
@@ -2884,7 +2892,7 @@
             let WSRoom = WS.getRoom();
             if (WSRoom != null) {
                 this.waitForLoadding = WSRoom['waitForLoadding'];
-                sendMessageToTop(MessageType.RoomDateNotification, WSRoom);
+                sendMessageToTop(MessageType.RoomDataNotification, WSRoom);
                 return WSRoom;
             }
             let apiUrl = new URL(this.video_together_host + "/room/update");
@@ -2903,7 +2911,7 @@
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
-            sendMessageToTop(MessageType.RoomDateNotification, data);
+            sendMessageToTop(MessageType.RoomDataNotification, data);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
