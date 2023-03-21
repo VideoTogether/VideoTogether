@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679399636
+// @version      1679402408
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1060,6 +1060,7 @@
     border: solid 1px #e9e9e9 !important;
     box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
     border-radius: 10px;
+    line-height: 1.2;
   }
 
   #videoTogetherFlyPannel #videoTogetherHeader {
@@ -1838,7 +1839,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1679399636';
+            this.version = '1679402408';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
