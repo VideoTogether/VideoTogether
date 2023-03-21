@@ -24,9 +24,17 @@
         HTMLVideoElement.prototype._vt_preCanPlayType = originCanPlayType;
         HTMLVideoElement.prototype.canPlayType = function (type) {
             console.log('canPlayType_vt_pre', type);
-            if (type == 'application/x-mpegURL' || type == 'application/vnd.apple.mpegURL' || type == 'application/vnd.apple.mpegurl') {
-                // Android Chrome hls player is shit!
-                return "";
+            try {
+                let m3u8Type = ['application/x-mpegurl',
+                    'application/vnd.apple.mpegurl',
+                    'audio/mpegurl',
+                    'vnd.apple.mpegurl']
+                if (m3u8Type.indexOf(type.toLowerCase()) != -1) {
+                    // Android Chrome hls player is shit!
+                    console.log('cant play', type)
+                    return "";
+                }
+            } catch {
             }
             return this._vt_preCanPlayType(type);
         };
