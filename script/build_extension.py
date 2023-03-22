@@ -26,6 +26,24 @@ languages = {
     'en-us': './source/extension/localization/en-us.json',
 }
 
+timestamp_str = str(int(time()))
+
+
+def isChanged(path, content: str):
+    if not os.path.exists(path):
+        return True
+    fileContent = ""
+    with open(path, encoding="utf-8") as f:
+        fileContent = f.read()
+    if len(fileContent) != len(content):
+        return True
+    strList = content.split(timestamp_str)
+    idx = 0
+    for s in strList:
+        if fileContent[idx: idx+len(s)] != s:
+            return True
+        idx = idx+len(s)+len(timestamp_str)
+    return False
 
 def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
     global rootPath
@@ -51,14 +69,15 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
                 resultFilename = resultFilename + "."+subName["name"]
         resultPath = releasePath.joinpath(resultFilename+extension)
         print(resultPath)
-        content = content.replace('{{timestamp}}', str(int(time())))
-        WriteSource(resultPath, content)
+        content = content.replace('{{timestamp}}', timestamp_str)
+        if isChanged(resultPath, content):
+            WriteSource(resultPath, content)
         return
     start = content.index(r'{{{')
     end = content.index("}}}") + 3
     config = json.loads(content[start+3:end-3])
     for key in config:
-        if(key == "order"):
+        if (key == "order"):
             continue
         newSubNameList = deepcopy(subNameList)
         s = ReadSource(Path(sourceSubDir).joinpath(config[key]))
@@ -112,10 +131,10 @@ if __name__ == '__main__':
                     rootPath.joinpath("source/chrome/vt.en-us.user.js"))
     shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
                     rootPath.joinpath("source/chrome/vt.zh-cn.user.js"))
-    shutil.copyfile(rootPath.joinpath("release/vt.debug.en-us.user.js"),
-                    rootPath.joinpath("source/chrome/vt.debug.en-us.user.js"))
-    shutil.copyfile(rootPath.joinpath("release/vt.debug.zh-cn.user.js"),
-                    rootPath.joinpath("source/chrome/vt.debug.zh-cn.user.js"))
+    # shutil.copyfile(rootPath.joinpath("release/vt.debug.en-us.user.js"),
+    #                 rootPath.joinpath("source/chrome/vt.debug.en-us.user.js"))
+    # shutil.copyfile(rootPath.joinpath("release/vt.debug.zh-cn.user.js"),
+    #                 rootPath.joinpath("source/chrome/vt.debug.zh-cn.user.js"))
     shutil.copyfile(rootPath.joinpath("release/vt.en-us.user.js"),
                     rootPath.joinpath("source/firefox/vt.en-us.user.js"))
     shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
