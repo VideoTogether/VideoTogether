@@ -1781,7 +1781,7 @@
             if (scheduled && this.lastScheduledTaskTs + 2 > Date.now() / 1000) {
                 return;
             }
-            this.lastScheduledTaskTs = Date.now()/1000;
+            this.lastScheduledTaskTs = Date.now() / 1000;
             try {
                 if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
                     alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
@@ -1942,8 +1942,10 @@
                 }
             } catch { }
             try {
-                if (document.querySelector('.advertise-layer').querySelector('div')) {
-                    return true;
+                if (window.location.hostname.endsWith('youku.com')) {
+                    if (document.querySelector('.advertise-layer').querySelector('div')) {
+                        return true;
+                    }
                 }
             } catch { }
             return false;
