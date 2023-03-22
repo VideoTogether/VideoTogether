@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1666089671
+// @version      1679488190
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -10,9 +10,38 @@
 // ==/UserScript==
 
 (function () {
+    const language = 'en-us'
     const vtRuntime = `extension`;
 
-    const KRAKEN_API = 'https://rpc.kraken.fm';
+    let roomUuid = null;
+
+    const lastRunQueue = []
+    // request can only be called up to 10 times in 5 seconds
+    const periodSec = 5;
+    const timeLimitation = 15;
+    function isLimited() {
+        while (lastRunQueue.length > 0 && lastRunQueue[0] < Date.now() / 1000 - periodSec) {
+            lastRunQueue.shift();
+        }
+        if (lastRunQueue.length > timeLimitation) {
+            console.error("limited")
+            return true;
+        }
+        lastRunQueue.push(Date.now() / 1000);
+        return false;
+    }
+
+    function fixedEncodeURIComponent(str) {
+        return encodeURIComponent(str).replace(
+            /[!'()*]/g,
+            (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+        ).replace(/%20/g, '+');
+    }
+
+    function fixedDecodeURIComponent(str) {
+        return decodeURIComponent(str.replace(/\+/g, ' '));
+    }
+
     function isWeb(type) {
         return type == 'website' || type == 'website_debug';
     }
@@ -20,7 +49,7 @@
      * @returns {Element}
      */
     function select(query) {
-        e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
+        let e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
         return e;
     }
 
@@ -30,6 +59,29 @@
 
     function show(e) {
         if (e) e.style.display = null;
+    }
+
+    function isRoomProtected() {
+        try {
+            return window.VideoTogetherStorage == undefined || window.VideoTogetherStorage.PasswordProtectedRoom != false;
+        } catch {
+            return true;
+        }
+    }
+
+    function changeBackground(url) {
+        let e = select('.vt-modal-body');
+        if (e) {
+            if (url == null || url == "") {
+                e.style.backgroundImage = 'none';
+            } else if (e.style.backgroundImage != `url("${url}")`) {
+                e.style.backgroundImage = `url("${url}")`
+            }
+        }
+    }
+
+    function changeMemberCount(c) {
+        select('#memberCount').innerHTML = String.fromCodePoint("0x1f465") + " " + c
     }
 
     function dsply(e, _show = true) {
@@ -90,6 +142,183 @@
         });
     }
 
+    function WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
+        return {
+            "method": "/room/update",
+            "data": {
+                "tempUser": extension.tempUser,
+                "password": password,
+                "name": name,
+                "playbackRate": playbackRate,
+                "currentTime": currentTime,
+                "paused": paused,
+                "url": url,
+                "lastUpdateClientTime": localTimestamp,
+                "duration": duration,
+                "protected": isRoomProtected(),
+                "videoTitle": extension.isMain ? document.title : extension.videoTitle,
+                "sendLocalTimestamp": Date.now() / 1000
+            }
+        }
+    }
+
+    function WSJoinRoomRequest(name, password) {
+        return {
+            "method": "/room/join",
+            "data": {
+                "password": password,
+                "name": name,
+            }
+        }
+    }
+
+    function WsUpdateMemberRequest(name, password, isLoadding, currentUrl) {
+        return {
+            "method": "/room/update_member",
+            "data": {
+                "password": password,
+                "roomName": name,
+                "sendLocalTimestamp": Date.now() / 1000,
+                "userId": extension.tempUser,
+                "isLoadding": isLoadding,
+                "currentUrl": currentUrl
+            }
+        }
+    }
+
+    function popupError(msg) {
+        let x = select("#snackbar");
+        x.innerHTML = msg;
+        x.className = "show";
+        setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
+    }
+
+    async function waitForRoomUuid(timeout = 10000) {
+        return new Promise((res, rej) => {
+            let id = setInterval(() => {
+                if (roomUuid != null) {
+                    res(roomUuid);
+                }
+            }, 200)
+            setTimeout(() => {
+                clearInterval(id);
+                rej(null);
+            }, timeout);
+        });
+    }
+
+    class Room {
+        constructor() {
+            this.currentTime = null;
+            this.duration = null;
+            this.lastUpdateClientTime = null;
+            this.lastUpdateServerTime = null;
+            this.name = null;
+            this.paused = null;
+            this.playbackRate = null;
+            this.protected = null;
+            this.timestamp = null;
+            this.url = null;
+            this.videoTitle = null;
+        }
+    }
+
+    const WS = {
+        _socket: null,
+        _lastConnectTime: 0,
+        _connectTimeout: 10,
+        _expriedTime: 5,
+        _lastUpdateTime: 0,
+        _lastErrorMessage: null,
+        _lastRoom: new Room(),
+        async connect() {
+            if (this._socket != null) {
+                try {
+                    if (this._socket.readyState == 1) {
+                        return;
+                    }
+                    if (this._socket.readyState == 0
+                        && this._lastConnectTime + this._connectTimeout > Date.now() / 1000) {
+                        return;
+                    }
+                } catch { }
+            }
+            console.log('ws connect');
+            this._lastConnectTime = Date.now() / 1000
+            try {
+                this.disconnect()
+                this._socket = new WebSocket(`wss://vt.panghair.com:5000/ws?language=${language}`);
+                this._socket.onmessage = async e => {
+                    let lines = e.data.split('\n');
+                    for (let i = 0; i < lines.length; i++) {
+                        try {
+                            await this.onmessage(lines[i]);
+                        } catch (err) { console.log(err, lines[i]) }
+                    }
+                }
+            } catch { }
+        },
+        async onmessage(str) {
+            data = JSON.parse(str);
+            if (data['errorMessage'] != null) {
+                this._lastUpdateTime = Date.now() / 1000;
+                this._lastErrorMessage = data['errorMessage'];
+                this._lastRoom = null;
+                return;
+            }
+            this._lastErrorMessage = null;
+            if (data['method'] == "/room/join") {
+                this._joinedName = data['data']['name'];
+            }
+            if (data['method'] == "/room/join" || data['method'] == "/room/update") {
+                this._lastRoom = Object.assign(data['data'], Room);
+                this._lastUpdateTime = Date.now() / 1000;
+                if (!isLimited() && extension.role == extension.RoleEnum.Member) {
+                    extension.ScheduledTask();
+                }
+            }
+            if (data['method'] == 'replay_timestamp') {
+                sendMessageToTop(MessageType.TimestampV2Resp, { ts: Date.now() / 1000, data: data['data'] })
+            }
+        },
+        getRoom() {
+            if (this._lastUpdateTime + this._expriedTime > Date.now() / 1000) {
+                if (this._lastErrorMessage != null) {
+                    throw new Error(this._lastErrorMessage);
+                }
+                return this._lastRoom;
+            }
+        },
+        async send(data) {
+            try {
+                this._socket.send(JSON.stringify(data));
+            } catch { }
+        },
+        async updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
+            // TODO localtimestamp
+            this.send(WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp));
+        },
+        async updateMember(name, password, isLoadding, currentUrl) {
+            this.send(WsUpdateMemberRequest(name, password, isLoadding, currentUrl));
+        },
+        _joinedName: null,
+        async joinRoom(name, password) {
+            if (name == this._joinedName) {
+                return;
+            }
+            this.send(WSJoinRoomRequest(name, password));
+        },
+        async disconnect() {
+            if (this._socket != null) {
+                try {
+                    this._socket.close();
+                } catch { }
+            }
+            this._joinedName = null;
+            this._socket = null;
+        }
+    }
+
     const VoiceStatus = {
         STOP: 1,
         CONNECTTING: 5,
@@ -101,12 +330,20 @@
     const Voice = {
         _status: VoiceStatus.STOP,
         _errorMessage: "",
-        get errorMessage(){
+        _rname: "",
+        _mutting: false,
+        get errorMessage() {
             return this._errorMessage;
         },
         set errorMessage(m) {
             this._errorMessage = m;
             select("#snackbar").innerHTML = m;
+            let voiceConnErrBtn = select('#voiceConnErrBtn');
+            if (voiceConnErrBtn != undefined) {
+                voiceConnErrBtn.onclick = () => {
+                    alert('If you have installed uBlock and other adblock extensions, please disable those extensions and try again.')
+                }
+            }
         },
         set status(s) {
             this._status = s;
@@ -182,6 +419,8 @@
         },
 
         join: async function (name, rname, mutting = false) {
+            Voice._rname = rname;
+            Voice._mutting = mutting;
             let cancellingNoise = true;
             try {
                 cancellingNoise = !(window.VideoTogetherStorage.EchoCancellation === false);
@@ -191,8 +430,26 @@
             Voice.status = VoiceStatus.CONNECTTING;
             this.noiseCancellationEnabled = cancellingNoise;
             let uid = generateUUID();
-            const rnameRPC = encodeURIComponent("VideoTogether_" + rname);
-            const unameRPC = encodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
+            let notNullUuid;
+            try {
+                notNullUuid = await waitForRoomUuid();
+            } catch {
+                Voice.errorMessage = "uuid is missing";
+                Voice.status = VoiceStatus.ERROR;
+                return;
+            }
+            const rnameRPC = fixedEncodeURIComponent(notNullUuid + "_" + rname);
+            if (rnameRPC.length > 256) {
+                Voice.errorMessage = "Room name too long";
+                Voice.status = VoiceStatus.ERROR;
+                return;
+            }
+            if (window.location.protocol != "https:") {
+                Voice.errorMessage = "Only support https website";
+                Voice.status = VoiceStatus.ERROR;
+                return;
+            }
+            const unameRPC = fixedEncodeURIComponent(uid + ':' + Base64.encode(generateUUID()));
             let ucid = "";
             console.log(rnameRPC, uid);
             const configuration = {
@@ -203,9 +460,8 @@
 
             async function subscribe(pc) {
                 var res = await rpc('subscribe', [rnameRPC, unameRPC, ucid]);
-                if (res.error && typeof res.error === 'string' && res.error.indexOf(unameRPC + ' not found in')) {
-                    pc.close();
-                    await start();
+                if (res.error && typeof res.error === 'object' && typeof res.error.code === 'number' && [5002001, 5002002].indexOf(res.error.code) != -1) {
+                    Voice.join("", Voice._rname, Voice._mutting);
                     return;
                 }
                 if (res.data) {
@@ -230,7 +486,7 @@
             } catch (e) {
                 if (Voice.status == VoiceStatus.CONNECTTING) {
                     Voice.status = VoiceStatus.ERROR;
-                    Voice.errorMessage = "Connection error";
+                    Voice.errorMessage = "Connection error (<a id='voiceConnErrBtn' style='color:inherit' href='#''>Help</a>)";
                 }
             }
 
@@ -240,7 +496,7 @@
 
             async function start() {
 
-                let res = await rpc('turn', [unameRPC], 5);
+                let res = await rpc('turn', [unameRPC]);
                 if (res.data && res.data.length > 0) {
                     configuration.iceServers = res.data;
                     configuration.iceTransportPolicy = 'relay';
@@ -256,7 +512,7 @@
                     console.log("ontrack", event);
 
                     let stream = event.streams[0];
-                    let sid = decodeURIComponent(stream.id);
+                    let sid = fixedDecodeURIComponent(stream.id);
                     let id = sid.split(':')[0];
                     // var name = Base64.decode(sid.split(':')[1]);
                     console.log(id, uid);
@@ -306,18 +562,30 @@
                 await Voice.conn.setLocalDescription(await Voice.conn.createOffer());
                 res = await rpc('publish', [rnameRPC, unameRPC, JSON.stringify(Voice.conn.localDescription)]);
                 if (res.data) {
-                    var jsep = JSON.parse(res.data.jsep);
+                    let jsep = JSON.parse(res.data.jsep);
                     if (jsep.type == 'answer') {
                         await Voice.conn.setRemoteDescription(jsep);
                         ucid = res.data.track;
                         await subscribe(Voice.conn);
+                    }
+                } else {
+                    throw new Error('Unknown error');
+                }
+                Voice.conn.oniceconnectionstatechange = e => {
+                    if (Voice.conn.iceConnectionState == "disconnected" || Voice.conn.iceConnectionState == "failed" || Voice.conn.iceConnectionState == "closed") {
+                        Voice.errorMessage = "Connection lost";
+                        Voice.status = VoiceStatus.ERROR;
+                    } else {
+                        if (Voice.status == VoiceStatus.ERROR) {
+                            Voice.status = Voice._mutting ? VoiceStatus.MUTED : VoiceStatus.UNMUTED;
+                        }
                     }
                 }
             }
 
             async function rpc(method, params = [], retryTime = -1) {
                 try {
-                    const response = await window.videoTogetherExtension.Fetch(KRAKEN_API, "POST", { id: generateUUID(), method: method, params: params }, {
+                    const response = await window.videoTogetherExtension.Fetch(extension.video_together_host + "/kraken", "POST", { id: generateUUID(), method: method, params: params }, {
                         method: 'POST', // *GET, POST, PUT, DELETE, etc.
                         mode: 'cors', // no-cors, *cors, same-origin
                         cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
@@ -329,7 +597,7 @@
                         referrerPolicy: 'no-referrer', // no-referrer, *client
                         body: JSON.stringify({ id: generateUUID(), method: method, params: params }) // body data type must match "Content-Type" header
                     });
-                    return response.json(); // parses JSON response into native JavaScript objects
+                    return await response.json(); // parses JSON response into native JavaScript objects
                 } catch (err) {
                     if (Voice.status == VoiceStatus.STOP) {
                         return;
@@ -370,6 +638,7 @@
                     s.track.enabled = false;
                 }
             });
+            Voice._mutting = true;
             Voice.status = VoiceStatus.MUTED;
         },
         unmute: () => {
@@ -378,6 +647,7 @@
                     s.track.enabled = true;
                 }
             });
+            Voice._mutting = false;
             Voice.status = VoiceStatus.UNMUTED;
         },
         updateVoiceSetting: async (cancellingNoise = false) => {
@@ -562,6 +832,7 @@
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
+                this.minimized = false;
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
                 let wrapper;
@@ -582,6 +853,17 @@
       <div class="vt-modal-title">VideoTogether</div>
     </div>
 
+    <a href="https://afdian.net/a/videotogether" target="_blank" id="vtDonate" type="button"
+      class="vt-modal-donate vt-modal-title-button">
+      <span class="vt-modal-close-x">
+        <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+            <path fill="currentColor"
+              d="M12 4.435c-1.989-5.399-12-4.597-12 3.568 0 4.068 3.06 9.481 12 14.997 8.94-5.516 12-10.929 12-14.997 0-8.118-10-8.999-12-3.568z" />
+          </svg>
+        </span>
+      </span>
+    </a>
 
     <a href="https://setting.2gether.video/" target="_blank" id="videoTogetherSetting" type="button"
       aria-label="Setting" class="vt-modal-setting vt-modal-title-button">
@@ -611,7 +893,10 @@
 
     <div class="vt-modal-body">
       <div id="mainPannel" class="content">
-        <div id="videoTogetherRoleText" style="height: 22.5px;"></div>
+        <div style="height: 22.5px;">
+          <span id="videoTogetherRoleText"></span>
+          <span id="memberCount"></span>
+        </div>
         <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
         <div style="margin-bottom: 10px;">
           <span id="videoTogetherRoomNameLabel">Room</span>
@@ -625,7 +910,7 @@
 
       <div id="voicePannel" class="content" style="display: none;">
         <div id="videoVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
-          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Voide volume</span>
+          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Video volume</span>
           <div class="range-slider">
             <input id="videoVolume" class="slider" type="range" value="100" min="0" max="100">
           </div>
@@ -658,6 +943,7 @@
     <div id="snackbar"></div>
 
     <div class="vt-modal-footer">
+
       <div id="lobbyBtnGroup">
         <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
           <span>Create</span>
@@ -774,6 +1060,7 @@
     border: solid 1px #e9e9e9 !important;
     box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
     border-radius: 10px;
+    line-height: 1.2;
   }
 
   #videoTogetherFlyPannel #videoTogetherHeader {
@@ -808,6 +1095,12 @@
   }
 
   .vt-modal-setting {
+    position: absolute;
+    top: -1px;
+    right: 65px;
+  }
+
+  .vt-modal-donate {
     position: absolute;
     top: -1px;
     right: 40px;
@@ -880,13 +1173,15 @@
   }
 
   .vt-modal-body {
-    height: 100px;
+    height: 164px;
     display: flex;
     flex-direction: column;
     align-items: center;
     overflow-y: auto;
     font-size: 16px;
     color: black;
+    border-radius: 0 0 10px 10px;
+    background-size: cover;
   }
 
   .vt-modal-footer {
@@ -999,6 +1294,12 @@
     width: 76px;
   }
 
+  #videoTogetherRoomNameInput:disabled{
+    border: none ;
+    background-color: transparent;
+    color: black;
+  }
+
   #videoTogetherRoomNameInput,
   #videoTogetherRoomPasswordInput {
     width: 150px !important;
@@ -1008,8 +1309,8 @@
     display: inline-block;
     padding: 0 !important;
     color: #00000073;
-    background-color: #ffffff !important;
-    border: 1px solid #e9e9e9 !important;
+    background-color: #ffffff;
+    border: 1px solid #e9e9e9;
     margin: 0 !important;
   }
 
@@ -1214,9 +1515,9 @@
     color: #fff;
     text-align: center;
     padding: 16px 0px 16px 0px;
-    position: sticky;
+    position: relative;
     z-index: 999999;
-    bottom: 0px;
+    top: -56px;
   }
 
   #snackbar.show {
@@ -1248,6 +1549,18 @@
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
+                document.addEventListener("fullscreenchange", (event) => {
+                    if (document.fullscreenElement) {
+                        hide(this.videoTogetherFlyPannel);
+                        hide(this.videoTogetherSamllIcon);
+                    } else {
+                        if (this.minimized) {
+                            this.Minimize();
+                        } else {
+                            this.Maximize();
+                        }
+                    }
+                });
 
                 this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
                 this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
@@ -1315,6 +1628,7 @@
                 });
                 this.videoTogetherRoleText = wrapper.querySelector("#videoTogetherRoleText")
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
+                hide(this.videoTogetherSetting);
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPasswordInput");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
@@ -1344,6 +1658,7 @@
         }
 
         Minimize(isDefault = false) {
+            this.minimized = true;
             if (!isDefault) {
                 this.SaveIsMinimized(true);
             }
@@ -1353,6 +1668,7 @@
         }
 
         Maximize(isDefault = false) {
+            this.minimized = false;
             if (!isDefault) {
                 this.SaveIsMinimized(false);
             }
@@ -1372,32 +1688,6 @@
             } else if (VideoTogetherMinimizedHere == 1) {
                 this.Minimize(true);
             }
-            const data = this.GetSavedRoomInfo()
-            if (data) {
-                if (data.roomName) {
-                    this.inputRoomName.value = data.roomName;
-                }
-                if (data.password) {
-                    this.inputRoomPassword.value = data.roomName;
-                }
-            }
-        }
-
-        GetSavedRoomInfo() {
-            try {
-                const data = JSON.parse(sessionStorage.getItem(this.sessionKey) || '');
-                if (data && (data.roomName || data.password)) {
-                    return data;
-                }
-                return null;
-            } catch {
-                return null;
-            }
-        }
-
-        SaveRoomInfo(roomName, password) {
-            const data = JSON.stringify({ roomName, password });
-            sessionStorage.setItem(this.sessionKey, data);
         }
 
         InRoom() {
@@ -1429,7 +1719,6 @@
             this.Maximize();
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
-            this.SaveRoomInfo(roomName, password);
             window.videoTogetherExtension.CreateRoom(roomName, password);
         }
 
@@ -1437,7 +1726,6 @@
             this.Maximize();
             let roomName = this.inputRoomName.value;
             let password = this.inputRoomPassword.value;
-            this.SaveRoomInfo(roomName, password);
             window.videoTogetherExtension.JoinRoom(roomName, password);
         }
 
@@ -1477,12 +1765,6 @@
         ChangeVoiceVolume: 8,
         ChangeVideoVolume: 9,
 
-        // will be deprecated
-        LoadStorageData: 10,
-        SyncStorageData: 11,
-        SetStorageData: 12,
-        // --------------------
-
         FetchRequest: 13,
         FetchResponse: 14,
 
@@ -1493,6 +1775,13 @@
 
         SetTabStorage: 18,
         SetTabStorageSuccess: 19,
+
+        UpdateRoomRequest: 20,
+        CallScheduledTask: 21,
+
+        RoomDataNotification: 22,
+        UpdateMemberStatus: 23,
+        TimestampV2Resp: 24,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1542,18 +1831,20 @@
             this.role = this.RoleEnum.Null
             this.url = ""
             this.duration = undefined
-
+            this.waitForLoadding = false;
+            this.playAfterLoadding = false;
             this.minTrip = 1e9;
             this.timeOffset = 0;
+            this.lastScheduledTaskTs = 0;
+            this.httpSucc = false;
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1666089671';
+            this.version = '1679488190';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
             this.callbackMap = new Map;
-
             this.allLinksTargetModified = false;
             this.voiceVolume = 1;
             // we need a common callback function to deal with all message
@@ -1565,23 +1856,25 @@
             try {
                 this.CreateVideoDomObserver();
             } catch { }
-            this.timer = setInterval(this.ScheduledTask.bind(this), 2 * 1000);
+            this.timer = setInterval(() => this.ScheduledTask(true), 2 * 1000);
             this.videoMap = new Map();
             window.addEventListener('message', message => {
                 if (message.data.context) {
                     this.tempUser = message.data.context.tempUser;
                     this.videoTitle = message.data.context.videoTitle;
                     this.voiceStatus = message.data.context.voiceStatus;
+                    this.timeOffset = message.data.context.timeOffset;
                     // sub frame has 2 storage data source, top frame or extension.js in this frame
                     // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
                 this.processReceivedMessage(message.data.type, message.data.data);
             });
-            window.addEventListener('click', message => {
-                setTimeout(this.ScheduledTask.bind(this), 200);
-            })
-            this.RunWithRetry(this.SyncTimeWithServer.bind(this), 2);
+
+            // if some element's click be invoked frequenctly, a lot of http request will be sent
+            // window.addEventListener('click', message => {
+            //     setTimeout(this.ScheduledTask.bind(this), 200);
+            // })
 
             if (this.isMain) {
                 try {
@@ -1623,9 +1916,14 @@
 
 
         async Fetch(url, method = 'GET', data = null) {
+            if (!extension.isMain) {
+                console.error("fetch in child");
+                throw new Error("fetch in child");
+            }
             url = new URL(url);
             url.searchParams.set("version", this.version);
             try {
+                url.searchParams.set("language", language);
                 url.searchParams.set("voiceStatus", this.isMain ? Voice.status : this.voiceStatus);
                 url.searchParams.set("loaddingVersion", window.VideoTogetherStorage.LoaddingVersion);
                 url.searchParams.set("runtimeType", window.VideoTogetherStorage.UserscriptType);
@@ -1635,7 +1933,7 @@
             } catch (e) { }
             url = url.toString();
             let host = (new URL(url)).host;
-            if (this.cspBlockedHost[host]) {
+            if (this.cspBlockedHost[host] || url.startsWith('http:')) {
                 let id = generateUUID()
                 return await new Promise((resolve, reject) => {
                     this.callbackMap.set(id, (data) => {
@@ -1691,8 +1989,61 @@
 
         async ForEachVideo(func) {
             try {
+                if (window.location.hostname.endsWith("iqiyi.com")) {
+                    let video = document.querySelector('.iqp-player-videolayer-inner > video');
+                    if (video != null) {
+                        video.VideoTogetherChoosed = true;
+                        try { await func(video) } catch { };
+                    }
+                }
+                // disneyplus
+                if (window.location.hostname.endsWith("disneyplus.com")) {
+                    try {
+                        let ff = document.querySelector('.ff-10sec-icon');
+                        let rr = document.querySelector('.rwd-10sec-icon');
+                        let video = document.querySelector('video');
+                        if (ff && rr && video) {
+                            if (!video.videoTogetherVideoWrapper) {
+                                video.videoTogetherVideoWrapper = new VideoWrapper();
+                            }
+                            let videoWrapper = video.videoTogetherVideoWrapper;
+                            videoWrapper.play = async () => await video.play();
+                            videoWrapper.pause = async () => await video.pause();
+                            videoWrapper.paused = video.paused
+                            videoWrapper.currentTimeGetter = () => video.currentTime;
+                            videoWrapper.currentTimeSetter = (v) => {
+                                let isFf = v > video.currentTime;
+                                let d = Math.abs(v - video.currentTime);
+                                let clickTime = parseInt(d / 10);
+                                if (clickTime > 0) {
+                                    console.log(clickTime);
+                                }
+                                for (let i = 0; i < clickTime; i++) {
+                                    isFf ? ff.click() : rr.click();
+                                }
+                                setTimeout(() => {
+                                    isFf ? ff.click() : rr.click();
+                                    if (video.readyState != 4) {
+                                        console.log("loading");
+                                        ff.click();
+                                        rr.click();
+                                    }
+                                    setTimeout(() => {
+                                        if (video.readyState == 4) {
+                                            video.currentTime = v;
+                                        }
+                                    }, 100);
+                                }, 200);
+                            }
+                            videoWrapper.duration = video.duration;
+                            videoWrapper.playbackRateGetter = () => video.playbackRate;
+                            videoWrapper.playbackRateSetter = (v) => { video.playbackRate = v };
+                            await func(videoWrapper);
+                        }
+                    } catch (e) { }
+                }
                 // Netflix
-                if (window.location.host.includes("netflix")) {
+                if (window.location.hostname.endsWith("netflix.com")) {
                     try {
                         let videoPlayer = netflix.appContext.state.playerApp.getAPI().videoPlayer;
                         let player = videoPlayer.getVideoPlayerBySessionId(videoPlayer.getAllPlayerSessionIds()[0]);
@@ -1787,7 +2138,8 @@
                         tempUser: this.tempUser,
                         videoTitle: this.isMain ? document.title : this.videoTitle,
                         voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
-                        VideoTogetherStorage: window.VideoTogetherStorage
+                        VideoTogetherStorage: window.VideoTogetherStorage,
+                        timeOffset: this.timeOffset
                     }
                 });
                 // console.info("send ", type, iframs[i].contentWindow, data)
@@ -1802,10 +2154,13 @@
             }
         }
 
-        processReceivedMessage(type, data) {
+        async processReceivedMessage(type, data) {
             let _this = this;
             // console.info("get ", type, window.location, data);
             switch (type) {
+                case MessageType.CallScheduledTask:
+                    this.ScheduledTask();
+                    break;
                 case MessageType.ActivatedVideo:
                     if (this.activatedVideo == undefined || this.activatedVideo.activatedTime < data.activatedTime) {
                         this.activatedVideo = data;
@@ -1819,13 +2174,24 @@
                         if (video.VideoTogetherVideoId == data.video.id) {
                             try {
                                 await this.SyncMasterVideo(data, video);
-                                _this.UpdateStatusText("Sync " + _this.GetDisplayTimeText(), "green");
                             } catch (e) {
                                 this.UpdateStatusText(e, "red");
                             }
                         }
                     })
                     this.sendMessageToSonWithContext(type, data);
+                    break;
+                case MessageType.UpdateRoomRequest:
+                    try {
+                        await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp);
+                        if (this.waitForLoadding) {
+                            this.UpdateStatusText("wait for memeber loadding", "red");
+                        } else {
+                            _this.UpdateStatusText("Sync " + _this.GetDisplayTimeText(), "green");
+                        }
+                    } catch (e) {
+                        this.UpdateStatusText(e, "red");
+                    }
                     break;
                 case MessageType.SyncMemberVideo:
                     this.ForEachVideo(async video => {
@@ -1853,6 +2219,7 @@
                         video.volume = data.volume;
                     });
                     this.sendMessageToSonWithContext(type, data);
+                    break;
                 case MessageType.FetchResponse: {
                     try {
                         this.callbackMap.get(data.id)(data);
@@ -1884,6 +2251,7 @@
                     if (window.VideoTogetherSettingEnabled == undefined && !isWeb(window.VideoTogetherStorage.UserscriptType)) {
                         try {
                             window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
+                            show(select('#videoTogetherSetting'));
                         } catch (e) { }
                     }
                     window.VideoTogetherSettingEnabled = true;
@@ -1891,6 +2259,26 @@
                 }
                 case MessageType.SetTabStorageSuccess: {
                     this.SetTabStorageSuccessCallback();
+                    break;
+                }
+                case MessageType.RoomDataNotification: {
+                    if (data['uuid'] != "") {
+                        roomUuid = data['uuid'];
+                    }
+                    changeBackground(data['backgroundUrl']);
+                    changeMemberCount(data['memberCount'])
+                    break;
+                }
+                case MessageType.UpdateMemberStatus: {
+                    WS.updateMember(this.roomName, this.password, data.isLoadding, this.url);
+                    break;
+                }
+                case MessageType.TimestampV2Resp: {
+                    let l1 = data['data']['sendLocalTimestamp'];
+                    let s1 = data['data']['receiveServerTimestamp'];
+                    let s2 = data['data']['sendServerTimestamp'];
+                    let l2 = data['ts']
+                    this.UpdateTimestampIfneeded(s1, l1, l2 - s2 + s1);
                     break;
                 }
                 default:
@@ -1929,13 +2317,16 @@
             console.info("vide event: ", e.type);
             // maybe we need to check if the event is activated by user interaction
             this.setActivatedVideoDom(e.target);
+            if (!isLimited()) {
+                sendMessageToTop(MessageType.CallScheduledTask, {});
+            }
         }
 
         AddVideoListener(videoDom) {
             if (this.VideoClickedListener == undefined) {
                 this.VideoClickedListener = this.VideoClicked.bind(this)
             }
-            this.addListenerMulti(videoDom, "play pause", this.VideoClickedListener);
+            this.addListenerMulti(videoDom, "play pause seeked", this.VideoClickedListener);
         }
 
         CreateVideoDomObserver() {
@@ -1943,15 +2334,17 @@
             let observer = new WebKitMutationObserver(function (mutations) {
                 mutations.forEach(function (mutation) {
                     for (let i = 0; i < mutation.addedNodes.length; i++) {
-
                         if (mutation.addedNodes[i].tagName == "VIDEO" || mutation.addedNodes[i].tagName == "BWP-VIDEO") {
                             try {
                                 _this.AddVideoListener(mutation.addedNodes[i]);
                             } catch { }
                         }
-
                         try {
-                            if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+                            let videos = mutation.addedNodes[i].querySelectorAll("video");
+                            [...videos].forEach(v => _this.AddVideoListener(v));
+                        } catch { }
+                        try {
+                            if (extension.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
                                 if (mutation.addedNodes[i].tagName == "A") {
                                     mutation.addedNodes[i].target = "_self";
                                 }
@@ -1985,8 +2378,12 @@
             let response = await this.Fetch(url + "/timestamp");
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
+            if (!this.httpSucc) {
+                this.httpSucc = true
+                this.video_together_host = url;
+            }
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
-            this.video_together_host = url;
+            sendMessageToTop(MessageType.SetStorageValue, { key: "PublicVtVersion", value: data["vtVersion"] });
         }
 
         RecoveryState() {
@@ -2048,9 +2445,12 @@
         }
 
         async JoinRoom(name, password) {
+            if (name == "") {
+                popupError("Please input room name")
+                return;
+            }
             try {
                 this.tempUser = generateTempUserId();
-                let data = await this.RunWithRetry(async () => await this.GetRoom(name, password), 2);
                 this.roomName = name;
                 this.password = password;
                 this.setRole(this.RoleEnum.Member);
@@ -2061,6 +2461,8 @@
         }
 
         exitRoom() {
+            roomUuid = null;
+            WS.disconnect();
             Voice.stop();
             show(select('#mainPannel'));
             hide(select('#voicePannel'));
@@ -2075,7 +2477,11 @@
             this.SaveStateToSessionStorageWhenSameOrigin("");
         }
 
-        async ScheduledTask() {
+        async ScheduledTask(scheduled = false) {
+            if (scheduled && this.lastScheduledTaskTs + 2 > Date.now() / 1000) {
+                return;
+            }
+            this.lastScheduledTaskTs = Date.now()/1000;
             try {
                 if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
                     alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
@@ -2095,7 +2501,7 @@
                     if (video.VideoTogetherVideoId == undefined) {
                         video.VideoTogetherVideoId = generateUUID();
                     }
-                    if (video instanceof VideoWrapper) {
+                    if (video instanceof VideoWrapper || video.VideoTogetherChoosed == true) {
                         // ad hoc
                         sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
                     } else {
@@ -2109,20 +2515,25 @@
                 })
             } catch { };
 
-            try {
-                if (this.minTrip == 1e9) {
-                    this.SyncTimeWithServer(this.video_together_host);
-                    this.SyncTimeWithServer(this.video_together_backup_host);
-                }
-            } catch { };
 
             if (this.role != this.RoleEnum.Null) {
+                WS.connect();
                 try {
                     if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
                         this.allLinksTargetModified = true;
                         this.openAllLinksInSelf();
                     }
                 } catch { }
+                try {
+                    if (this.minTrip == 1e9 || !this.httpSucc) {
+                        this.SyncTimeWithServer(this.video_together_host);
+                        setTimeout(() => {
+                            if (this.minTrip == 1e9 || !this.httpSucc) {
+                                this.SyncTimeWithServer(this.video_together_backup_host);
+                            }
+                        }, 3000);
+                    }
+                } catch { };
             }
 
             try {
@@ -2143,15 +2554,23 @@
                                 1,
                                 0,
                                 true,
-                                1e9);
+                                1e9,
+                                this.getLocalTimestamp());
                             throw new Error("No video in this page");
                         } else {
-                            sendMessageToTop(MessageType.SyncMasterVideo, { video: video, password: this.password, roomName: this.roomName, link: this.linkWithoutState(window.location) });
+                            sendMessageToTop(MessageType.SyncMasterVideo, {
+                                waitForLoadding: this.waitForLoadding,
+                                video: video,
+                                password: this.password,
+                                roomName: this.roomName,
+                                link: this.linkWithoutState(window.location)
+                            });
                         }
                         break;
                     }
                     case this.RoleEnum.Member: {
                         let room = await this.GetRoom(this.roomName, this.password);
+                        sendMessageToTop(MessageType.RoomDataNotification, room);
                         this.duration = room["duration"];
                         if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
@@ -2190,7 +2609,7 @@
                         if (video == undefined) {
                             throw new Error("No video in this page");
                         } else {
-                            sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password })
+                            sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
                         }
                         break;
                     }
@@ -2212,7 +2631,21 @@
                     }
                 }
             } catch { }
-
+            try {
+                if (window.location.hostname.endsWith('v.qq.com')) {
+                    let adCtrls = document.querySelectorAll('.txp_ad_control:not(.txp_none)');
+                    for (let i = 0; i < adCtrls.length; i++) {
+                        if (adCtrls[i].getAttribute('data-role') == 'creative-player-video-ad-control') {
+                            return true;
+                        }
+                    }
+                }
+            } catch { }
+            try {
+                if (document.querySelector('.advertise-layer').querySelector('div')) {
+                    return true;
+                }
+            } catch { }
             return false;
         }
 
@@ -2255,17 +2688,28 @@
             return closestVideo;
         }
 
-        // TODO The poll task works really good currently.
-        // But we can sync when video event is traggered to enhance the performance
-        // and reduce server workload
         async SyncMasterVideo(data, videoDom) {
-            await this.UpdateRoom(data.roomName,
-                data.password,
-                data.link,
-                videoDom.playbackRate,
-                videoDom.currentTime,
-                videoDom.paused,
-                videoDom.duration);
+            if (data.waitForLoadding) {
+                if (!videoDom.paused) {
+                    videoDom.pause();
+                    this.playAfterLoadding = true;
+                }
+            } else {
+                if (this.playAfterLoadding) {
+                    videoDom.play();
+                }
+                this.playAfterLoadding = false;
+            }
+            sendMessageToTop(MessageType.UpdateRoomRequest, {
+                name: data.roomName,
+                password: data.password,
+                url: data.link,
+                playbackRate: videoDom.playbackRate,
+                currentTime: videoDom.currentTime,
+                paused: videoDom.paused,
+                duration: videoDom.duration,
+                localTimestamp: this.getLocalTimestamp()
+            })
         }
 
         linkWithoutState(link) {
@@ -2354,7 +2798,7 @@
         }
 
         async SyncMemberVideo(data, videoDom) {
-            let room = await this.GetRoom(data.roomName, data.password);
+            let room = data.room;
             sendMessageToTop(MessageType.GetRoomData, room);
 
             // useless
@@ -2399,7 +2843,18 @@
             if (isNaN(videoDom.duration)) {
                 throw new Error("Need to play manually");
             }
-            sendMessageToTop(MessageType.UpdateStatusText, { text: "Sync " + this.GetDisplayTimeText(), color: "green" })
+            sendMessageToTop(MessageType.UpdateStatusText, { text: "Sync " + this.GetDisplayTimeText(), color: "green" });
+
+            setTimeout(() => {
+                let isLoadding = false;
+                try {
+                    if (document.hasFocus() && Math.abs(room["duration"] - videoDom.duration) < 0.5) {
+                        isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
+                    }
+                } catch {
+                };
+                sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
+            }, 3000);
         }
 
         async CheckResponse(response) {
@@ -2415,10 +2870,14 @@
         }
 
         async CreateRoom(name, password) {
+            if (name == "") {
+                popupError("Please input room name")
+                return;
+            }
             try {
                 this.tempUser = generateTempUserId();
                 let url = this.linkWithoutState(window.location);
-                let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0), 2);
+                let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0, this.getLocalTimestamp()), 2);
                 this.setRole(this.RoleEnum.Master);
                 this.roomName = name;
                 this.password = password;
@@ -2426,13 +2885,26 @@
             } catch (e) { this.UpdateStatusText(e, "red") }
         }
 
-        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration) {
+        setWaitForLoadding(b) {
+            let enabled = true;
+            try { enabled = (window.VideoTogetherStorage.WaitForLoadding != false) } catch { }
+            this.waitForLoadding = enabled && b;
+        }
+
+        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
             try {
                 if (window.location.pathname == "/page") {
                     let url = new URL(atob(new URL(window.location).searchParams.get("url")));
                     window.location = url;
                 }
             } catch { }
+            WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp);
+            let WSRoom = WS.getRoom();
+            if (WSRoom != null) {
+                this.setWaitForLoadding(WSRoom['waitForLoadding']);
+                sendMessageToTop(MessageType.RoomDataNotification, WSRoom);
+                return WSRoom;
+            }
             let apiUrl = new URL(this.video_together_host + "/room/update");
             apiUrl.searchParams.set("name", name);
             apiUrl.searchParams.set("password", password);
@@ -2440,16 +2912,16 @@
             apiUrl.searchParams.set("currentTime", currentTime);
             apiUrl.searchParams.set("paused", paused);
             apiUrl.searchParams.set("url", url);
-            apiUrl.searchParams.set("lastUpdateClientTime", this.getLocalTimestamp());
+            apiUrl.searchParams.set("lastUpdateClientTime", localTimestamp);
             apiUrl.searchParams.set("duration", duration);
             apiUrl.searchParams.set("tempUser", this.tempUser);
-            apiUrl.searchParams.set("public", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PublicVideoRoom));
-            apiUrl.searchParams.set("protected", (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.PasswordProtectedRoom));
+            apiUrl.searchParams.set("protected", isRoomProtected());
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
+            sendMessageToTop(MessageType.RoomDataNotification, data);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
@@ -2464,6 +2936,12 @@
         }
 
         async GetRoom(name, password) {
+            WS.joinRoom(name, password);
+            let WSRoom = WS.getRoom();
+            if (WSRoom != null) {
+                // TODO updatetimestamp
+                return WSRoom;
+            }
             let url = new URL(this.video_together_host + "/room/get");
             url.searchParams.set("name", name);
             url.searchParams.set("tempUser", this.tempUser);
@@ -2501,6 +2979,7 @@
 
                 document.onmousemove = dr;
                 document.ontouchmove = dr;
+                document.onpointermove = dr;
 
                 function dr(event) {
 
@@ -2533,9 +3012,11 @@
                 }
                 target.onmouseup = endDrag;
                 target.ontouchend = endDrag;
+                target.onpointerup = endDrag;
             }
             window.videoTogetherFlyPannel.videoTogetherHeader.onmousedown = filter;
             window.videoTogetherFlyPannel.videoTogetherHeader.ontouchstart = filter;
+            window.videoTogetherFlyPannel.videoTogetherHeader.onpointerdown = filter;
         }
     }
 
@@ -2548,7 +3029,8 @@
     }
     if (window.videoTogetherExtension === undefined) {
         window.videoTogetherExtension = null;
-        window.videoTogetherExtension = new VideoTogetherExtension();
+        var extension = new VideoTogetherExtension();
+        window.videoTogetherExtension = extension;
         sendMessageToSelf(MessageType.ExtensionInitSuccess, {})
     }
     try {

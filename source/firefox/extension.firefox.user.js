@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1666089671
+// @version      1679488190
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1666089671'
+    let version = '1679488190'
     let type = 'Firefox'
     function getBrowser() {
         switch (type) {
@@ -155,12 +155,26 @@
             }
         }
     }
-    // if (type == 'Chrome') {
-    //     let vtEnabled = await getGM().getValue('vtEnabled');
-    //     if (vtEnabled === false) {
-    //         return;
+
+    if (isExtension) {
+        let vtEnabled = await getGM().getValue('vtEnabled');
+        if (vtEnabled === false) {
+            getBrowser().runtime.sendMessage(JSON.stringify({ type: 4, enabled: false }));
+            return;
+        } else {
+            getBrowser().runtime.sendMessage(JSON.stringify({ type: 4, enabled: true }));
+        }
+    }
+
+    // let vtVersion = 10407
+    // try {
+    //     let publicVtVersion = await getGM().getValue("PublicVtVersion")
+    //     if (publicVtVersion != null) {
+    //         vtVersion = publicVtVersion;
     //     }
-    // }
+    //     console.log(publicVtVersion)
+    // } catch (e) { };
+
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
     let prefixLen = 0;
@@ -336,7 +350,7 @@
             } catch (e) {
                 data["VideoTogetherTabStorageEnabled"] = false;
             }
-            window.top.postMessage({
+            window.postMessage({
                 source: "VideoTogether",
                 type: 16,
                 data: data
@@ -359,7 +373,7 @@
     let wrapper = document.createElement("div");
     wrapper.innerHTML = `<div id="videoTogetherLoading">
     <div id="videoTogetherLoadingwrap">
-        <img style="display: inline;" src="https://www.2gether.video/icon/favicon-16x16.png">
+        <img style="display: inline;" src="data:image/png;base64,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">
         <a target="_blank" href="http://2gether.video/guide/qa.html">loading ...</a>
     </div>
 </div>
@@ -406,7 +420,7 @@
     script.type = 'text/javascript';
     switch (type) {
         case "userscript":
-            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
+            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + version;
             break;
         case "Chrome":
         case "Safari":
@@ -422,13 +436,14 @@
                 if (e.blockedURI.indexOf('2gether.video') != -1) {
                     urlDisabled = true;
                 }
-                if (e.blockedURI == 'eval') {
-                    evalDisabled = true;
-                }
-                if (e.blockedURI = 'inline') {
-                    inlineDisabled = true;
-                }
-                if (inlineDisabled && evalDisabled && urlDisabled) {
+                // if (e.blockedURI == 'eval') {
+                //     evalDisabled = true;
+                // }
+                // if (e.blockedURI = 'inline') {
+                //     inlineDisabled = true;
+                // }
+                // inlineDisabled && evalDisabled &&
+                if (urlDisabled) {
                     console.log("hot update is not successful")
                     insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
                     hotUpdated = true;
@@ -444,7 +459,7 @@
             script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "website":
-            script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
+            script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + version;
             break;
         case "website_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
@@ -454,7 +469,11 @@
     (document.body || document.documentElement).appendChild(script);
     if (type != "Chrome" && type != "Safari" && type != "Firefox") {
         try {
-            InsertInlineJs(script.src);
+            // keep this inline inject because shark browser needs this
+            if (isWebsite) {
+                InsertInlineJs(script.src);
+            }
+
             GM_addElement('script', {
                 src: script.src,
                 type: 'text/javascript'
@@ -473,7 +492,10 @@
             script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js`;
             (document.body || document.documentElement).appendChild(script);
             try {
-                InsertInlineJs(script.src);
+                if (isWebsite) {
+                    InsertInlineJs(script.src);
+                }
+
                 GM_addElement('script', {
                     src: script.src,
                     type: 'text/javascript'

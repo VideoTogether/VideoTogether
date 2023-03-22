@@ -71,9 +71,9 @@
     try {
         document.body.appendChild(script);
     } catch { };
-    try {
-        InsertInlineJs(script.src);
-    } catch { };
+    // try {
+    //     InsertInlineJs(script.src);
+    // } catch { };
 
     // fallback to china service
     setTimeout(() => {
@@ -88,9 +88,9 @@
             try {
                 document.body.appendChild(script);
             } catch { };
-            try {
-                InsertInlineJs(script.src);
-            } catch { };
+            // try {
+            //     InsertInlineJs(script.src);
+            // } catch { };
         }
 
     }, 5000);

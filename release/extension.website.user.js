@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679482148
+// @version      1679488190
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1679482148'
+    let version = '1679488190'
     let type = 'website'
     function getBrowser() {
         switch (type) {
@@ -436,13 +436,14 @@
                 if (e.blockedURI.indexOf('2gether.video') != -1) {
                     urlDisabled = true;
                 }
-                if (e.blockedURI == 'eval') {
-                    evalDisabled = true;
-                }
-                if (e.blockedURI = 'inline') {
-                    inlineDisabled = true;
-                }
-                if (inlineDisabled && evalDisabled && urlDisabled) {
+                // if (e.blockedURI == 'eval') {
+                //     evalDisabled = true;
+                // }
+                // if (e.blockedURI = 'inline') {
+                //     inlineDisabled = true;
+                // }
+                // inlineDisabled && evalDisabled &&
+                if (urlDisabled) {
                     console.log("hot update is not successful")
                     insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
                     hotUpdated = true;
@@ -468,7 +469,11 @@
     (document.body || document.documentElement).appendChild(script);
     if (type != "Chrome" && type != "Safari" && type != "Firefox") {
         try {
-            InsertInlineJs(script.src);
+            // keep this inline inject because shark browser needs this
+            if (isWebsite) {
+                InsertInlineJs(script.src);
+            }
+
             GM_addElement('script', {
                 src: script.src,
                 type: 'text/javascript'
@@ -487,7 +492,10 @@
             script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js`;
             (document.body || document.documentElement).appendChild(script);
             try {
-                InsertInlineJs(script.src);
+                if (isWebsite) {
+                    InsertInlineJs(script.src);
+                }
+
                 GM_addElement('script', {
                     src: script.src,
                     type: 'text/javascript'
