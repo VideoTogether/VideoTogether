@@ -166,6 +166,15 @@
         }
     }
 
+    // let vtVersion = 10407
+    // try {
+    //     let publicVtVersion = await getGM().getValue("PublicVtVersion")
+    //     if (publicVtVersion != null) {
+    //         vtVersion = publicVtVersion;
+    //     }
+    //     console.log(publicVtVersion)
+    // } catch (e) { };
+
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
     let prefixLen = 0;
@@ -368,7 +377,7 @@
     script.type = 'text/javascript';
     switch (type) {
         case "userscript":
-            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
+            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + version;
             break;
         case "Chrome":
         case "Safari":
@@ -406,7 +415,7 @@
             script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "website":
-            script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
+            script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + version;
             break;
         case "website_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());

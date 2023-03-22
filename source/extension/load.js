@@ -1,13 +1,16 @@
-function generateUUID() {
-    if (crypto.randomUUID != undefined) {
-        return crypto.randomUUID();
-    }
-    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-    );
-}
 
 (function () {
+    let version = '{{timestamp}}'
+
+    function generateUUID() {
+        if (crypto.randomUUID != undefined) {
+            return crypto.randomUUID();
+        }
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+
     try {
         let origin = Element.prototype.attachShadow;
         if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(origin))) {
@@ -64,7 +67,7 @@ function generateUUID() {
 
     let script = document.createElement('script');
     script.type = 'text/javascript';
-    script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now() / 1000 / 3600);
+    script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + version;
     try {
         document.body.appendChild(script);
     } catch { };

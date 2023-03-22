@@ -9,12 +9,14 @@ function getRealUrl() {
 }
 
 function getReal(parsedUrl) {
+    console.log('parsedUrl', parsedUrl);
     let u = new URL(parsedUrl);
     u.host = u.host.replaceAll('_', '.').replace('.' + WORKER_HOSTNAME, '');
     return u.toString();
 }
 
 function getProxyURL(origin) {
+    // TODO no http or https
     if (origin.startsWith("/")) {
         return origin;
     }
@@ -42,6 +44,7 @@ function Redirect(url) {
     return false;
 }
 async function handleRequest(req) {
+    console.log('--------------------------');
     let parsedUrl = req.url
 
     if (parsedUrl.startsWith(`https://${WORKER_HOSTNAME}`)) {
@@ -51,6 +54,7 @@ async function handleRequest(req) {
 <head>
     <title>${WORKER_HOSTNAME}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script src="https://2gether.video/release/extension.website.user.js"></script>
 </head>
 
 <body>
@@ -101,7 +105,12 @@ async function handleRequest(req) {
     }
     real_url = getReal(parsedUrl);
     if (Redirect(real_url)) {
-        return new Response(null, { status: 301, headers: { "Location": real_url } });
+        return new Response(null, { status: 301, headers: {
+             "Location": real_url, 
+             'Access-Control-Allow-Origin': '*',
+             'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS',
+             'Access-Control-Max-Age': '86400'
+             } });
     }
     console.log("real", real_url)
     console.log(req.method)
@@ -121,17 +130,26 @@ async function handleRequest(req) {
     let newReq = new Request(req);
 
     referer = req.headers.get("Referer");
+
     try {
         newReq.headers.set("Referer", getReal(referer))
+        console.log("real_referer", real_url,getReal(referer) );
     } catch { }
+    
+    newReq.headers.delete('x-real-ip');
+    newReq.headers.delete('cf-connecting-ip');
+    newReq.headers.delete('cf-ipcountry');
+    newReq.headers.delete('cf-ray');
+    newReq.headers.delete('cf-visitor');
     const res = await fetch(getRealUrl(), {
         // TODO
         "redirect": "manual",
         body: req.body,
-        headers: req.headers,
+        headers: newReq.headers,
         method: req.method,
     })
-    console.log(res)
+    console.log(newReq);
+    console.log(res);
     console.log(res.headers.get("Location"))
     // 去除 nosniff
     let clean_res
@@ -143,6 +161,9 @@ async function handleRequest(req) {
         clean_res = new Response(res.body, res)
     }
 
+    clean_res.headers.set('Access-Control-Allow-Origin', '*');
+    clean_res.headers.set('Access-Control-Allow-Methods', 'GET,HEAD,POST,OPTIONS');
+    clean_res.headers.set('Access-Control-Max-Age', '86400');
 
     if (res.status == 301 || res.status == 302) {
         console.log("123");
@@ -184,7 +205,7 @@ class Injecter {
 
     element(element) {
         console.log(element)
-        element.prepend('<script src="https://2gether.video/release/extension.user.js"></script>', { html: true })
+        element.prepend('<script src="https://2gether.video/release/extension.website.user.js"></script>', { html: true })
     }
 }
 
@@ -195,10 +216,10 @@ class Dependency {
     const WORKER_HOSTNAME = "${WORKER_HOSTNAME}"
 
     function getProxyURL(origin, force = false) {
+        let url = new URL(origin, window.location.href);
         if (origin.startsWith("/")) {
             return origin;
         }
-        let url = new URL(origin);
         if (url.hostname.endsWith(WORKER_HOSTNAME)) {
             // TODO port
             return origin;
@@ -244,16 +265,29 @@ class Dependency {
 class RemoveReferrer {
     element(element) {
         if (element.getAttribute('name') == 'referrer') {
-            element.setAttribute('content', 'unsafe-url');
+            // element.setAttribute('content', 'unsafe-url');
             console.log(element, 'referrer');
         }
     }
 }
+
+class DisableLocationChange {
+    text(text) {
+        let a = text.text;
+        let b = text.text.replace(/window.location.href *=/g, 'window.location.href==');
+        if(a!=b){
+            console.log(b);
+            text.replace(b);
+        }
+    }
+}
+
 const rewriter = new HTMLRewriter()
     .on("head", new Dependency())
     .on("meta", new RemoveReferrer())
     .on("head", new Injecter())
     .on("body", new Injecter())
+    .on("script", new DisableLocationChange())
     .on("a", new AttributeRewriter("href"))
     // .on("img", new AttributeRewriter("src"))
     .on("link", new AttributeRewriter("href"))

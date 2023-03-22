@@ -1136,6 +1136,7 @@
             this.minTrip = 1e9;
             this.timeOffset = 0;
             this.lastScheduledTaskTs = 0;
+            this.httpSucc = false;
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
@@ -1677,10 +1678,12 @@
             let response = await this.Fetch(url + "/timestamp");
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
-            if (this.minTrip == 1e9) {
+            if (!this.httpSucc) {
+                this.httpSucc = true
                 this.video_together_host = url;
             }
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
+            sendMessageToTop(MessageType.SetStorageValue, { key: "PublicVtVersion", value: data["vtVersion"] });
         }
 
         RecoveryState() {
@@ -1822,10 +1825,10 @@
                     }
                 } catch { }
                 try {
-                    if (this.minTrip == 1e9) {
+                    if (this.minTrip == 1e9 || !this.httpSucc) {
                         this.SyncTimeWithServer(this.video_together_host);
                         setTimeout(() => {
-                            if (this.minTrip == 1e9) {
+                            if (this.minTrip == 1e9 || !this.httpSucc) {
                                 this.SyncTimeWithServer(this.video_together_backup_host);
                             }
                         }, 3000);
