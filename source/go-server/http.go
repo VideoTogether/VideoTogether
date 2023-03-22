@@ -12,6 +12,8 @@ import (
 	"github.com/unrolled/render"
 )
 
+const vtVersion = 10408
+
 type slashFix struct {
 	render *render.Render
 	mux    http.Handler
@@ -75,6 +77,11 @@ type TimestampResponse struct {
 	Timestamp float64 `json:"timestamp"`
 }
 
+type TimestampExtendedResponse struct {
+	Timestamp float64 `json:"timestamp"`
+	VtVersion int     `json:"vtVersion"`
+}
+
 type RoomResponse struct {
 	*Room
 	*TimestampResponse
@@ -135,8 +142,13 @@ func (h *slashFix) handleRoomGet(res http.ResponseWriter, req *http.Request) {
 	h.JSON(res, 200, h.newRoomResponse(room))
 }
 
+// this http api must be requested once when user create or join a room
+// any info that need to push once to user should use this
 func (h *slashFix) handleTimestamp(res http.ResponseWriter, req *http.Request) {
-	h.JSON(res, 200, TimestampResponse{Timestamp: h.vtSrv.Timestamp()})
+	h.JSON(res, 200, TimestampExtendedResponse{
+		Timestamp: h.vtSrv.Timestamp(),
+		VtVersion: vtVersion,
+	})
 }
 
 // A reverse proxy to Kraken which support real-time voice communication

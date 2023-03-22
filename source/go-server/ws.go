@@ -275,6 +275,7 @@ func (c *Client) joinRoom(rawReq *WsRequestMessage) {
 	c.roomName = req.RoomName
 	c.hub.addClientToRoom(req.RoomName, c)
 	c.reply(rawReq.Method, RoomResponse{
+		// TODO remove this timestamp
 		TimestampResponse: &TimestampResponse{
 			Timestamp: c.hub.vtSrv.Timestamp(),
 		},
@@ -341,6 +342,7 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 		Message: WsRoomResponse{
 			Method: rawReq.Method,
 			Data: RoomResponse{
+				// TODO remove this timestamp
 				TimestampResponse: &TimestampResponse{
 					Timestamp: c.hub.vtSrv.Timestamp(),
 				},
