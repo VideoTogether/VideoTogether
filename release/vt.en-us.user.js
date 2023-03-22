@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679488190
+// @version      1679503716
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1840,7 +1840,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1679488190';
+            this.version = '1679503716';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2481,7 +2481,7 @@
             if (scheduled && this.lastScheduledTaskTs + 2 > Date.now() / 1000) {
                 return;
             }
-            this.lastScheduledTaskTs = Date.now()/1000;
+            this.lastScheduledTaskTs = Date.now() / 1000;
             try {
                 if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
                     alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
@@ -2642,8 +2642,10 @@
                 }
             } catch { }
             try {
-                if (document.querySelector('.advertise-layer').querySelector('div')) {
-                    return true;
+                if (window.location.hostname.endsWith('youku.com')) {
+                    if (document.querySelector('.advertise-layer').querySelector('div')) {
+                        return true;
+                    }
                 }
             } catch { }
             return false;
