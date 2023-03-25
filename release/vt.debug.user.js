@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679503716
+// @version      1679740986
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1840,7 +1840,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1679503716';
+            this.version = '1679740986';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2828,6 +2828,14 @@
                 } else {
                     try {
                         console.info("play");
+                        {
+                            // check if the video is ready
+                            if (window.location.hostname.endsWith('aliyundrive.com')) {
+                                if (videoDom.readyState == 0) {
+                                    throw new Error("请手动点击播放");
+                                }
+                            }
+                        }
                         await videoDom.play();
                         if (videoDom.paused) {
                             throw new Error("请手动点击播放");

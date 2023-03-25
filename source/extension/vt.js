@@ -2128,6 +2128,14 @@
                 } else {
                     try {
                         console.info("play");
+                        {
+                            // check if the video is ready
+                            if (window.location.hostname.endsWith('aliyundrive.com')) {
+                                if (videoDom.readyState == 0) {
+                                    throw new Error("{$need_to_play_manually$}");
+                                }
+                            }
+                        }
                         await videoDom.play();
                         if (videoDom.paused) {
                             throw new Error("{$need_to_play_manually$}");
