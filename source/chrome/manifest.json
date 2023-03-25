@@ -57,7 +57,10 @@
         "192": "./icon/android-icon-192x192.png"
     },
     "permissions": [
-        "storage"
+        "storage",
+        "activeTab",
+        "tabs",
+        "webNavigation"
     ],
     "action": {
         "default_popup": "popup.html"

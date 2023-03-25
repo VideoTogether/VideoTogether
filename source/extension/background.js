@@ -12,34 +12,48 @@ function getBrowser() {
 
 let tabs = []
 
+async function getTabData(id) {
+    let tabId = `tab-${id}`;
+    return new Promise((resolve) => {
+        try {
+            getBrowser().storage.session.get(tabId, tab => {
+                resolve(tab[tabId] == null ? {} : tab[tabId]);
+            })
+            return true;
+        } catch (e) {
+            if (tabs[tabId] == undefined) tabs[tabId] = {};
+            resolve(tabs[tabId]);
+        }
+    })
+}
+
+async function setTabData(id, data) {
+    let tabId = `tab-${id}`;
+    return new Promise((resolve) => {
+        try {
+            let item = {};
+            item[tabId] = data;
+            getBrowser().storage.session.set(item, () => {
+                resolve(data);
+            })
+            return true;
+        } catch (e) {
+            tabs[tabId] = data;
+            resolve(tabs[tabId]);
+        }
+    })
+}
+
 getBrowser().runtime.onMessage.addListener(function (msgText, sender, sendResponse) {
     let msg = JSON.parse(msgText);
     switch (msg.type) {
         case 1:
-            try {
-                let tabId = `tab-${sender.tab.id}`;
-                getBrowser().storage.session.get(tabId, tab => {
-                    sendResponse(tab[tabId] == null ? {} : tab[tabId]);
-                })
-                return true;
-            } catch (e) {
-                if (tabs[sender.tab.id] == undefined) tabs[sender.tab.id] = {};
-                sendResponse(tabs[sender.tab.id]);
-            }
+            getTabData(sender.tab.id).then(d => sendResponse(d));
+            return true;
             break;
         case 2:
-            try {
-                let tabId = `tab-${sender.tab.id}`;
-                let item = {};
-                item[tabId] = msg.tab;
-                getBrowser().storage.session.set(item, () => {
-                    sendResponse(msg.tab);
-                })
-                return true;
-            } catch (e) {
-                tabs[sender.tab.id] = msg.tab;
-                sendResponse(tabs[sender.tab.id]);
-            }
+            setTabData(sender.tab.id, msg.tab).then(d => sendResponse(d));
+            return true;
             break;
         case 3:
             let props = msg.props;
@@ -64,5 +78,36 @@ getBrowser().runtime.onMessage.addListener(function (msgText, sender, sendRespon
                 });
             }
             sendResponse();
+    }
+});
+
+function getTopLevelDomainFromUrl(url) {
+    const urlObject = new URL(url);
+    const domain = urlObject.hostname;
+    const domainParts = domain.split('.');
+    const topLevelDomain = domainParts.slice(-2).join('.');
+    return topLevelDomain;
+}
+
+getBrowser().webNavigation.onDOMContentLoaded.addListener((details) => {
+    if (details.frameId === 0) {
+        getBrowser().tabs.get(details.tabId, async (tab) => {
+            if (tab.openerTabId) {
+                const tabData = await getTabData(tab.openerTabId);
+                if (tabData.VideoTogetherTabStorage.VideoTogetherRole != 2) {
+                    return;
+                }
+                getBrowser().tabs.get(tab.openerTabId, (openerTab) => {
+                    const newTabDomain = getTopLevelDomainFromUrl(tab.url);
+                    const openerTabDomain = getTopLevelDomainFromUrl(openerTab.url);
+
+                    if (newTabDomain === openerTabDomain) {
+                        getBrowser().tabs.remove(tab.id, () => {
+                            getBrowser().tabs.update(openerTab.id, { url: tab.url });
+                        });
+                    }
+                });
+            }
+        });
     }
 });
