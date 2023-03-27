@@ -849,9 +849,9 @@
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
-                ["", "moz", "webkit", "ms"].forEach(prefix => {
+                ["", "webkit"].forEach(prefix => {
                     document.addEventListener(prefix + "fullscreenchange", (event) => {
-                        if (document.fullscreenElement) {
+                        if (document.fullscreenElement || document.webkitFullscreenElement) {
                             hide(this.videoTogetherFlyPannel);
                             hide(this.videoTogetherSamllIcon);
                         } else {
