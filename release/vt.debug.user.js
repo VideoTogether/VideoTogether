@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679932705
+// @version      1679933213
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1549,17 +1549,19 @@
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
-                document.addEventListener("fullscreenchange", (event) => {
-                    if (document.fullscreenElement) {
-                        hide(this.videoTogetherFlyPannel);
-                        hide(this.videoTogetherSamllIcon);
-                    } else {
-                        if (this.minimized) {
-                            this.Minimize();
+                ["", "moz", "webkit", "ms"].forEach(prefix => {
+                    document.addEventListener(prefix + "fullscreenchange", (event) => {
+                        if (document.fullscreenElement) {
+                            hide(this.videoTogetherFlyPannel);
+                            hide(this.videoTogetherSamllIcon);
                         } else {
-                            this.Maximize();
+                            if (this.minimized) {
+                                this.Minimize();
+                            } else {
+                                this.Maximize();
+                            }
                         }
-                    }
+                    });
                 });
 
                 this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
@@ -1840,7 +1842,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1679932705';
+            this.version = '1679933213';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

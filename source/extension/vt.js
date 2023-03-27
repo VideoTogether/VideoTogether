@@ -849,17 +849,19 @@
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
-                document.addEventListener("fullscreenchange", (event) => {
-                    if (document.fullscreenElement) {
-                        hide(this.videoTogetherFlyPannel);
-                        hide(this.videoTogetherSamllIcon);
-                    } else {
-                        if (this.minimized) {
-                            this.Minimize();
+                ["", "moz", "webkit", "ms"].forEach(prefix => {
+                    document.addEventListener(prefix + "fullscreenchange", (event) => {
+                        if (document.fullscreenElement) {
+                            hide(this.videoTogetherFlyPannel);
+                            hide(this.videoTogetherSamllIcon);
                         } else {
-                            this.Maximize();
+                            if (this.minimized) {
+                                this.Minimize();
+                            } else {
+                                this.Maximize();
+                            }
                         }
-                    }
+                    });
                 });
 
                 this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
