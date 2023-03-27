@@ -2002,6 +2002,11 @@
                 }
                 this.playAfterLoadding = false;
             }
+            let paused = videoDom.paused;
+            if (this.playAfterLoadding) {
+                // some sites do not load video when paused
+                paused = false;
+            }
             sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
                 password: data.password,
