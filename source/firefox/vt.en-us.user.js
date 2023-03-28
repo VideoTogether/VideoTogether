@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679933801
+// @version      1680000662
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1842,7 +1842,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1679933801';
+            this.version = '1680000662';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2715,7 +2715,7 @@
                 url: data.link,
                 playbackRate: videoDom.playbackRate,
                 currentTime: videoDom.currentTime,
-                paused: videoDom.paused,
+                paused: paused,
                 duration: videoDom.duration,
                 localTimestamp: this.getLocalTimestamp()
             })

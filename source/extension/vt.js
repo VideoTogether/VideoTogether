@@ -2015,7 +2015,7 @@
                 url: data.link,
                 playbackRate: videoDom.playbackRate,
                 currentTime: videoDom.currentTime,
-                paused: videoDom.paused,
+                paused: paused,
                 duration: videoDom.duration,
                 localTimestamp: this.getLocalTimestamp()
             })
