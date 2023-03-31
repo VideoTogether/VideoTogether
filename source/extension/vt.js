@@ -881,10 +881,14 @@
                     Voice.join("", window.videoTogetherExtension.roomName);
                 }
                 this.videoVolume.oninput = () => {
-                    sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.videoVolume.value / 100 })
+                    extension.videoVolume = this.videoVolume.value;
+                    sendMessageToTop(MessageType.ChangeVideoVolume, { volume: extension.getVideoVolume() / 100 });
                 }
                 this.callVolumeSlider.oninput = () => {
-                    window.videoTogetherExtension.voiceVolume = this.callVolumeSlider.value / 100;
+                    extension.voiceVolume = this.callVolumeSlider.value;
+                    [...select('#peer').querySelectorAll("*")].forEach(e => {
+                        e.volume = extension.getVoiceVolume() / 100;
+                    });
                 }
                 initRangeSlider(this.videoVolume);
                 initRangeSlider(this.callVolumeSlider);
@@ -1148,7 +1152,9 @@
 
             this.callbackMap = new Map;
             this.allLinksTargetModified = false;
-            this.voiceVolume = 1;
+            this.voiceVolume = null;
+            this.videoVolume = null;
+
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
@@ -1763,6 +1769,8 @@
         }
 
         exitRoom() {
+            this.voiceVolume = null;
+            this.videoVolume = null;
             roomUuid = null;
             WS.disconnect();
             Voice.stop();
@@ -1779,6 +1787,30 @@
             this.SaveStateToSessionStorageWhenSameOrigin("");
         }
 
+        getVoiceVolume() {
+            if (this.voiceVolume != null) {
+                return this.voiceVolume;
+            }
+            try {
+                if (window.VideoTogetherStorage.VideoTogetherTabStorage.VoiceVolume != null) {
+                    return window.VideoTogetherStorage.VideoTogetherTabStorage.VoiceVolume;
+                }
+            } catch { }
+            return 100;
+        }
+
+        getVideoVolume() {
+            if (this.videoVolume != null) {
+                return this.videoVolume;
+            }
+            try {
+                if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoVolume != null) {
+                    return window.VideoTogetherStorage.VideoTogetherTabStorage.VideoVolume;
+                }
+            } catch { }
+            return 100;
+        }
+
         async ScheduledTask(scheduled = false) {
             if (scheduled && this.lastScheduledTaskTs + 2 > Date.now() / 1000) {
                 return;
@@ -1793,8 +1825,20 @@
             } catch { };
             try {
                 if (this.isMain) {
+                    if (windowPannel.videoVolume.value != this.getVideoVolume()) {
+                        windowPannel.videoVolume.value = this.getVideoVolume()
+                        windowPannel.videoVolume.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    if (windowPannel.callVolumeSlider.value != this.getVoiceVolume()) {
+                        windowPannel.callVolumeSlider.value = this.getVoiceVolume();
+                        windowPannel.callVolumeSlider.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+
+                    if (this.videoVolume != null) {
+                        sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.getVideoVolume() / 100 });
+                    }
                     [...select('#peer').querySelectorAll("*")].forEach(e => {
-                        e.volume = this.voiceVolume;
+                        e.volume = this.getVoiceVolume() / 100;
                     });
                 }
             } catch { }
@@ -2052,6 +2096,8 @@
                 VideoTogetherRole: this.role,
                 VideoTogetherTimestamp: Date.now() / 1000,
                 VideoTogetherVoice: voice,
+                VideoVolume: this.getVideoVolume(),
+                VoiceVolume: this.getVoiceVolume()
             }
         }
 
@@ -2341,7 +2387,8 @@
     if (window.videoTogetherFlyPannel === undefined) {
         window.videoTogetherFlyPannel = null;
         try {
-            window.videoTogetherFlyPannel = new VideoTogetherFlyPannel();
+            var windowPannel = new VideoTogetherFlyPannel();
+            window.videoTogetherFlyPannel = windowPannel;
         } catch (e) { console.error(e) }
     }
     if (window.videoTogetherExtension === undefined) {
