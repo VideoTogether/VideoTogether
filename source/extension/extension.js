@@ -71,8 +71,8 @@
                             const script = document.createElement('script');
                             script.src = "https://2gether.video/release/extension.website.user.js";
                             iframe.contentWindow.document.body.appendChild(script);
+                            iframe.contentWindow.VideoTogetherParentInject = true;
                         }
-                        iframe.contentWindow.VideoTogetherParentInject = true;
                     } catch (error) {
                     }
                 }
