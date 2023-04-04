@@ -59,6 +59,26 @@
         }
         return GM;
     }
+    setInterval(() => {
+        if (isWebsite) {
+            (function () {
+                const iframes = document.getElementsByTagName('iframe');
+                for (const iframe of iframes) {
+                    try {
+                        if (iframe.contentWindow.VideoTogetherParentInject != true &&
+                            window.location.origin === iframe.contentWindow.location.origin) {
+                            console.log("inject to iframe");
+                            const script = document.createElement('script');
+                            script.src = "https://2gether.video/release/extension.website.user.js";
+                            iframe.contentWindow.document.body.appendChild(script);
+                        }
+                        iframe.contentWindow.VideoTogetherParentInject = true;
+                    } catch (error) {
+                    }
+                }
+            })();
+        }
+    }, 2000);
 
     if (type == "website" || type == "website_debug") {
 

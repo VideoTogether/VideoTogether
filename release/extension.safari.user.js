@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1679488190
+// @version      1680572305
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1679488190'
+    let version = '1680572305'
     let type = 'Safari'
     function getBrowser() {
         switch (type) {
@@ -59,6 +59,26 @@
         }
         return GM;
     }
+    setInterval(() => {
+        if (isWebsite) {
+            (function () {
+                const iframes = document.getElementsByTagName('iframe');
+                for (const iframe of iframes) {
+                    try {
+                        if (iframe.contentWindow.VideoTogetherParentInject != true &&
+                            window.location.origin === iframe.contentWindow.location.origin) {
+                            console.log("inject to iframe");
+                            const script = document.createElement('script');
+                            script.src = "https://2gether.video/release/extension.website.user.js";
+                            iframe.contentWindow.document.body.appendChild(script);
+                        }
+                        iframe.contentWindow.VideoTogetherParentInject = true;
+                    } catch (error) {
+                    }
+                }
+            })();
+        }
+    }, 2000);
 
     if (type == "website" || type == "website_debug") {
 
