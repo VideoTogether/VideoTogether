@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1680573025
+// @version      1680960613
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -33,7 +33,7 @@
         }
     } catch (e) { };
 
-    let version = '1680573025'
+    let version = '1680960613'
     let type = 'Firefox'
     function getBrowser() {
         switch (type) {
@@ -326,7 +326,8 @@
                     if (window.location.hostname.endsWith("videotogether.gitee.io")
                         || window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
-                        || e.data.data.key.startsWith("Public")) {
+                        || e.data.data.key.startsWith("Public")
+                        || isWebsite) {
                         getGM().setValue(e.data.data.key, e.data.data.value)
                         AppendKey(e.data.data.key);
                         break;

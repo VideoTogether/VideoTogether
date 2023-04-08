@@ -326,7 +326,8 @@
                     if (window.location.hostname.endsWith("videotogether.gitee.io")
                         || window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
-                        || e.data.data.key.startsWith("Public")) {
+                        || e.data.data.key.startsWith("Public")
+                        || isWebsite) {
                         getGM().setValue(e.data.data.key, e.data.data.value)
                         AppendKey(e.data.data.key);
                         break;
