@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1680263728
+// @version      1680964927
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1846,7 +1846,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1680263728';
+            this.version = '1680964927';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2256,12 +2256,20 @@
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
                         sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
-                    if (window.VideoTogetherSettingEnabled == undefined && !isWeb(window.VideoTogetherStorage.UserscriptType)) {
-                        try {
-                            window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
-                            show(select('#videoTogetherSetting'));
-                        } catch (e) { }
-                    }
+                    try {
+                        if (window.VideoTogetherSettingEnabled == undefined) {
+                            if (!isWeb(window.VideoTogetherStorage.UserscriptType)) {
+                                window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
+                                show(select('#videoTogetherSetting'));
+                            } else {
+                                // website
+                                if (window.videoTogetherWebsiteSettingUrl != undefined) {
+                                    window.videoTogetherFlyPannel.videoTogetherSetting.href = window.videoTogetherWebsiteSettingUrl;
+                                    show(select('#videoTogetherSetting'));
+                                }
+                            }
+                        }
+                    } catch (e) { }
                     window.VideoTogetherSettingEnabled = true;
                     break;
                 }
