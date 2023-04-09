@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1680964927
+// @version      1681051519
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -59,6 +59,14 @@
 
     function show(e) {
         if (e) e.style.display = null;
+    }
+
+    function isVideoLoadded(video) {
+        try {
+            return video.readyState >= 3;
+        } catch {
+            return true;
+        }
     }
 
     function isRoomProtected() {
@@ -1846,7 +1854,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1680964927';
+            this.version = '1681051519';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2031,13 +2039,13 @@
                                 }
                                 setTimeout(() => {
                                     isFf ? ff.click() : rr.click();
-                                    if (video.readyState != 4) {
+                                    if (!isVideoLoadded(video)) {
                                         console.log("loading");
                                         ff.click();
                                         rr.click();
                                     }
                                     setTimeout(() => {
-                                        if (video.readyState == 4) {
+                                        if (isVideoLoadded(video)) {
                                             video.currentTime = v;
                                         }
                                     }, 100);
@@ -2920,7 +2928,7 @@
                 let isLoadding = false;
                 try {
                     if (document.hasFocus() && Math.abs(room["duration"] - videoDom.duration) < 0.5) {
-                        isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
+                        isLoadding = !isVideoLoadded(videoDom)
                     }
                 } catch {
                 };

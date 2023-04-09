@@ -61,6 +61,14 @@
         if (e) e.style.display = null;
     }
 
+    function isVideoLoadded(video) {
+        try {
+            return video.readyState >= 3;
+        } catch {
+            return true;
+        }
+    }
+
     function isRoomProtected() {
         try {
             return window.VideoTogetherStorage == undefined || window.VideoTogetherStorage.PasswordProtectedRoom != false;
@@ -1331,13 +1339,13 @@
                                 }
                                 setTimeout(() => {
                                     isFf ? ff.click() : rr.click();
-                                    if (video.readyState != 4) {
+                                    if (!isVideoLoadded(video)) {
                                         console.log("loading");
                                         ff.click();
                                         rr.click();
                                     }
                                     setTimeout(() => {
-                                        if (video.readyState == 4) {
+                                        if (isVideoLoadded(video)) {
                                             video.currentTime = v;
                                         }
                                     }, 100);
@@ -2220,7 +2228,7 @@
                 let isLoadding = false;
                 try {
                     if (document.hasFocus() && Math.abs(room["duration"] - videoDom.duration) < 0.5) {
-                        isLoadding = (videoDom.readyState != 4 && videoDom.readyState != undefined)
+                        isLoadding = !isVideoLoadded(videoDom)
                     }
                 } catch {
                 };
