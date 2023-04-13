@@ -232,6 +232,8 @@ func (r *Room) UpdateMemberData() {
 		}
 		return true
 	})
+	// ignore the loadding status when video is end, this is false positive
+	waitForLoadding = waitForLoadding && r.Duration != r.CurrentTime
 	if r.LastUpdateServerTime+10 > Timestamp() {
 		count++
 	}
