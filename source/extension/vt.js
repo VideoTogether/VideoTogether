@@ -63,6 +63,9 @@
 
     function isVideoLoadded(video) {
         try {
+            if (isNaN(video.readyState)) {
+                return true;
+            }
             return video.readyState >= 3;
         } catch {
             return true;
@@ -1381,14 +1384,11 @@
                 // 百度网盘
                 if (window.location.host.includes('pan.baidu.com')) {
                     if (!this.BaiduPanPlayer) {
-                        for (let key in window["$"]["cache"]) {
-                            try {
-                                if (window["$"]["cache"][key]["handle"]["elem"].player) {
-                                    this.BaiduPanPlayer = window["$"]["cache"][key]["handle"]["elem"].player;
-                                    break;
-                                }
-                            } catch { }
-                        }
+                        try {
+                            if (document.querySelector('.vjs-controls-enabled').player != undefined) {
+                                this.BaiduPanPlayer = document.querySelector('.vjs-controls-enabled').player;
+                            }
+                        } catch { }
                     }
                     if (this.BaiduPanPlayer) {
                         if (!this.BaiduPanPlayer.videoTogetherVideoWrapper) {
@@ -1401,8 +1401,8 @@
                         videoWrapper.currentTimeGetter = () => this.BaiduPanPlayer.currentTime();
                         videoWrapper.currentTimeSetter = (v) => this.BaiduPanPlayer.currentTime(v);
                         videoWrapper.duration = this.BaiduPanPlayer.duration();
-                        videoWrapper.playbackRateGetter = () => { };
-                        videoWrapper.playbackRateSetter = (v) => { };
+                        videoWrapper.playbackRateGetter = () => this.BaiduPanPlayer.playbackRate();
+                        videoWrapper.playbackRateSetter = (v) => this.BaiduPanPlayer.playbackRate(v);
                         await func(videoWrapper);
                     }
                 }
@@ -1426,13 +1426,6 @@
                 }
             } catch (e) { };
 
-            // baidupan vip
-            try {
-                let video = document.getElementById("video-root").shadowRoot.getElementById("html5player_html5_api");
-                if (video != undefined) {
-                    await func(video);
-                }
-            } catch (e) { };
             this.video_tag_names.forEach(async tag => {
                 let videos = document.getElementsByTagName(tag);
                 for (let i = 0; i < videos.length; i++) {
