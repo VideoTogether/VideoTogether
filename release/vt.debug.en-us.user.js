@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685020135
+// @version      1685021765
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1915,7 +1915,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685020135';
+            this.version = '1685021765';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2300,6 +2300,8 @@
                         //     data.m3u8Url
                         //     data.url = 'https://2gether.video/zh-cn/easyshare.html#' + m3u8Url;
                         // }
+                    } else {
+                        data.m3u8Url = "";
                     }
                     try {
                         if (!isEmpty(data.m3u8Url) && isEasyShareEnabled()) {
@@ -3111,6 +3113,7 @@
         }
 
         async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url = "") {
+            m3u8Url = emptyStrIfUdf(m3u8Url);
             try {
                 if (window.location.pathname == "/page") {
                     let url = new URL(atob(new URL(window.location).searchParams.get("url")));
