@@ -192,6 +192,7 @@ type Room struct {
 	Protected            bool    `json:"protected"`
 	VideoTitle           string  `json:"videoTitle"`
 	BackgroundUrl        string  `json:"backgroundUrl"`
+	M3u8Url              string  `json:"m3u8Url"`
 
 	// id for room not host
 	Uuid string `json:"uuid"`
@@ -219,6 +220,10 @@ type Member struct {
 
 func (m *Member) IsJoined() bool {
 	return m.lastUpdateTimestamp+10 > Timestamp() && m.CurrentUrl == m.room.Url
+}
+
+func (r *Room) setM3u8Url(url string) {
+	r.M3u8Url = url
 }
 
 func (r *Room) UpdateMemberData() {

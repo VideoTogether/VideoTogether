@@ -47,6 +47,7 @@ func newSlashFix(
 	mux.HandleFunc("/kraken", s.handleKraken)
 	mux.HandleFunc("/qps", s.qpsHtml)
 	mux.HandleFunc("/qps_json", s.qpsJson)
+	mux.HandleFunc("/static/check_easy_share", s.handleStaticCheckEasyShare)
 
 	wsHub := newWsHub(vtSrv, qps)
 	go wsHub.run()
@@ -101,6 +102,10 @@ func (h *slashFix) newRoomResponse(room *Room) *RoomResponse {
 	return resp
 }
 
+func (h *slashFix) handleStaticCheckEasyShare(res http.ResponseWriter, req *http.Request) {
+	h.Html(res, 200, "<script>let url=window.location.hash.substring(1);fetch(url).then(r => {if (r.ok) {window.top.postMessage({source: 'VideoTogether',type: 25,data: {m3u8Url: url}}, '*');}})</script>")
+}
+
 func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) {
 	userId := req.URL.Query().Get("tempUser")
 	name := req.URL.Query().Get("name")
@@ -117,6 +122,7 @@ func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) 
 	room.CurrentTime = floatParam(req, "currentTime", nil)
 	room.Paused = req.URL.Query().Get("paused") != "false"
 	room.Url = req.URL.Query().Get("url")
+	room.setM3u8Url(req.URL.Query().Get("m3u8Url"))
 	room.LastUpdateClientTime = floatParam(req, "lastUpdateClientTime", nil)
 	room.Duration = floatParam(req, "duration", p(1e9))
 	room.LastUpdateServerTime = h.vtSrv.Timestamp()
@@ -211,6 +217,14 @@ func (h *slashFix) qpsJson(w http.ResponseWriter, _ *http.Request) {
 
 func (h *slashFix) Text(w io.Writer, status int, v string) {
 	if err := h.render.Text(w, status, v); err != nil {
+		panic(err)
+	}
+}
+
+func (h *slashFix) Html(w http.ResponseWriter, status int, v string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	if _, err := w.Write([]byte(v)); err != nil {
 		panic(err)
 	}
 }

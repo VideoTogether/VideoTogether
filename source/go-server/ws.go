@@ -328,6 +328,7 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	room.CurrentTime = req.CurrentTime
 	room.Paused = req.Paused
 	room.Url = req.Url
+	room.setM3u8Url(req.Url)
 	room.LastUpdateClientTime = req.LastUpdateClientTime
 	room.Duration = req.Duration
 	room.LastUpdateServerTime = c.hub.vtSrv.Timestamp()
