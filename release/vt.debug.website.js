@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1684414602
+// @version      1685020135
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -29,6 +29,43 @@
         }
         lastRunQueue.push(Date.now() / 1000);
         return false;
+    }
+
+    function skipIntroLen() {
+        try {
+            let len = parseInt(window.VideoTogetherStorage.SkipIntroLength);
+            if (window.VideoTogetherStorage.SkipIntro && !isNaN(len)) {
+                return len;
+            }
+        } catch { }
+        return 0;
+    }
+
+    function isEmpty(s) {
+        try {
+            return s.length == 0;
+        } catch {
+            return true;
+        }
+    }
+
+    function emptyStrIfUdf(s) {
+        return s == undefined ? "" : s;
+    }
+    function isEasyShareEnabled() {
+        try {
+            return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare;
+        } catch {
+            return false;
+        }
+    }
+
+    function isEasyShareMember() {
+        try {
+            return window.VideoTogetherEasyShareMemberSite == true;
+        } catch {
+            return false;
+        }
     }
 
     function fixedEncodeURIComponent(str) {
@@ -153,7 +190,7 @@
         });
     }
 
-    function WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
+    function WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url) {
         return {
             "method": "/room/update",
             "data": {
@@ -168,7 +205,8 @@
                 "duration": duration,
                 "protected": isRoomProtected(),
                 "videoTitle": extension.isMain ? document.title : extension.videoTitle,
-                "sendLocalTimestamp": Date.now() / 1000
+                "sendLocalTimestamp": Date.now() / 1000,
+                "m3u8Url": m3u8Url
             }
         }
     }
@@ -305,9 +343,9 @@
                 this._socket.send(JSON.stringify(data));
             } catch { }
         },
-        async updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
+        async updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url) {
             // TODO localtimestamp
-            this.send(WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp));
+            this.send(WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url));
         },
         async updateMember(name, password, isLoadding, currentUrl) {
             this.send(WsUpdateMemberRequest(name, password, isLoadding, currentUrl));
@@ -917,6 +955,11 @@
           <span id="videoTogetherRoomPasswordLabel">密码</span>
           <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="输入建房密码">
         </div>
+        <div>
+          <button id="easyShareCopyBtn" class="vt-btn vt-btn-secondary" type="button" style="display: none;">
+            <span>复制轻松分享链接</span>
+          </button>
+        </div>
       </div>
 
       <div id="voicePannel" class="content" style="display: none;">
@@ -1267,8 +1310,8 @@
 
   .vt-btn-dangerous {
     color: #fff;
-    border-color: #ff4d4f !important;
-    background-color: #ff4d4f !important;
+    border-color: #ff4d4f;
+    background-color: #ff4d4f;
   }
 
   .vt-btn-dangerous:hover {
@@ -1305,8 +1348,8 @@
     width: 76px;
   }
 
-  #videoTogetherRoomNameInput:disabled{
-    border: none ;
+  #videoTogetherRoomNameInput:disabled {
+    border: none;
     background-color: transparent;
     color: black;
   }
@@ -1588,6 +1631,17 @@
                 this.videoVolume = wrapper.querySelector("#videoVolume");
                 this.callVolumeSlider = wrapper.querySelector("#callVolume");
                 this.callErrorBtn = wrapper.querySelector("#callErrorBtn");
+                this.easyShareCopyBtn = wrapper.querySelector("#easyShareCopyBtn");
+                this.easyShareCopyBtn.onclick = async () => {
+                    try {
+                        await navigator.clipboard.writeText("点击链接，和我一起看吧：<main_share_link> , 如果打不开可以尝试备用链接：<china_share_link>"
+                            .replace("<main_share_link>", extension.generateEasyShareLink())
+                            .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                        popupError("复制成功，快去分享吧");
+                    } catch {
+                        popupError("复制失败");
+                    }
+                }
                 this.callErrorBtn.onclick = () => {
                     Voice.join("", window.videoTogetherExtension.roomName);
                 }
@@ -1729,6 +1783,7 @@
             this.inputRoomName.placeholder = "请输入房间名"
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
+            hide(this.easyShareCopyBtn);
             this.isInRoom = false;
         }
 
@@ -1799,6 +1854,9 @@
         RoomDataNotification: 22,
         UpdateMemberStatus: 23,
         TimestampV2Resp: 24,
+        EasyShareCheckSucc: 25,
+
+        UpdateM3u8Files: 1001,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1857,7 +1915,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1684414602';
+            this.version = '1685020135';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1865,6 +1923,11 @@
             this.allLinksTargetModified = false;
             this.voiceVolume = null;
             this.videoVolume = null;
+            this.m3u8Files = {};
+            // blockedFiles won't be set to false, if allowed
+            this.blockedM3u8Files = {};
+            this.allowedM3u8Files = {};
+            this.currentM3u8Url = undefined;
 
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
@@ -1933,6 +1996,13 @@
             }
         }
 
+        generateEasyShareLink(china = false) {
+            if (china) {
+                return `https://videotogether.gitee.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`
+            } else {
+                return `https://2gether.video/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
+            }
+        }
 
         async Fetch(url, method = 'GET', data = null) {
             if (!extension.isMain) {
@@ -2191,8 +2261,57 @@
                     this.sendMessageToSonWithContext(type, data);
                     break;
                 case MessageType.UpdateRoomRequest:
+                    let m3u8Url = undefined;
+                    if (isEasyShareEnabled()) {
+                        try {
+                            let d = NaN;
+                            let selected = null;
+                            for (let id in this.m3u8Files) {
+                                this.m3u8Files[id].forEach(m3u8 => {
+                                    if (this.allowedM3u8Files[m3u8.m3u8Url] == true) {
+                                        if (isNaN(d) || Math.abs(data.duration - m3u8.duration) < d) {
+                                            d = Math.abs(data.duration - m3u8.duration);
+                                            selected = m3u8;
+                                        }
+                                        return;
+                                    }
+
+                                    if (this.blockedM3u8Files[m3u8.m3u8Url] != true) {
+                                        try {
+                                            // run once
+                                            this.blockedM3u8Files[m3u8.m3u8Url] = true;
+                                            let checkFrame = document.createElement("iframe");
+                                            checkFrame.src = this.video_together_host + '/static/check_easy_share#' + m3u8.m3u8Url;
+                                            hide(checkFrame);
+                                            document.body.append(checkFrame);
+                                            setTimeout(() => checkFrame.remove(), 100000);
+                                        } catch (e) { console.error(e) }
+                                    }
+                                })
+                            }
+                            if (d < 3) {
+                                m3u8Url = selected.m3u8Url;
+                            }
+                        } catch { }
+                        if (data.m3u8Url == undefined) {
+                            data.m3u8Url = m3u8Url;
+                        }
+                        // if (m3u8Url != undefined) {
+                        //     data.m3u8Url
+                        //     data.url = 'https://2gether.video/zh-cn/easyshare.html#' + m3u8Url;
+                        // }
+                    }
                     try {
-                        await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp);
+                        if (!isEmpty(data.m3u8Url) && isEasyShareEnabled()) {
+                            this.currentM3u8Url = data.m3u8Url;
+                            show(windowPannel.easyShareCopyBtn);
+                        } else {
+                            this.currentM3u8Url = undefined;
+                            hide(windowPannel.easyShareCopyBtn);
+                        }
+                    } catch { };
+                    try {
+                        await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp, data.m3u8Url);
                         if (this.waitForLoadding) {
                             this.UpdateStatusText("等待成员加载视频", "red");
                         } else {
@@ -2296,6 +2415,15 @@
                     let s2 = data['data']['sendServerTimestamp'];
                     let l2 = data['ts']
                     this.UpdateTimestampIfneeded(s1, l1, l2 - s2 + s1);
+                    break;
+                }
+                case MessageType.UpdateM3u8Files: {
+                    this.m3u8Files[data['id']] = data['m3u8Files'];
+                    break;
+                }
+                case MessageType.EasyShareCheckSucc: {
+                    console.log('easyShare', data);
+                    this.allowedM3u8Files[data['m3u8Url']] = true;
                     break;
                 }
                 default:
@@ -2627,30 +2755,39 @@
                         let room = await this.GetRoom(this.roomName, this.password);
                         sendMessageToTop(MessageType.RoomDataNotification, room);
                         this.duration = room["duration"];
-                        if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
+                        let newUrl = room["url"];
+                        if (isEasyShareMember()) {
+                            if (isEmpty(room['m3u8Url'])) {
+                                throw new Error("该视频无法同步");
+                            } else {
+                                window.location.hash = room['m3u8Url'];
+                                newUrl = window.location.href;
+                            }
+                        }
+                        if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
-                                let state = this.GetRoomState(room["url"]);
+                                let state = this.GetRoomState(newUrl);
                                 sendMessageToTop(MessageType.SetTabStorage, state);
                                 setInterval(() => {
-                                    if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == room["url"]) {
+                                    if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == newUrl) {
                                         try {
                                             if (isWeb(window.VideoTogetherStorage.UserscriptType)) {
-                                                if (!this._jumping && window.location.origin != (new URL(room["url"]).origin)) {
+                                                if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
                                                     this._jumping = true;
                                                     alert("请在跳转后再次加入");
                                                 }
                                             }
                                         } catch { };
                                         this.SetTabStorageSuccessCallback = () => {
-                                            sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                            sendMessageToTop(MessageType.JumpToNewPage, { url: newUrl });
                                         }
                                     }
                                 }, 200);
                             } else {
-                                if (this.SaveStateToSessionStorageWhenSameOrigin(room["url"])) {
-                                    sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                if (this.SaveStateToSessionStorageWhenSameOrigin(newUrl)) {
+                                    sendMessageToTop(MessageType.JumpToNewPage, { url: newUrl });
                                 } else {
-                                    sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
+                                    sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(newUrl).toString() });
                                 }
                             }
                         } else {
@@ -2746,6 +2883,9 @@
         }
 
         async SyncMasterVideo(data, videoDom) {
+            if (skipIntroLen() > 0 && videoDom.currentTime < skipIntroLen()) {
+                videoDom.currentTime = skipIntroLen();
+            }
             if (data.waitForLoadding) {
                 if (!videoDom.paused) {
                     videoDom.pause();
@@ -2762,6 +2902,12 @@
                 // some sites do not load video when paused
                 paused = false;
             }
+            let m3u8Url;
+            try {
+                if (videoDom.src.startsWith('http')) {
+                    m3u8Url = videoDom.src;
+                }
+            } catch { };
             sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
                 password: data.password,
@@ -2770,7 +2916,8 @@
                 currentTime: videoDom.currentTime,
                 paused: paused,
                 duration: videoDom.duration,
-                localTimestamp: this.getLocalTimestamp()
+                localTimestamp: this.getLocalTimestamp(),
+                m3u8Url: m3u8Url
             })
         }
 
@@ -2963,14 +3110,14 @@
             this.waitForLoadding = enabled && b;
         }
 
-        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
+        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url = "") {
             try {
                 if (window.location.pathname == "/page") {
                     let url = new URL(atob(new URL(window.location).searchParams.get("url")));
                     window.location = url;
                 }
             } catch { }
-            WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp);
+            WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url);
             let WSRoom = WS.getRoom();
             if (WSRoom != null) {
                 this.setWaitForLoadding(WSRoom['waitForLoadding']);
@@ -2989,6 +3136,7 @@
             apiUrl.searchParams.set("tempUser", this.tempUser);
             apiUrl.searchParams.set("protected", isRoomProtected());
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
+            apiUrl.searchParams.set("m3u8Url", emptyStrIfUdf(m3u8Url));
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;

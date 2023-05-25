@@ -60,6 +60,11 @@
           <span id="videoTogetherRoomPasswordLabel">{$password_input_lable$}</span>
           <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="{$password_input_placeholder$}">
         </div>
+        <div>
+          <button id="easyShareCopyBtn" class="vt-btn vt-btn-secondary" type="button" style="display: none;">
+            <span>{$copy_easy_share_link$}</span>
+          </button>
+        </div>
       </div>
 
       <div id="voicePannel" class="content" style="display: none;">
@@ -410,8 +415,8 @@
 
   .vt-btn-dangerous {
     color: #fff;
-    border-color: #ff4d4f !important;
-    background-color: #ff4d4f !important;
+    border-color: #ff4d4f;
+    background-color: #ff4d4f;
   }
 
   .vt-btn-dangerous:hover {
@@ -448,8 +453,8 @@
     width: 76px;
   }
 
-  #videoTogetherRoomNameInput:disabled{
-    border: none ;
+  #videoTogetherRoomNameInput:disabled {
+    border: none;
     background-color: transparent;
     color: black;
   }
