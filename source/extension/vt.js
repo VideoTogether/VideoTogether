@@ -1638,6 +1638,7 @@
                     break;
                 case MessageType.JumpToNewPage:
                     window.location = data.url;
+                    window.location.reload();// for hash change
                     break;
                 case MessageType.ChangeVideoVolume:
                     this.ForEachVideo(video => {

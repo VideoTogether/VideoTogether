@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685078857
+// @version      1685097013
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1915,7 +1915,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685078857';
+            this.version = '1685097013';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2343,6 +2343,7 @@
                     break;
                 case MessageType.JumpToNewPage:
                     window.location = data.url;
+                    window.location.reload();// for hash change
                     break;
                 case MessageType.ChangeVideoVolume:
                     this.ForEachVideo(video => {
