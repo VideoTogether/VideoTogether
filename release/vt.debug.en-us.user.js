@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685097013
+// @version      1685101779
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1915,7 +1915,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685097013';
+            this.version = '1685101779';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2343,7 +2343,7 @@
                     break;
                 case MessageType.JumpToNewPage:
                     window.location = data.url;
-                    window.location.reload();// for hash change
+                    // window.location.reload();// for hash change
                     break;
                 case MessageType.ChangeVideoVolume:
                     this.ForEachVideo(video => {
@@ -2766,6 +2766,8 @@
                                 let _url = new URL(window.location);
                                 _url.hash = room['m3u8Url'];
                                 newUrl = _url.href;
+                                window.VideoTogetherEasyShareUrl = room['url'];
+                                window.VideoTogetherEasyShareTitle = room['videoTitle'];
                             }
                         }
                         if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
