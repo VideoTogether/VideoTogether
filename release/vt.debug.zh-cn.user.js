@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685021765
+// @version      1685078857
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1915,7 +1915,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685021765';
+            this.version = '1685078857';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2762,8 +2762,9 @@
                             if (isEmpty(room['m3u8Url'])) {
                                 throw new Error("该视频无法同步");
                             } else {
-                                window.location.hash = room['m3u8Url'];
-                                newUrl = window.location.href;
+                                let _url = new URL(window.location);
+                                _url.hash = room['m3u8Url'];
+                                newUrl = _url.href;
                             }
                         }
                         if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
@@ -3074,6 +3075,7 @@
                     }
                 } catch {
                 };
+                // make the member count update slow
                 sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
             }, 3000);
         }
