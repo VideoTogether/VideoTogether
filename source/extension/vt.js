@@ -2057,8 +2057,9 @@
                             if (isEmpty(room['m3u8Url'])) {
                                 throw new Error("{$video_not_supported$}");
                             } else {
-                                window.location.hash = room['m3u8Url'];
-                                newUrl = window.location.href;
+                                let _url = new URL(window.location);
+                                _url.hash = room['m3u8Url'];
+                                newUrl = _url.href;
                             }
                         }
                         if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
@@ -2369,6 +2370,7 @@
                     }
                 } catch {
                 };
+                // make the member count update slow
                 sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
             }, 3000);
         }

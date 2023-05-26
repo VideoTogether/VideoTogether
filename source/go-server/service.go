@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -219,7 +220,10 @@ type Member struct {
 }
 
 func (m *Member) IsJoined() bool {
-	return m.lastUpdateTimestamp+10 > Timestamp() && m.CurrentUrl == m.room.Url
+
+	return m.lastUpdateTimestamp+10 > Timestamp() &&
+		(m.CurrentUrl == m.room.Url /*same page*/ ||
+			(m.room.M3u8Url != "" && strings.Contains(m.CurrentUrl, m.room.M3u8Url)) /*easy share*/)
 }
 
 func (r *Room) setM3u8Url(url string) {
