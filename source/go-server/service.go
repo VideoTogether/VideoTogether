@@ -143,11 +143,12 @@ func (r *Room) UpdateMember(m Member) {
 }
 
 type Statistics struct {
-	RoomCount          int       `json:"roomCount"`
-	LoaddingTimeList   []float64 `json:"loaddingTimeList"`
-	LoaddingRooms      []Room    `json:"loaddingRooms"`
-	MemberCountList    []int64   `json:"memberCountList"`
-	EasyShareRoomCount int       `json:"easyShareRoomCount"`
+	RoomCount                   int       `json:"roomCount"`
+	LoaddingTimeList            []float64 `json:"loaddingTimeList"`
+	LoaddingRooms               []Room    `json:"loaddingRooms"`
+	MemberCountList             []int64   `json:"memberCountList"`
+	EasyShareRoomCount          int       `json:"easyShareRoomCount"`
+	EasyShareSupportedRoomCount int       `json:"easyShareSupportedRoomCount"`
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -162,6 +163,9 @@ func (s *VideoTogetherService) Statistics() Statistics {
 		} else {
 			if room.isEasyShare {
 				stat.EasyShareRoomCount++
+			}
+			if room.M3u8Url != "" {
+				stat.EasyShareSupportedRoomCount++
 			}
 			stat.RoomCount++
 			idx := room.MemberCount
