@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
 
@@ -12,7 +13,20 @@ import (
 	"github.com/unrolled/render"
 )
 
-const vtVersion = 10408
+var vtVersion = randInt(0, 1e9)
+var adminPassword = randomString(30)
+
+func randomString(l int) string {
+	bytes := make([]byte, l)
+	for i := 0; i < l; i++ {
+		bytes[i] = byte(randInt(65, 90))
+	}
+	return string(bytes)
+}
+
+func randInt(min int, max int) int {
+	return min + rand.Intn(max-min)
+}
 
 type slashFix struct {
 	render *render.Render
@@ -48,6 +62,9 @@ func newSlashFix(
 	mux.HandleFunc("/qps", s.qpsHtml)
 	mux.HandleFunc("/qps_json", s.qpsJson)
 	mux.HandleFunc("/static/check_easy_share", s.handleStaticCheckEasyShare)
+
+	// don't rely on beta APIs
+	mux.HandleFunc("/beta/admin", s.handleBetaAdmin)
 
 	wsHub := newWsHub(vtSrv, qps)
 	go wsHub.run()
@@ -130,6 +147,15 @@ func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) 
 	room.VideoTitle = req.URL.Query().Get("videoTitle")
 
 	h.JSON(res, 200, h.newRoomResponse(room))
+}
+
+func (h *slashFix) handleBetaAdmin(res http.ResponseWriter, req *http.Request) {
+	reqAdminPassword := req.URL.Query().Get("password")
+	if reqAdminPassword != adminPassword {
+		return
+	}
+	reqVtVersion := int(floatParam(req, "vtVersion", nil))
+	vtVersion = reqVtVersion
 }
 
 func (h *slashFix) handleRoomGet(res http.ResponseWriter, req *http.Request) {

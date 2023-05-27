@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -11,7 +12,8 @@ import (
 )
 
 func main() {
-
+	_ = os.WriteFile("admin_password.txt", []byte(adminPassword), 0644)
+	rand.Seed(time.Now().UnixNano())
 	vtSrv := NewVideoTogetherService(time.Minute * 3)
 	server := newSlashFix(
 		render.New(),
