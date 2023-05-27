@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -145,7 +144,6 @@ func (r *Room) UpdateMember(m Member) {
 type Statistics struct {
 	RoomCount                   int       `json:"roomCount"`
 	LoaddingTimeList            []float64 `json:"loaddingTimeList"`
-	LoaddingRooms               []Room    `json:"loaddingRooms"`
 	MemberCountList             []int64   `json:"memberCountList"`
 	EasyShareRoomCount          int       `json:"easyShareRoomCount"`
 	EasyShareSupportedRoomCount int       `json:"easyShareSupportedRoomCount"`
@@ -154,7 +152,6 @@ type Statistics struct {
 func (s *VideoTogetherService) Statistics() Statistics {
 	var stat Statistics
 	stat.LoaddingTimeList = make([]float64, 0)
-	stat.LoaddingRooms = make([]Room, 0)
 	stat.MemberCountList = make([]int64, 10)
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
@@ -175,15 +172,10 @@ func (s *VideoTogetherService) Statistics() Statistics {
 			stat.MemberCountList[idx]++
 			if room.BeginLoaddingTimestamp != 0 {
 				stat.LoaddingTimeList = append(stat.LoaddingTimeList, s.Timestamp()-room.BeginLoaddingTimestamp)
-				stat.LoaddingRooms = append(stat.LoaddingRooms, *room)
 			}
 		}
 		return true
 	})
-	statStr, _ := json.Marshal(stat)
-	// for loadding bug investigation
-	_ = os.WriteFile("stat.json", statStr, 0644)
-	stat.LoaddingRooms = nil
 	sort.Float64s(stat.LoaddingTimeList)
 	return stat
 }
