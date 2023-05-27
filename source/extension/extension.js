@@ -22,17 +22,6 @@
 // ==/UserScript==
 
 (async function () {
-    try {
-        let origin = Element.prototype.attachShadow;
-        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(origin))) {
-            Element.prototype._attachShadow = origin;
-            Element.prototype.attachShadow = function () {
-                console.log('attachShadow');
-                return this._attachShadow({ mode: "open" });
-            };
-        }
-    } catch (e) { };
-
     let version = '{{timestamp}}'
     let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
     function getBrowser() {

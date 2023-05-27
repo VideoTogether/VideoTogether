@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1680960613
+// @version      1685152629
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,18 +22,7 @@
 // ==/UserScript==
 
 (async function () {
-    try {
-        let origin = Element.prototype.attachShadow;
-        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(origin))) {
-            Element.prototype._attachShadow = origin;
-            Element.prototype.attachShadow = function () {
-                console.log('attachShadow');
-                return this._attachShadow({ mode: "open" });
-            };
-        }
-    } catch (e) { };
-
-    let version = '1680960613'
+    let version = '1685152629'
     let type = 'Firefox'
     function getBrowser() {
         switch (type) {

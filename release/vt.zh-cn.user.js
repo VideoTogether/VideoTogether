@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685101779
+// @version      1685152629
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -145,19 +145,39 @@
     }
 
     const Global = {
-        NativePostMessageFunction: null
+        inited: false,
+        NativePostMessageFunction: null,
+        NativeAttachShadow: null,
+        NativeFetch: null
+    }
+
+    function AttachShadow(e, options) {
+        try {
+            return e.attachShadow(options);
+        } catch (err) {
+            GetNativeFunction();
+            return Global.NativeAttachShadow.call(e, options);
+        }
+    }
+
+    function GetNativeFunction() {
+        if (Global.inited) {
+            return;
+        }
+        Global.inited = true;
+        let temp = document.createElement("iframe");
+        hide(temp);
+        document.body.append(temp);
+        Global.NativePostMessageFunction = temp.contentWindow.postMessage;
+        Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
+        Global.NativeFetch = temp.contentWindow.fetch;
     }
 
     function PostMessage(window, data) {
         if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
             window.postMessage(data, "*");
         } else {
-            if (!Global.NativePostMessageFunction) {
-                let temp = document.createElement("iframe");
-                hide(temp);
-                document.body.append(temp);
-                Global.NativePostMessageFunction = temp.contentWindow.postMessage;
-            }
+            GetNativeFunction();
             Global.NativePostMessageFunction.call(window, data, "*");
         }
     }
@@ -886,10 +906,8 @@
                 shadowWrapper.id = "VideoTogetherWrapper";
                 let wrapper;
                 try {
-                    wrapper = shadowWrapper.attachShadow({ mode: "open" });
-                } catch (e) {
-                    wrapper = shadowWrapper._attachShadow({ mode: "open" });
-                }
+                    wrapper = AttachShadow(shadowWrapper, { mode: "open" });
+                } catch (e) { console.error(e); }
 
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
@@ -1915,7 +1933,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685101779';
+            this.version = '1685152629';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2060,15 +2078,10 @@
                     signal: controller.signal
                 });
             } else {
-                if (!this.NativeFetchFunction) {
-                    let temp = document.createElement("iframe");
-                    hide(temp);
-                    document.body.append(temp);
-                    this.NativeFetchFunction = temp.contentWindow.fetch;
-                }
+                GetNativeFunction();
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
-                return await this.NativeFetchFunction.call(window, url, {
+                return await Global.NativeFetch.call(window, url, {
                     method: method,
                     body: data == null ? undefined : JSON.stringify(data),
                     signal: controller.signal
@@ -3265,6 +3278,4 @@
     try {
         document.querySelector("#videoTogetherLoading").remove()
     } catch { }
-
-
 })()

@@ -12,14 +12,14 @@
     }
 
     try {
-        let origin = Element.prototype.attachShadow;
-        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(origin))) {
-            Element.prototype._attachShadow = origin;
-            Element.prototype.attachShadow = function () {
-                console.log('attachShadow');
-                return this._attachShadow({ mode: "open" });
+        let originalAttachShadow = Element.prototype.attachShadow;
+        Element.prototype.attachShadow = function (shadowRootInit = {}) {
+            let modifiedShadowRootInit = {
+                ...shadowRootInit,
+                mode: 'open'
             };
-        }
+            return originalAttachShadow.call(this, modifiedShadowRootInit);
+        };
     } catch (e) { };
 
     let NativePostMessageFunction = undefined;
