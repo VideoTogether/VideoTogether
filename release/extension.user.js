@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685152629
+// @version      1685193687
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,7 +22,7 @@
 // ==/UserScript==
 
 (async function () {
-    let version = '1685152629'
+    let version = '1685193687'
     let type = 'userscript'
     function getBrowser() {
         switch (type) {
@@ -175,14 +175,6 @@
         }
     }
 
-    // let vtVersion = 10407
-    // try {
-    //     let publicVtVersion = await getGM().getValue("PublicVtVersion")
-    //     if (publicVtVersion != null) {
-    //         vtVersion = publicVtVersion;
-    //     }
-    //     console.log(publicVtVersion)
-    // } catch (e) { };
 
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
@@ -209,6 +201,43 @@
             }
         }
     }
+
+    let vtRefreshVersion = version;
+    try {
+        let publicVtVersion = await getGM().getValue("PublicVtVersion")
+        if (publicVtVersion != null) {
+            vtRefreshVersion = vtRefreshVersion + String(publicVtVersion);
+        }
+        console.log(publicVtVersion)
+    } catch (e) { };
+
+    let cachedVt = null;
+    try {
+        let privateCachedVt = await getGM().getValue("PrivateCachedVt");
+        let cachedVersion = null;
+        try {
+            cachedVersion = privateCachedVt['version'];
+        } catch { };
+        if (cachedVersion == vtRefreshVersion) {
+            cachedVt = privateCachedVt['data'];
+        } else {
+            console.log("Refresh VT");
+            fetch(`https://2gether.video/release/vt.${language}.user.js?vtRefreshVersion=` + vtRefreshVersion)
+                .then(r => r.text())
+                .then(data => getGM().setValue('PrivateCachedVt', {
+                    'version': vtRefreshVersion,
+                    'data': data
+                }))
+                .catch(() => {
+                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js?vtRefreshVersion=` + vtRefreshVersion)
+                        .then(r => r.text())
+                        .then(data => getGM().setValue('PrivateCachedVt', {
+                            'version': vtRefreshVersion,
+                            'data': data
+                        }))
+                })
+        }
+    } catch (e) { };
 
     async function AppendKey(key) {
         let keysStr = await getGM().getValue("VideoTogetherKeys");
@@ -446,13 +475,6 @@
                 if (e.blockedURI.indexOf('2gether.video') != -1) {
                     urlDisabled = true;
                 }
-                // if (e.blockedURI == 'eval') {
-                //     evalDisabled = true;
-                // }
-                // if (e.blockedURI = 'inline') {
-                //     inlineDisabled = true;
-                // }
-                // inlineDisabled && evalDisabled &&
                 if (urlDisabled) {
                     console.log("hot update is not successful")
                     insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
@@ -461,6 +483,7 @@
             });
             // script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             script.src = getBrowser().runtime.getURL(`load.${language}.js`);
+            script.setAttribute("cachedVt", cachedVt);
             break;
         case "userscript_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
@@ -493,6 +516,9 @@
 
     // fallback to china service
     setTimeout(() => {
+        try {
+            document.querySelector("#videoTogetherLoading").remove()
+        } catch { }
         if (type == "Chrome" || type == "Firefox" || type == "Safari") {
             return;
         }
