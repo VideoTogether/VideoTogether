@@ -143,10 +143,11 @@ func (r *Room) UpdateMember(m Member) {
 }
 
 type Statistics struct {
-	RoomCount        int       `json:"roomCount"`
-	LoaddingTimeList []float64 `json:"loaddingTimeList"`
-	LoaddingRooms    []Room    `json:"loaddingRooms"`
-	MemberCountList  []int64   `json:"memberCountList"`
+	RoomCount          int       `json:"roomCount"`
+	LoaddingTimeList   []float64 `json:"loaddingTimeList"`
+	LoaddingRooms      []Room    `json:"loaddingRooms"`
+	MemberCountList    []int64   `json:"memberCountList"`
+	EasyShareRoomCount int       `json:"easyShareRoomCount"`
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -159,6 +160,9 @@ func (s *VideoTogetherService) Statistics() Statistics {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {
 			s.rooms.Delete(key)
 		} else {
+			if room.isEasyShare {
+				stat.EasyShareRoomCount++
+			}
 			stat.RoomCount++
 			idx := room.MemberCount
 			if idx >= len(stat.MemberCountList) {
@@ -204,10 +208,11 @@ type Room struct {
 	BeginLoaddingTimestamp float64 `json:"beginLoaddingTimestamp"`
 	MemberCount            int     `json:"memberCount"`
 
-	userIds  sync.Map
-	members  sync.Map
-	hostId   string
-	password string
+	userIds     sync.Map
+	members     sync.Map
+	hostId      string
+	password    string
+	isEasyShare bool
 }
 
 type Member struct {
@@ -219,11 +224,14 @@ type Member struct {
 	room *Room
 }
 
+func (m *Member) IsEasyShare() bool {
+	return m.room.M3u8Url != "" && strings.Contains(m.CurrentUrl, m.room.M3u8Url)
+}
+
 func (m *Member) IsJoined() bool {
 
 	return m.lastUpdateTimestamp+10 > Timestamp() &&
-		(m.CurrentUrl == m.room.Url /*same page*/ ||
-			(m.room.M3u8Url != "" && strings.Contains(m.CurrentUrl, m.room.M3u8Url)) /*easy share*/)
+		(m.CurrentUrl == m.room.Url /*same page*/ || m.IsEasyShare() /*easy share*/)
 }
 
 func (r *Room) setM3u8Url(url string) {
@@ -233,8 +241,10 @@ func (r *Room) setM3u8Url(url string) {
 func (r *Room) UpdateMemberData() {
 	count := 0
 	waitForLoadding := false
+	isEasyShare := false
 	r.members.Range(func(key, value any) bool {
 		member := value.(*Member)
+		isEasyShare = isEasyShare || member.IsEasyShare()
 		if member != nil && member.IsJoined() {
 			count++
 			waitForLoadding = waitForLoadding || member.IsLoadding
@@ -248,6 +258,7 @@ func (r *Room) UpdateMemberData() {
 	}
 	r.MemberCount = count
 	r.WaitForLoadding = waitForLoadding
+	r.isEasyShare = isEasyShare
 }
 
 func (r *Room) HasAccess(password string) bool {
