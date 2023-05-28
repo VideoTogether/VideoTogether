@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685252740
+// @version      1685253065
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -54,6 +54,10 @@
     }
     function isEasyShareEnabled() {
         try {
+            const hostname = window.location.hostname;
+            if (hostname.endsWith("iqiyi.com") || hostname.endsWith("qq.com") || hostname.endsWith("youku.com")) {
+                return false;
+            }
             return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare;
         } catch {
             return false;
@@ -1933,7 +1937,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685252740';
+            this.version = '1685253065';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

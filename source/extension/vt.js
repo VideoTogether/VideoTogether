@@ -54,6 +54,10 @@
     }
     function isEasyShareEnabled() {
         try {
+            const hostname = window.location.hostname;
+            if (hostname.endsWith("iqiyi.com") || hostname.endsWith("qq.com") || hostname.endsWith("youku.com")) {
+                return false;
+            }
             return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare;
         } catch {
             return false;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685152629
+// @version      1685253065
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -54,6 +54,10 @@
     }
     function isEasyShareEnabled() {
         try {
+            const hostname = window.location.hostname;
+            if (hostname.endsWith("iqiyi.com") || hostname.endsWith("qq.com") || hostname.endsWith("youku.com")) {
+                return false;
+            }
             return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare;
         } catch {
             return false;
@@ -1933,7 +1937,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685152629';
+            this.version = '1685253065';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2877,27 +2881,31 @@
                 this.videoMap.get(this.activatedVideo.id) != undefined &&
                 this.videoMap.get(this.activatedVideo.id).refreshTime + VIDEO_EXPIRED_SECOND >= Date.now() / 1000) {
                 // do we need use this rule for member role? when multi closest videos?
-                return this.activatedVideo;
+                // return this.activatedVideo;
             }
 
+            // get the longest video for master
+            const _duration = this.duration == undefined ? 1e9 : this.duration;
             let closest = 1e10;
             let closestVideo = undefined;
-            let _this = this;
+            const videoDurationList = [];
             this.videoMap.forEach((video, id) => {
                 try {
-                    if (_this.duration == undefined) {
-                        closestVideo = video;
+                    if (!isFinite(video.duration)) {
                         return;
                     }
+                    videoDurationList.push(video.duration);
                     if (closestVideo == undefined) {
                         closestVideo = video;
                     }
-                    if (Math.abs(video.duration - _this.duration) < closest) {
-                        closest = Math.abs(video.duration - _this.duration);
+                    if (Math.abs(video.duration - _duration) < closest) {
+                        closest = Math.abs(video.duration - _duration);
                         closestVideo = video;
                     }
                 } catch (e) { console.error(e); }
             });
+            // collect this for debug
+            this.videoDurationList = videoDurationList;
             return closestVideo;
         }
 
