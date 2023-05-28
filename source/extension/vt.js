@@ -2172,27 +2172,31 @@
                 this.videoMap.get(this.activatedVideo.id) != undefined &&
                 this.videoMap.get(this.activatedVideo.id).refreshTime + VIDEO_EXPIRED_SECOND >= Date.now() / 1000) {
                 // do we need use this rule for member role? when multi closest videos?
-                return this.activatedVideo;
+                // return this.activatedVideo;
             }
 
+            // get the longest video for master
+            const _duration = this.duration == undefined ? 1e9 : this.duration;
             let closest = 1e10;
             let closestVideo = undefined;
-            let _this = this;
+            const videoDurationList = [];
             this.videoMap.forEach((video, id) => {
                 try {
-                    if (_this.duration == undefined) {
-                        closestVideo = video;
+                    if (!isFinite(video.duration)) {
                         return;
                     }
+                    videoDurationList.push(video.duration);
                     if (closestVideo == undefined) {
                         closestVideo = video;
                     }
-                    if (Math.abs(video.duration - _this.duration) < closest) {
-                        closest = Math.abs(video.duration - _this.duration);
+                    if (Math.abs(video.duration - _duration) < closest) {
+                        closest = Math.abs(video.duration - _duration);
                         closestVideo = video;
                     }
                 } catch (e) { console.error(e); }
             });
+            // collect this for debug
+            this.videoDurationList = videoDurationList;
             return closestVideo;
         }
 
