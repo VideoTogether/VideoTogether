@@ -149,6 +149,8 @@ type Statistics struct {
 	EasyShareSupportedRoomCount int       `json:"easyShareSupportedRoomCount"`
 	D1                          int
 	D2                          int
+	EasyshareSucc               int
+	EasyshareErr                int
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -157,6 +159,8 @@ func (s *VideoTogetherService) Statistics() Statistics {
 	stat.MemberCountList = make([]int64, 10)
 	stat.D1 = updatePanic
 	stat.D2 = joinPanic
+	stat.EasyshareSucc = easyshareSucc
+	stat.EasyshareErr = easyshareErr
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {

@@ -16,6 +16,9 @@ import (
 var vtVersion = randInt(0, 1e9)
 var adminPassword = randomString(30)
 
+var easyshareSucc = 0
+var easyshareErr = 0
+
 func Init() {
 	vtVersion = randInt(0, 1e9)
 	adminPassword = randomString(30)
@@ -70,6 +73,7 @@ func newSlashFix(
 
 	// don't rely on beta APIs
 	mux.HandleFunc("/beta/admin", s.handleBetaAdmin)
+	mux.HandleFunc("/beta/counter", s.handleCounter)
 
 	wsHub := newWsHub(vtSrv, qps)
 	go wsHub.run()
@@ -224,6 +228,18 @@ func (h *slashFix) handleKraken(res http.ResponseWriter, req *http.Request) {
 
 func (h *slashFix) handleStatistics(res http.ResponseWriter, req *http.Request) {
 	h.JSON(res, 200, h.vtSrv.Statistics())
+}
+
+func (h *slashFix) handleCounter(res http.ResponseWriter, req *http.Request) {
+	key := req.URL.Query().Get("key")
+	switch key {
+	case "easyshare_succ":
+		easyshareSucc++
+		break
+	case "easyshare_err":
+		easyshareErr++
+		break
+	}
 }
 
 func (h *slashFix) qpsHtml(w http.ResponseWriter, _ *http.Request) {
