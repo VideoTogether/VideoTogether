@@ -14,6 +14,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+var joinPanic = 0
+var updatePanic = 0
+
 func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
@@ -272,6 +275,12 @@ func (c *Client) joinRoom(rawReq *WsRequestMessage) {
 		return
 	}
 
+	if c.roomName != "" && c.roomName != req.RoomName {
+		joinPanic++
+		c.conn.Close()
+		return
+	}
+
 	c.roomName = req.RoomName
 	c.hub.addClientToRoom(req.RoomName, c)
 	c.reply(rawReq.Method, RoomResponse{
@@ -314,6 +323,13 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 		return
 	}
 	roomPw := GetMD5Hash(req.Password)
+
+	if c.roomName != "" && c.roomName != req.Room.Name {
+		updatePanic++
+		c.conn.Close()
+		return
+	}
+
 	c.roomName = req.Room.Name
 
 	room, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(c.ctx, req.Name, roomPw, req.TempUser)

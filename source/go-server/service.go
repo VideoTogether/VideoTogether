@@ -147,12 +147,16 @@ type Statistics struct {
 	MemberCountList             []int64   `json:"memberCountList"`
 	EasyShareRoomCount          int       `json:"easyShareRoomCount"`
 	EasyShareSupportedRoomCount int       `json:"easyShareSupportedRoomCount"`
+	D1                          int
+	D2                          int
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
 	var stat Statistics
 	stat.LoaddingTimeList = make([]float64, 0)
 	stat.MemberCountList = make([]int64, 10)
+	stat.D1 = updatePanic
+	stat.D2 = joinPanic
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {

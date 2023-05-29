@@ -16,6 +16,11 @@ import (
 var vtVersion = randInt(0, 1e9)
 var adminPassword = randomString(30)
 
+func Init() {
+	vtVersion = randInt(0, 1e9)
+	adminPassword = randomString(30)
+}
+
 func randomString(l int) string {
 	bytes := make([]byte, l)
 	for i := 0; i < l; i++ {

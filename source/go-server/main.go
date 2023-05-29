@@ -7,11 +7,18 @@ import (
 	"strings"
 	"time"
 
+	_ "net/http/pprof"
+
 	"github.com/VideoTogether/VideoTogether/internal/qps"
 	"github.com/unrolled/render"
 )
 
 func main() {
+	// go func() {
+	// 	log.Println(http.ListenAndServe("localhost:6060", nil))
+	// }()
+
+	Init()
 	_ = os.WriteFile("admin_password.txt", []byte(adminPassword), 0644)
 	rand.Seed(time.Now().UnixNano())
 	vtSrv := NewVideoTogetherService(time.Minute * 3)

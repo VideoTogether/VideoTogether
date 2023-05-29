@@ -6,3 +6,6 @@ main
 VideoTogether
 *.exe
 admin_password.txt
+private.pem
+certificate.crt
+.vscode
