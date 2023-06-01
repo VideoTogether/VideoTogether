@@ -46,14 +46,28 @@ func newWsHub(vtSrv *VideoTogetherService, qps *qps.QP) *Hub {
 	}
 }
 
+type BroadcastType int32
+
+const (
+	ALL     BroadcastType = 0
+	MEMBERS BroadcastType = 1
+	HOST    BroadcastType = 2
+)
+
 type Broadcast struct {
 	RoomName string
+	Type     BroadcastType
 	Message  interface{}
 }
 
 type WsRoomResponse struct {
 	Method string       `json:"method"`
 	Data   RoomResponse `json:"data"`
+}
+
+type WsResponse struct {
+	Method string `json:"method"`
+	Data   any    `json:"data"`
 }
 
 type RoomClients struct {
@@ -118,6 +132,16 @@ func (h *Hub) run() {
 					client := key.(*Client)
 					if client.isHost {
 						if !room.IsHost(client.lastTempUserId) {
+							return true
+						}
+					}
+					switch message.Type {
+					case MEMBERS:
+						if client.isHost {
+							return true
+						}
+					case HOST:
+						if !client.isHost {
 							return true
 						}
 					}
@@ -207,6 +231,17 @@ type UpdateMemberRequest struct {
 	SendLocalTimestamp float64 `json:"sendLocalTimestamp"`
 }
 
+type RealUrlRequest struct {
+	M3u8Url string `json:"m3u8Url"`
+	Idx     int    `json:"idx"`
+	Origin  string `json:"origin"`
+}
+
+type RealUrlResponse struct {
+	Origin string `json:"origin"`
+	Real   string `json:"real"`
+}
+
 type UpdateRoomRequest struct {
 	*Room
 	TempUser           string  `json:"tempUser"`
@@ -251,9 +286,45 @@ func (c *Client) readPump() {
 			c.updateRoom(&req)
 		case "/room/update_member":
 			c.updateMember(&req)
+		case "url_req":
+			c.reqRealUrl(&req)
+		case "url_resp":
+			c.respRealUrl(&req)
 		default:
 			c.reply(req.Method, nil, errors.New("unknown method"))
 		}
+	}
+}
+
+func (c *Client) respRealUrl(rawReq *WsRequestMessage) {
+	var data RealUrlResponse
+	if err := json.Unmarshal(rawReq.Data, &data); err != nil {
+		c.reply(rawReq.Method, nil, errors.New("invalid data"))
+		return
+	}
+	c.hub.broadcast <- Broadcast{
+		RoomName: c.roomName,
+		Type:     MEMBERS,
+		Message: WsResponse{
+			Method: "url_resp",
+			Data:   data,
+		},
+	}
+}
+
+func (c *Client) reqRealUrl(rawReq *WsRequestMessage) {
+	var data RealUrlRequest
+	if err := json.Unmarshal(rawReq.Data, &data); err != nil {
+		c.reply(rawReq.Method, nil, errors.New("invalid data"))
+		return
+	}
+	c.hub.broadcast <- Broadcast{
+		RoomName: c.roomName,
+		Type:     HOST,
+		Message: WsResponse{
+			Method: "url_req",
+			Data:   data,
+		},
 	}
 }
 
@@ -356,6 +427,7 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	c.hub.addClientToRoom(room.Name, c)
 	c.hub.broadcast <- Broadcast{
 		RoomName: room.Name,
+		Type:     ALL,
 		Message: WsRoomResponse{
 			Method: rawReq.Method,
 			Data: RoomResponse{
