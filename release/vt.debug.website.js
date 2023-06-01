@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685252740
+// @version      1685625270
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -12,6 +12,7 @@
 (function () {
     const language = 'zh-cn'
     const vtRuntime = `website`;
+    const realUrlCache = {}
 
     let roomUuid = null;
 
@@ -54,6 +55,10 @@
     }
     function isEasyShareEnabled() {
         try {
+            const hostname = window.location.hostname;
+            if (hostname.endsWith("iqiyi.com") || hostname.endsWith("qq.com") || hostname.endsWith("youku.com")) {
+                return false;
+            }
             return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare;
         } catch {
             return false;
@@ -66,6 +71,24 @@
         } catch {
             return false;
         }
+    }
+
+    const mediaUrlsCache = {}
+    function extractMediaUrls(m3u8Content, m3u8Url) {
+        if (mediaUrlsCache[m3u8Url] == undefined) {
+            let lines = m3u8Content.split("\n");
+            let mediaUrls = [];
+            let base = new URL(m3u8Url);
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (line !== "" && !line.startsWith("#")) {
+                    let mediaUrl = new URL(line, base);
+                    mediaUrls.push(mediaUrl.href);
+                }
+            }
+            mediaUrlsCache[m3u8Url] = mediaUrls;
+        }
+        return mediaUrlsCache[m3u8Url];
     }
 
     function fixedEncodeURIComponent(str) {
@@ -192,6 +215,14 @@
 
     function sendMessageToSelf(type, data) {
         PostMessage(window, {
+            source: "VideoTogether",
+            type: type,
+            data: data
+        });
+    }
+
+    function sendMessageTo(w, type, data) {
+        PostMessage(w, {
             source: "VideoTogether",
             type: type,
             data: data
@@ -349,6 +380,12 @@
             if (data['method'] == 'replay_timestamp') {
                 sendMessageToTop(MessageType.TimestampV2Resp, { ts: Date.now() / 1000, data: data['data'] })
             }
+            if (data['method'] == 'url_req') {
+                extension.UrlRequest(data['data'].m3u8Url, data['data'].idx, data['data'].origin)
+            }
+            if (data['method'] == 'url_resp') {
+                realUrlCache[data['data'].origin] = data['data'].real;
+            }
         },
         getRoom() {
             if (this._lastUpdateTime + this._expriedTime > Date.now() / 1000) {
@@ -366,6 +403,25 @@
         async updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url) {
             // TODO localtimestamp
             this.send(WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url));
+        },
+        async urlReq(m3u8Url, idx, origin) {
+            this.send({
+                "method": "url_req",
+                "data": {
+                    "m3u8Url": m3u8Url,
+                    "idx": idx,
+                    "origin": origin
+                }
+            })
+        },
+        async urlResp(origin, real) {
+            this.send({
+                "method": "url_resp",
+                "data": {
+                    "origin": origin,
+                    "real": real,
+                }
+            })
         },
         async updateMember(name, password, isLoadding, currentUrl) {
             this.send(WsUpdateMemberRequest(name, password, isLoadding, currentUrl));
@@ -1873,6 +1929,10 @@
         UpdateMemberStatus: 23,
         TimestampV2Resp: 24,
         EasyShareCheckSucc: 25,
+        FetchRealUrlReq: 26,
+        FetchRealUrlResp: 27,
+        FetchRealUrlFromIframeReq: 28,
+        FetchRealUrlFromIframeResp: 29,
 
         UpdateM3u8Files: 1001,
     }
@@ -1933,7 +1993,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685252740';
+            this.version = '1685625270';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1942,6 +2002,9 @@
             this.voiceVolume = null;
             this.videoVolume = null;
             this.m3u8Files = {};
+            this.m3u8PostWindows = {};
+            this.m3u8MediaUrls = {};
+
             // blockedFiles won't be set to false, if allowed
             this.blockedM3u8Files = {};
             this.allowedM3u8Files = {};
@@ -1968,7 +2031,7 @@
                     // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
-                this.processReceivedMessage(message.data.type, message.data.data);
+                this.processReceivedMessage(message.data.type, message.data.data, message);
             });
 
             // if some element's click be invoked frequenctly, a lot of http request will be sent
@@ -2238,6 +2301,41 @@
             }
         }
 
+        async FetchRemoteRealUrl(m3u8Url, idx, originUrl) {
+            if (realUrlCache[originUrl] != undefined) {
+                return realUrlCache[originUrl];
+            }
+            if (this.isMain) {
+                WS.urlReq(m3u8Url, idx, originUrl);
+            } else {
+                sendMessageToTop(MessageType.FetchRealUrlFromIframeReq, { m3u8Url: m3u8Url, idx: idx, origin: originUrl });
+            }
+
+            return new Promise((res, rej) => {
+                let id = setInterval(() => {
+                    if (realUrlCache[originUrl] != undefined) {
+                        res(realUrlCache[originUrl]);
+                    }
+                }, 200);
+                setTimeout(() => {
+                    clearInterval(id);
+                    rej(null);
+                }, 3000);
+            });
+        }
+
+        UrlRequest(m3u8Url, idx, origin) {
+            for (let id in this.m3u8Files) {
+                this.m3u8Files[id].forEach(m3u8 => {
+                    if (m3u8Url == m3u8.m3u8Url) {
+                        let urls = extractMediaUrls(m3u8.m3u8Content, m3u8.m3u8Url);
+                        let url = urls[idx];
+                        sendMessageTo(this.m3u8PostWindows[id], MessageType.FetchRealUrlReq, { url: url, origin: origin });
+                    }
+                })
+            }
+        }
+
         UpdateStatusText(text, color) {
             if (window.self != window.top) {
                 sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
@@ -2246,7 +2344,7 @@
             }
         }
 
-        async processReceivedMessage(type, data) {
+        async processReceivedMessage(type, data, _msg) {
             let _this = this;
             // console.info("get ", type, window.location, data);
             switch (type) {
@@ -2435,11 +2533,36 @@
                 }
                 case MessageType.UpdateM3u8Files: {
                     this.m3u8Files[data['id']] = data['m3u8Files'];
+                    this.m3u8PostWindows[data['id']] = _msg.source;
                     break;
                 }
                 case MessageType.EasyShareCheckSucc: {
                     console.log('easyShare', data);
                     this.allowedM3u8Files[data['m3u8Url']] = true;
+                    break;
+                }
+                case MessageType.FetchRealUrlReq: {
+                    console.log(data);
+                    if (realUrlCache[data.url] == undefined) {
+                        let r = await fetch(data.url, { method: "HEAD" });
+                        realUrlCache[data.url] = r.url;
+                    }
+                    sendMessageToTop(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
+                    console.log(r);
+                    break;
+                }
+                case MessageType.FetchRealUrlResp: {
+                    console.log(data);
+                    WS.urlResp(data.origin, data.real);
+                    break;
+                }
+                case MessageType.FetchRealUrlFromIframeReq: {
+                    let real = await extension.FetchRemoteRealUrl(data.m3u8Url, data.idx, data.origin);
+                    sendMessageTo(_msg.source, MessageType.FetchRealUrlFromIframeResp, { origin: data.origin, real: real });
+                    break;
+                }
+                case MessageType.FetchRealUrlFromIframeResp: {
+                    realUrlCache[data.origin] = data.real;
                     break;
                 }
                 default:
