@@ -1,3 +1,19 @@
+setTimeout(() => {
+    if (sessionStorage.getItem("VideoTogetherSuperEasyShare") === 'true') {
+        console.log("VideoTogetherSuperEasyShare");
+        // do I need to overwrite setAttribute?
+        Object.defineProperty(HTMLVideoElement.prototype, 'src', {
+            set: function (v) {
+                fetch(v, { method: "HEAD" }).then(r => {
+                    this.setAttribute('src', r.url);
+                }).catch(e => {
+                    this.setAttribute('src', v);
+                })
+            },
+            get: function () { return this.getAttribute('src') }
+        })
+    }
+}, 1);
 
 (() => {
     let MessageType = {

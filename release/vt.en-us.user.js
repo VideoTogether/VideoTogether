@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685625270
+// @version      1685806000
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -298,6 +298,7 @@
             let id = setInterval(() => {
                 if (roomUuid != null) {
                     res(roomUuid);
+                    clearInterval(id);
                 }
             }, 200)
             setTimeout(() => {
@@ -1993,7 +1994,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685625270';
+            this.version = '1685806000';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2315,6 +2316,7 @@
                 let id = setInterval(() => {
                     if (realUrlCache[originUrl] != undefined) {
                         res(realUrlCache[originUrl]);
+                        clearInterval(id);
                     }
                 }, 200);
                 setTimeout(() => {
@@ -2548,7 +2550,6 @@
                         realUrlCache[data.url] = r.url;
                     }
                     sendMessageToTop(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
-                    console.log(r);
                     break;
                 }
                 case MessageType.FetchRealUrlResp: {

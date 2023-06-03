@@ -202,14 +202,14 @@
         }
     }
 
-    let vtRefreshVersion = version;
+    let vtRefreshVersion = version+language;
     try {
         let publicVtVersion = await getGM().getValue("PublicVtVersion")
         if (publicVtVersion != null) {
             vtRefreshVersion = vtRefreshVersion + String(publicVtVersion);
         }
-        console.log(publicVtVersion)
     } catch (e) { };
+    console.log(vtRefreshVersion)
 
     let cachedVt = null;
     try {

@@ -298,6 +298,7 @@
             let id = setInterval(() => {
                 if (roomUuid != null) {
                     res(roomUuid);
+                    clearInterval(id);
                 }
             }, 200)
             setTimeout(() => {
@@ -1610,6 +1611,7 @@
                 let id = setInterval(() => {
                     if (realUrlCache[originUrl] != undefined) {
                         res(realUrlCache[originUrl]);
+                        clearInterval(id);
                     }
                 }, 200);
                 setTimeout(() => {
@@ -1843,7 +1845,6 @@
                         realUrlCache[data.url] = r.url;
                     }
                     sendMessageToTop(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
-                    console.log(r);
                     break;
                 }
                 case MessageType.FetchRealUrlResp: {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685193687
+// @version      1685806209
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,7 +22,7 @@
 // ==/UserScript==
 
 (async function () {
-    let version = '1685193687'
+    let version = '1685806209'
     let type = 'Firefox'
     function getBrowser() {
         switch (type) {
@@ -202,14 +202,14 @@
         }
     }
 
-    let vtRefreshVersion = version;
+    let vtRefreshVersion = version+language;
     try {
         let publicVtVersion = await getGM().getValue("PublicVtVersion")
         if (publicVtVersion != null) {
             vtRefreshVersion = vtRefreshVersion + String(publicVtVersion);
         }
-        console.log(publicVtVersion)
     } catch (e) { };
+    console.log(vtRefreshVersion)
 
     let cachedVt = null;
     try {
