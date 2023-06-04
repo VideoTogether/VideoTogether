@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1684414602
+// @version      1685852046
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -12,6 +12,7 @@
 (function () {
     const language = 'en-us'
     const vtRuntime = `extension`;
+    const realUrlCache = {}
 
     let roomUuid = null;
 
@@ -29,6 +30,65 @@
         }
         lastRunQueue.push(Date.now() / 1000);
         return false;
+    }
+
+    function skipIntroLen() {
+        try {
+            let len = parseInt(window.VideoTogetherStorage.SkipIntroLength);
+            if (window.VideoTogetherStorage.SkipIntro && !isNaN(len)) {
+                return len;
+            }
+        } catch { }
+        return 0;
+    }
+
+    function isEmpty(s) {
+        try {
+            return s.length == 0;
+        } catch {
+            return true;
+        }
+    }
+
+    function emptyStrIfUdf(s) {
+        return s == undefined ? "" : s;
+    }
+    function isEasyShareEnabled() {
+        try {
+            const hostname = window.location.hostname;
+            if (hostname.endsWith("iqiyi.com") || hostname.endsWith("qq.com") || hostname.endsWith("youku.com")) {
+                return false;
+            }
+            return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare;
+        } catch {
+            return false;
+        }
+    }
+
+    function isEasyShareMember() {
+        try {
+            return window.VideoTogetherEasyShareMemberSite == true;
+        } catch {
+            return false;
+        }
+    }
+
+    const mediaUrlsCache = {}
+    function extractMediaUrls(m3u8Content, m3u8Url) {
+        if (mediaUrlsCache[m3u8Url] == undefined) {
+            let lines = m3u8Content.split("\n");
+            let mediaUrls = [];
+            let base = new URL(m3u8Url);
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (line !== "" && !line.startsWith("#")) {
+                    let mediaUrl = new URL(line, base);
+                    mediaUrls.push(mediaUrl.href);
+                }
+            }
+            mediaUrlsCache[m3u8Url] = mediaUrls;
+        }
+        return mediaUrlsCache[m3u8Url];
     }
 
     function fixedEncodeURIComponent(str) {
@@ -108,19 +168,39 @@
     }
 
     const Global = {
-        NativePostMessageFunction: null
+        inited: false,
+        NativePostMessageFunction: null,
+        NativeAttachShadow: null,
+        NativeFetch: null
+    }
+
+    function AttachShadow(e, options) {
+        try {
+            return e.attachShadow(options);
+        } catch (err) {
+            GetNativeFunction();
+            return Global.NativeAttachShadow.call(e, options);
+        }
+    }
+
+    function GetNativeFunction() {
+        if (Global.inited) {
+            return;
+        }
+        Global.inited = true;
+        let temp = document.createElement("iframe");
+        hide(temp);
+        document.body.append(temp);
+        Global.NativePostMessageFunction = temp.contentWindow.postMessage;
+        Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
+        Global.NativeFetch = temp.contentWindow.fetch;
     }
 
     function PostMessage(window, data) {
         if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
             window.postMessage(data, "*");
         } else {
-            if (!Global.NativePostMessageFunction) {
-                let temp = document.createElement("iframe");
-                hide(temp);
-                document.body.append(temp);
-                Global.NativePostMessageFunction = temp.contentWindow.postMessage;
-            }
+            GetNativeFunction();
             Global.NativePostMessageFunction.call(window, data, "*");
         }
     }
@@ -141,6 +221,14 @@
         });
     }
 
+    function sendMessageTo(w, type, data) {
+        PostMessage(w, {
+            source: "VideoTogether",
+            type: type,
+            data: data
+        });
+    }
+
     function initRangeSlider(slider) {
         const min = slider.min
         const max = slider.max
@@ -153,7 +241,7 @@
         });
     }
 
-    function WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
+    function WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url) {
         return {
             "method": "/room/update",
             "data": {
@@ -168,7 +256,8 @@
                 "duration": duration,
                 "protected": isRoomProtected(),
                 "videoTitle": extension.isMain ? document.title : extension.videoTitle,
-                "sendLocalTimestamp": Date.now() / 1000
+                "sendLocalTimestamp": Date.now() / 1000,
+                "m3u8Url": m3u8Url
             }
         }
     }
@@ -209,6 +298,7 @@
             let id = setInterval(() => {
                 if (roomUuid != null) {
                     res(roomUuid);
+                    clearInterval(id);
                 }
             }, 200)
             setTimeout(() => {
@@ -291,6 +381,12 @@
             if (data['method'] == 'replay_timestamp') {
                 sendMessageToTop(MessageType.TimestampV2Resp, { ts: Date.now() / 1000, data: data['data'] })
             }
+            if (data['method'] == 'url_req') {
+                extension.UrlRequest(data['data'].m3u8Url, data['data'].idx, data['data'].origin)
+            }
+            if (data['method'] == 'url_resp') {
+                realUrlCache[data['data'].origin] = data['data'].real;
+            }
         },
         getRoom() {
             if (this._lastUpdateTime + this._expriedTime > Date.now() / 1000) {
@@ -305,9 +401,28 @@
                 this._socket.send(JSON.stringify(data));
             } catch { }
         },
-        async updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
+        async updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url) {
             // TODO localtimestamp
-            this.send(WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp));
+            this.send(WSUpdateRoomRequest(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url));
+        },
+        async urlReq(m3u8Url, idx, origin) {
+            this.send({
+                "method": "url_req",
+                "data": {
+                    "m3u8Url": m3u8Url,
+                    "idx": idx,
+                    "origin": origin
+                }
+            })
+        },
+        async urlResp(origin, real) {
+            this.send({
+                "method": "url_resp",
+                "data": {
+                    "origin": origin,
+                    "real": real,
+                }
+            })
         },
         async updateMember(name, password, isLoadding, currentUrl) {
             this.send(WsUpdateMemberRequest(name, password, isLoadding, currentUrl));
@@ -848,10 +963,8 @@
                 shadowWrapper.id = "VideoTogetherWrapper";
                 let wrapper;
                 try {
-                    wrapper = shadowWrapper.attachShadow({ mode: "open" });
-                } catch (e) {
-                    wrapper = shadowWrapper._attachShadow({ mode: "open" });
-                }
+                    wrapper = AttachShadow(shadowWrapper, { mode: "open" });
+                } catch (e) { console.error(e); }
 
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
@@ -916,6 +1029,11 @@
         <div>
           <span id="videoTogetherRoomPasswordLabel">Password</span>
           <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="Host's password">
+        </div>
+        <div>
+          <button id="easyShareCopyBtn" class="vt-btn vt-btn-secondary" type="button" style="display: none;">
+            <span>Copy Easy Share Link</span>
+          </button>
         </div>
       </div>
 
@@ -1267,8 +1385,8 @@
 
   .vt-btn-dangerous {
     color: #fff;
-    border-color: #ff4d4f !important;
-    background-color: #ff4d4f !important;
+    border-color: #ff4d4f;
+    background-color: #ff4d4f;
   }
 
   .vt-btn-dangerous:hover {
@@ -1305,8 +1423,8 @@
     width: 76px;
   }
 
-  #videoTogetherRoomNameInput:disabled{
-    border: none ;
+  #videoTogetherRoomNameInput:disabled {
+    border: none;
     background-color: transparent;
     color: black;
   }
@@ -1588,6 +1706,17 @@
                 this.videoVolume = wrapper.querySelector("#videoVolume");
                 this.callVolumeSlider = wrapper.querySelector("#callVolume");
                 this.callErrorBtn = wrapper.querySelector("#callErrorBtn");
+                this.easyShareCopyBtn = wrapper.querySelector("#easyShareCopyBtn");
+                this.easyShareCopyBtn.onclick = async () => {
+                    try {
+                        await navigator.clipboard.writeText("Click the link to watch together with me：<main_share_link>"
+                            .replace("<main_share_link>", extension.generateEasyShareLink())
+                            .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                        popupError("Copied");
+                    } catch {
+                        popupError("Copy failed");
+                    }
+                }
                 this.callErrorBtn.onclick = () => {
                     Voice.join("", window.videoTogetherExtension.roomName);
                 }
@@ -1729,6 +1858,7 @@
             this.inputRoomName.placeholder = "Name of room"
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
+            hide(this.easyShareCopyBtn);
             this.isInRoom = false;
         }
 
@@ -1799,6 +1929,13 @@
         RoomDataNotification: 22,
         UpdateMemberStatus: 23,
         TimestampV2Resp: 24,
+        EasyShareCheckSucc: 25,
+        FetchRealUrlReq: 26,
+        FetchRealUrlResp: 27,
+        FetchRealUrlFromIframeReq: 28,
+        FetchRealUrlFromIframeResp: 29,
+
+        UpdateM3u8Files: 1001,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1857,7 +1994,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1684414602';
+            this.version = '1685852046';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -1865,6 +2002,14 @@
             this.allLinksTargetModified = false;
             this.voiceVolume = null;
             this.videoVolume = null;
+            this.m3u8Files = {};
+            this.m3u8PostWindows = {};
+            this.m3u8MediaUrls = {};
+
+            // blockedFiles won't be set to false, if allowed
+            this.blockedM3u8Files = {};
+            this.allowedM3u8Files = {};
+            this.currentM3u8Url = undefined;
 
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
@@ -1887,7 +2032,7 @@
                     // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
-                this.processReceivedMessage(message.data.type, message.data.data);
+                this.processReceivedMessage(message.data.type, message.data.data, message);
             });
 
             // if some element's click be invoked frequenctly, a lot of http request will be sent
@@ -1933,6 +2078,13 @@
             }
         }
 
+        generateEasyShareLink(china = false) {
+            if (china) {
+                return `https://videotogether.gitee.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`
+            } else {
+                return `https://2gether.video/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
+            }
+        }
 
         async Fetch(url, method = 'GET', data = null) {
             if (!extension.isMain) {
@@ -1990,15 +2142,10 @@
                     signal: controller.signal
                 });
             } else {
-                if (!this.NativeFetchFunction) {
-                    let temp = document.createElement("iframe");
-                    hide(temp);
-                    document.body.append(temp);
-                    this.NativeFetchFunction = temp.contentWindow.fetch;
-                }
+                GetNativeFunction();
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
-                return await this.NativeFetchFunction.call(window, url, {
+                return await Global.NativeFetch.call(window, url, {
                     method: method,
                     body: data == null ? undefined : JSON.stringify(data),
                     signal: controller.signal
@@ -2155,6 +2302,42 @@
             }
         }
 
+        async FetchRemoteRealUrl(m3u8Url, idx, originUrl) {
+            if (realUrlCache[originUrl] != undefined) {
+                return realUrlCache[originUrl];
+            }
+            if (this.isMain) {
+                WS.urlReq(m3u8Url, idx, originUrl);
+            } else {
+                sendMessageToTop(MessageType.FetchRealUrlFromIframeReq, { m3u8Url: m3u8Url, idx: idx, origin: originUrl });
+            }
+
+            return new Promise((res, rej) => {
+                let id = setInterval(() => {
+                    if (realUrlCache[originUrl] != undefined) {
+                        res(realUrlCache[originUrl]);
+                        clearInterval(id);
+                    }
+                }, 200);
+                setTimeout(() => {
+                    clearInterval(id);
+                    rej(null);
+                }, 3000);
+            });
+        }
+
+        UrlRequest(m3u8Url, idx, origin) {
+            for (let id in this.m3u8Files) {
+                this.m3u8Files[id].forEach(m3u8 => {
+                    if (m3u8Url == m3u8.m3u8Url) {
+                        let urls = extractMediaUrls(m3u8.m3u8Content, m3u8.m3u8Url);
+                        let url = urls[idx];
+                        sendMessageTo(this.m3u8PostWindows[id], MessageType.FetchRealUrlReq, { url: url, origin: origin });
+                    }
+                })
+            }
+        }
+
         UpdateStatusText(text, color) {
             if (window.self != window.top) {
                 sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
@@ -2163,7 +2346,7 @@
             }
         }
 
-        async processReceivedMessage(type, data) {
+        async processReceivedMessage(type, data, _msg) {
             let _this = this;
             // console.info("get ", type, window.location, data);
             switch (type) {
@@ -2191,8 +2374,59 @@
                     this.sendMessageToSonWithContext(type, data);
                     break;
                 case MessageType.UpdateRoomRequest:
+                    let m3u8Url = undefined;
+                    if (isEasyShareEnabled()) {
+                        try {
+                            let d = NaN;
+                            let selected = null;
+                            for (let id in this.m3u8Files) {
+                                this.m3u8Files[id].forEach(m3u8 => {
+                                    if (this.allowedM3u8Files[m3u8.m3u8Url] == true) {
+                                        if (isNaN(d) || Math.abs(data.duration - m3u8.duration) < d) {
+                                            d = Math.abs(data.duration - m3u8.duration);
+                                            selected = m3u8;
+                                        }
+                                        return;
+                                    }
+
+                                    if (this.blockedM3u8Files[m3u8.m3u8Url] != true) {
+                                        try {
+                                            // run once
+                                            this.blockedM3u8Files[m3u8.m3u8Url] = true;
+                                            let checkFrame = document.createElement("iframe");
+                                            checkFrame.src = this.video_together_host + '/static/check_easy_share#' + m3u8.m3u8Url;
+                                            hide(checkFrame);
+                                            document.body.append(checkFrame);
+                                            setTimeout(() => checkFrame.remove(), 100000);
+                                        } catch (e) { console.error(e) }
+                                    }
+                                })
+                            }
+                            if (d < 3) {
+                                m3u8Url = selected.m3u8Url;
+                            }
+                        } catch { }
+                        if (data.m3u8Url == undefined) {
+                            data.m3u8Url = m3u8Url;
+                        }
+                        // if (m3u8Url != undefined) {
+                        //     data.m3u8Url
+                        //     data.url = 'https://2gether.video/zh-cn/easyshare.html#' + m3u8Url;
+                        // }
+                    } else {
+                        data.m3u8Url = "";
+                    }
                     try {
-                        await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp);
+                        if (!isEmpty(data.m3u8Url) && isEasyShareEnabled()) {
+                            this.currentM3u8Url = data.m3u8Url;
+                            show(windowPannel.easyShareCopyBtn);
+                        } else {
+                            this.currentM3u8Url = undefined;
+                            hide(windowPannel.easyShareCopyBtn);
+                        }
+                    } catch { };
+                    try {
+                        await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp, data.m3u8Url);
                         if (this.waitForLoadding) {
                             this.UpdateStatusText("wait for memeber loadding", "red");
                         } else {
@@ -2222,6 +2456,7 @@
                     break;
                 case MessageType.JumpToNewPage:
                     window.location = data.url;
+                    // window.location.reload();// for hash change
                     break;
                 case MessageType.ChangeVideoVolume:
                     this.ForEachVideo(video => {
@@ -2296,6 +2531,39 @@
                     let s2 = data['data']['sendServerTimestamp'];
                     let l2 = data['ts']
                     this.UpdateTimestampIfneeded(s1, l1, l2 - s2 + s1);
+                    break;
+                }
+                case MessageType.UpdateM3u8Files: {
+                    this.m3u8Files[data['id']] = data['m3u8Files'];
+                    this.m3u8PostWindows[data['id']] = _msg.source;
+                    break;
+                }
+                case MessageType.EasyShareCheckSucc: {
+                    console.log('easyShare', data);
+                    this.allowedM3u8Files[data['m3u8Url']] = true;
+                    break;
+                }
+                case MessageType.FetchRealUrlReq: {
+                    console.log(data);
+                    if (realUrlCache[data.url] == undefined) {
+                        let r = await fetch(data.url, { method: "HEAD" });
+                        realUrlCache[data.url] = r.url;
+                    }
+                    sendMessageToTop(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
+                    break;
+                }
+                case MessageType.FetchRealUrlResp: {
+                    console.log(data);
+                    WS.urlResp(data.origin, data.real);
+                    break;
+                }
+                case MessageType.FetchRealUrlFromIframeReq: {
+                    let real = await extension.FetchRemoteRealUrl(data.m3u8Url, data.idx, data.origin);
+                    sendMessageTo(_msg.source, MessageType.FetchRealUrlFromIframeResp, { origin: data.origin, real: real });
+                    break;
+                }
+                case MessageType.FetchRealUrlFromIframeResp: {
+                    realUrlCache[data.origin] = data.real;
                     break;
                 }
                 default:
@@ -2627,30 +2895,43 @@
                         let room = await this.GetRoom(this.roomName, this.password);
                         sendMessageToTop(MessageType.RoomDataNotification, room);
                         this.duration = room["duration"];
-                        if (room["url"] != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
+                        let newUrl = room["url"];
+                        if (isEasyShareMember()) {
+                            if (isEmpty(room['m3u8Url'])) {
+                                throw new Error("Can't sync this video");
+                            } else {
+                                let _url = new URL(window.location);
+                                _url.hash = room['m3u8Url'];
+                                newUrl = _url.href;
+                                window.VideoTogetherEasyShareUrl = room['url'];
+                                window.VideoTogetherEasyShareTitle = room['videoTitle'];
+                            }
+                        }
+                        if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
-                                let state = this.GetRoomState(room["url"]);
+                                let state = this.GetRoomState(newUrl);
                                 sendMessageToTop(MessageType.SetTabStorage, state);
                                 setInterval(() => {
-                                    if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == room["url"]) {
+                                    if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == newUrl) {
                                         try {
                                             if (isWeb(window.VideoTogetherStorage.UserscriptType)) {
-                                                if (!this._jumping && window.location.origin != (new URL(room["url"]).origin)) {
+                                                if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
                                                     this._jumping = true;
                                                     alert("Please join again after jump");
                                                 }
                                             }
                                         } catch { };
                                         this.SetTabStorageSuccessCallback = () => {
-                                            sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                            sendMessageToTop(MessageType.JumpToNewPage, { url: newUrl });
+                                            this.SetTabStorageSuccessCallback = () => { };
                                         }
                                     }
                                 }, 200);
                             } else {
-                                if (this.SaveStateToSessionStorageWhenSameOrigin(room["url"])) {
-                                    sendMessageToTop(MessageType.JumpToNewPage, { url: room["url"] });
+                                if (this.SaveStateToSessionStorageWhenSameOrigin(newUrl)) {
+                                    sendMessageToTop(MessageType.JumpToNewPage, { url: newUrl });
                                 } else {
-                                    sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(room["url"]).toString() });
+                                    sendMessageToTop(MessageType.JumpToNewPage, { url: this.linkWithMemberState(newUrl).toString() });
                                 }
                             }
                         } else {
@@ -2721,31 +3002,38 @@
                 this.videoMap.get(this.activatedVideo.id) != undefined &&
                 this.videoMap.get(this.activatedVideo.id).refreshTime + VIDEO_EXPIRED_SECOND >= Date.now() / 1000) {
                 // do we need use this rule for member role? when multi closest videos?
-                return this.activatedVideo;
+                // return this.activatedVideo;
             }
 
+            // get the longest video for master
+            const _duration = this.duration == undefined ? 1e9 : this.duration;
             let closest = 1e10;
             let closestVideo = undefined;
-            let _this = this;
+            const videoDurationList = [];
             this.videoMap.forEach((video, id) => {
                 try {
-                    if (_this.duration == undefined) {
-                        closestVideo = video;
+                    if (!isFinite(video.duration)) {
                         return;
                     }
+                    videoDurationList.push(video.duration);
                     if (closestVideo == undefined) {
                         closestVideo = video;
                     }
-                    if (Math.abs(video.duration - _this.duration) < closest) {
-                        closest = Math.abs(video.duration - _this.duration);
+                    if (Math.abs(video.duration - _duration) < closest) {
+                        closest = Math.abs(video.duration - _duration);
                         closestVideo = video;
                     }
                 } catch (e) { console.error(e); }
             });
+            // collect this for debug
+            this.videoDurationList = videoDurationList;
             return closestVideo;
         }
 
         async SyncMasterVideo(data, videoDom) {
+            if (skipIntroLen() > 0 && videoDom.currentTime < skipIntroLen()) {
+                videoDom.currentTime = skipIntroLen();
+            }
             if (data.waitForLoadding) {
                 if (!videoDom.paused) {
                     videoDom.pause();
@@ -2762,6 +3050,12 @@
                 // some sites do not load video when paused
                 paused = false;
             }
+            let m3u8Url;
+            try {
+                if (videoDom.src.startsWith('http')) {
+                    m3u8Url = videoDom.src;
+                }
+            } catch { };
             sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
                 password: data.password,
@@ -2770,7 +3064,8 @@
                 currentTime: videoDom.currentTime,
                 paused: paused,
                 duration: videoDom.duration,
-                localTimestamp: this.getLocalTimestamp()
+                localTimestamp: this.getLocalTimestamp(),
+                m3u8Url: m3u8Url
             })
         }
 
@@ -2925,6 +3220,7 @@
                     }
                 } catch {
                 };
+                // make the member count update slow
                 sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
             }, 3000);
         }
@@ -2963,14 +3259,15 @@
             this.waitForLoadding = enabled && b;
         }
 
-        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp) {
+        async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url = "") {
+            m3u8Url = emptyStrIfUdf(m3u8Url);
             try {
                 if (window.location.pathname == "/page") {
                     let url = new URL(atob(new URL(window.location).searchParams.get("url")));
                     window.location = url;
                 }
             } catch { }
-            WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp);
+            WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url);
             let WSRoom = WS.getRoom();
             if (WSRoom != null) {
                 this.setWaitForLoadding(WSRoom['waitForLoadding']);
@@ -2989,6 +3286,7 @@
             apiUrl.searchParams.set("tempUser", this.tempUser);
             apiUrl.searchParams.set("protected", isRoomProtected());
             apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
+            apiUrl.searchParams.set("m3u8Url", emptyStrIfUdf(m3u8Url));
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;
@@ -3109,6 +3407,4 @@
     try {
         document.querySelector("#videoTogetherLoading").remove()
     } catch { }
-
-
 })()

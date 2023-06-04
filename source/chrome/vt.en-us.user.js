@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685806000
+// @version      1685852046
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1994,7 +1994,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685806000';
+            this.version = '1685852046';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2923,6 +2923,7 @@
                                         } catch { };
                                         this.SetTabStorageSuccessCallback = () => {
                                             sendMessageToTop(MessageType.JumpToNewPage, { url: newUrl });
+                                            this.SetTabStorageSuccessCallback = () => { };
                                         }
                                     }
                                 }, 200);

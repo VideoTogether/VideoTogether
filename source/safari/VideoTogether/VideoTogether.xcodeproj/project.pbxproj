@@ -51,6 +51,10 @@
 		468287F928F25B10008CFC46 /* vt.zh-cn.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287F528F25B10008CFC46 /* vt.zh-cn.user.js */; };
 		46ACA8EB28F25E8F00F37C93 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 46ACA8EA28F25E8F00F37C93 /* Icon.png */; };
 		46ACA8EC28F25E8F00F37C93 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 46ACA8EA28F25E8F00F37C93 /* Icon.png */; };
+		46D922F82A2C3E61006F8194 /* pre.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F62A2C3E61006F8194 /* pre.js */; };
+		46D922F92A2C3E61006F8194 /* pre.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F62A2C3E61006F8194 /* pre.js */; };
+		46D922FA2A2C3E61006F8194 /* preInjected.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F72A2C3E61006F8194 /* preInjected.js */; };
+		46D922FB2A2C3E61006F8194 /* preInjected.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F72A2C3E61006F8194 /* preInjected.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -129,6 +133,8 @@
 		468287F428F25B10008CFC46 /* vt.en-us.user.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "vt.en-us.user.js"; sourceTree = "<group>"; };
 		468287F528F25B10008CFC46 /* vt.zh-cn.user.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "vt.zh-cn.user.js"; sourceTree = "<group>"; };
 		46ACA8EA28F25E8F00F37C93 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = "Shared (Extension)/Resources/images/Icon.png"; sourceTree = SOURCE_ROOT; };
+		46D922F62A2C3E61006F8194 /* pre.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = pre.js; sourceTree = "<group>"; };
+		46D922F72A2C3E61006F8194 /* preInjected.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = preInjected.js; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -211,6 +217,8 @@
 		4682878128F1CF25008CFC46 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				46D922F62A2C3E61006F8194 /* pre.js */,
+				46D922F72A2C3E61006F8194 /* preInjected.js */,
 				463C5AF728F2BBB8007A2310 /* background.safari.js */,
 				468287F428F25B10008CFC46 /* vt.en-us.user.js */,
 				468287F528F25B10008CFC46 /* vt.zh-cn.user.js */,
@@ -430,9 +438,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				46D922F82A2C3E61006F8194 /* pre.js in Resources */,
 				463C5AF828F2BBB8007A2310 /* background.safari.js in Resources */,
 				468287F228F1DEE2008CFC46 /* load.zh-cn.js in Resources */,
 				468287F828F25B10008CFC46 /* vt.zh-cn.user.js in Resources */,
+				46D922FA2A2C3E61006F8194 /* preInjected.js in Resources */,
 				468287CD28F1CF25008CFC46 /* images in Resources */,
 				468287CF28F1CF25008CFC46 /* manifest.json in Resources */,
 				468287EC28F1D16E008CFC46 /* extension.safari.user.js in Resources */,
@@ -446,9 +456,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				46D922F92A2C3E61006F8194 /* pre.js in Resources */,
 				463C5AF928F2BBB8007A2310 /* background.safari.js in Resources */,
 				468287F328F1DEE2008CFC46 /* load.zh-cn.js in Resources */,
 				468287F928F25B10008CFC46 /* vt.zh-cn.user.js in Resources */,
+				46D922FB2A2C3E61006F8194 /* preInjected.js in Resources */,
 				468287CE28F1CF25008CFC46 /* images in Resources */,
 				468287D028F1CF25008CFC46 /* manifest.json in Resources */,
 				468287ED28F1D16E008CFC46 /* extension.safari.user.js in Resources */,
