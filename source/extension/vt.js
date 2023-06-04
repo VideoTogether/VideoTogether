@@ -55,11 +55,14 @@
     }
     function isEasyShareEnabled() {
         try {
+            if (isWeb()) {
+                return false;
+            }
             const hostname = window.location.hostname;
             if (hostname.endsWith("iqiyi.com") || hostname.endsWith("qq.com") || hostname.endsWith("youku.com")) {
                 return false;
             }
-            return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare;
+            return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare != false;
         } catch {
             return false;
         }
