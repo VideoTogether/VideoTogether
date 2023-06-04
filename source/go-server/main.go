@@ -18,9 +18,9 @@ func main() {
 	// 	log.Println(http.ListenAndServe("localhost:6060", nil))
 	// }()
 
+	rand.Seed(time.Now().UnixNano())
 	Init()
 	_ = os.WriteFile("admin_password.txt", []byte(adminPassword), 0644)
-	rand.Seed(time.Now().UnixNano())
 	vtSrv := NewVideoTogetherService(time.Minute * 3)
 	server := newSlashFix(
 		render.New(),
