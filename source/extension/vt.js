@@ -2218,6 +2218,7 @@
                                         } catch { };
                                         this.SetTabStorageSuccessCallback = () => {
                                             sendMessageToTop(MessageType.JumpToNewPage, { url: newUrl });
+                                            this.SetTabStorageSuccessCallback = () => { };
                                         }
                                     }
                                 }, 200);
