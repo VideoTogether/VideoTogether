@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685879170
+// @version      1685887469
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1997,7 +1997,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685879170';
+            this.version = '1685887469';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3160,6 +3160,11 @@
         }
 
         async SyncMemberVideo(data, videoDom) {
+            if (this.lastSyncMemberVideo + 1 > Date.now() / 1000) {
+                return;
+            }
+            this.lastSyncMemberVideo = Date.now() / 1000;
+
             let room = data.room;
             sendMessageToTop(MessageType.GetRoomData, room);
 
@@ -3169,12 +3174,15 @@
             if (videoDom == undefined) {
                 throw new Error("没有视频");
             }
-
+            let isLoading = (Math.abs(this.memberLastSeek - videoDom.currentTime) < 0.01);
+            this.memberLastSeek = -1;
             if (room["paused"] == false) {
                 videoDom.videoTogetherPaused = false;
                 if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
                     videoDom.currentTime = this.CalculateRealCurrent(room);
                 }
+                // play fail will return so here is safe
+                this.memberLastSeek = videoDom.currentTime;
             } else {
                 videoDom.videoTogetherPaused = true;
                 if (Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
@@ -3216,16 +3224,16 @@
             sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" });
 
             setTimeout(() => {
-                let isLoadding = false;
                 try {
-                    if (document.hasFocus() && Math.abs(room["duration"] - videoDom.duration) < 0.5) {
-                        isLoadding = !isVideoLoadded(videoDom)
+                    if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
+                        isLoading = isLoading && !isVideoLoadded(videoDom)
+                    } else {
+                        isLoading = false;
                     }
-                } catch {
-                };
+                } catch { isLoading = false };
                 // make the member count update slow
-                sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
-            }, 3000);
+                sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoading });
+            }, 1);
         }
 
         async CheckResponse(response) {
