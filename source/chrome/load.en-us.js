@@ -1,6 +1,6 @@
 
 (function () {
-    let version = '1685193687'
+    let version = '1685845106'
 
     try {
         eval(document.currentScript.getAttribute("cachedvt"));
@@ -20,7 +20,12 @@
     if (window.videoTogetherExtension == undefined) {
         let script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + version;
+        try {
+            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + version;
+        } catch {
+            // this is a very secure site. don't inject
+            document.querySelector("#videoTogetherLoading").remove();
+        }
         try {
             document.body.appendChild(script);
         } catch { };
