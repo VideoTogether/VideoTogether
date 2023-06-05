@@ -151,10 +151,18 @@ type Statistics struct {
 	D2                          int
 	EasyshareSucc               int
 	EasyshareErr                int
+	EasyShareFailedUrl          *[]string
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
+	return s.StatisticsN("")
+}
+
+func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	var stat Statistics
+	if pwd == adminPassword {
+		stat.EasyShareFailedUrl = &easyShareFailedList
+	}
 	stat.LoaddingTimeList = make([]float64, 0)
 	stat.MemberCountList = make([]int64, 10)
 	stat.D1 = updatePanic

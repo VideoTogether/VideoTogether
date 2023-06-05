@@ -15,7 +15,7 @@ import (
 
 var vtVersion = randInt(0, 1e9)
 var adminPassword = randomString(30)
-
+var easyShareFailedList = make([]string, 0)
 var easyshareSucc = 0
 var easyshareErr = 0
 
@@ -227,7 +227,7 @@ func (h *slashFix) handleKraken(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *slashFix) handleStatistics(res http.ResponseWriter, req *http.Request) {
-	h.JSON(res, 200, h.vtSrv.Statistics())
+	h.JSON(res, 200, h.vtSrv.StatisticsN(req.URL.Query().Get("password")))
 }
 
 func (h *slashFix) handleCounter(res http.ResponseWriter, req *http.Request) {
@@ -238,6 +238,8 @@ func (h *slashFix) handleCounter(res http.ResponseWriter, req *http.Request) {
 		break
 	case "easyshare_err":
 		easyshareErr++
+		failedUrl := req.URL.Query().Get("failedUrl")
+		easyShareFailedList = append(easyShareFailedList, failedUrl)
 		break
 	}
 }
