@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685887469
+// @version      1686046638
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -13,6 +13,7 @@
     const language = 'zh-cn'
     const vtRuntime = `extension`;
     const realUrlCache = {}
+    const m3u8ContentCache = {}
 
     let roomUuid = null;
 
@@ -390,6 +391,13 @@
             if (data['method'] == 'url_resp') {
                 realUrlCache[data['data'].origin] = data['data'].real;
             }
+            if (data['method'] == 'm3u8_req') {
+                content = extension.GetM3u8Content(data['data'].m3u8Url);
+                WS.m3u8ContentResp(data['data'].m3u8Url, content);
+            }
+            if (data['method'] == 'm3u8_resp') {
+                m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
+            }
         },
         getRoom() {
             if (this._lastUpdateTime + this._expriedTime > Date.now() / 1000) {
@@ -424,6 +432,23 @@
                 "data": {
                     "origin": origin,
                     "real": real,
+                }
+            })
+        },
+        async m3u8ContentReq(m3u8Url){
+            this.send({
+                "method": "m3u8_req",
+                "data": {
+                    "m3u8Url": m3u8Url,
+                }
+            })
+        },
+        async m3u8ContentResp(m3u8Url, content) {
+            this.send({
+                "method": "m3u8_resp",
+                "data": {
+                    "m3u8Url": m3u8Url,
+                    "content": content
                 }
             })
         },
@@ -1997,7 +2022,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685887469';
+            this.version = '1686046638';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2327,6 +2352,37 @@
                     rej(null);
                 }, 3000);
             });
+        }
+
+        async FetchRemoteM3u8Content(m3u8Url){
+            if(m3u8ContentCache[m3u8Url]!=undefined){
+                return m3u8ContentCache[m3u8Url];
+            }
+            WS.m3u8ContentReq(m3u8Url);
+            return new Promise((res,rej)=>{
+                let id = setInterval(() => {
+                    if (m3u8ContentCache[m3u8Url] != undefined) {
+                        res(m3u8ContentCache[m3u8Url]);
+                        clearInterval(id);
+                    }
+                })
+                setTimeout(() => {
+                    clearInterval(id);
+                    rej(null);
+                }, 3000)
+            })
+        }
+
+        GetM3u8Content(m3u8Url){
+            let m3u8Content = "";
+            for (let id in this.m3u8Files) {
+                this.m3u8Files[id].forEach(m3u8 => {
+                    if (m3u8Url == m3u8.m3u8Url) {
+                        m3u8Content = m3u8.m3u8Content;
+                    }
+                })
+            }
+            return m3u8Content;
         }
 
         UrlRequest(m3u8Url, idx, origin) {

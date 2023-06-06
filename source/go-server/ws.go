@@ -178,7 +178,7 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 10240
+	maxMessageSize = 512 * 1024
 )
 
 var (
@@ -242,6 +242,15 @@ type RealUrlResponse struct {
 	Real   string `json:"real"`
 }
 
+type M3u8ContentRequest struct {
+	M3u8Url string `json:"m3u8Url"`
+}
+
+type M3u8ContentResponse struct {
+	M3u8Url string `json:"m3u8Url"`
+	Content string `json:"content"`
+}
+
 type UpdateRoomRequest struct {
 	*Room
 	TempUser           string  `json:"tempUser"`
@@ -290,9 +299,46 @@ func (c *Client) readPump() {
 			c.reqRealUrl(&req)
 		case "url_resp":
 			c.respRealUrl(&req)
+		case "m3u8_req":
+			c.reqM3u8Content(&req)
+		case "m3u8_resp":
+			c.respM3u8Content(&req)
 		default:
 			c.reply(req.Method, nil, errors.New("unknown method"))
 		}
+	}
+}
+
+// TODO need a template function to do this
+func (c *Client) respM3u8Content(rawReq *WsRequestMessage) {
+	var data M3u8ContentResponse
+	if err := json.Unmarshal(rawReq.Data, &data); err != nil {
+		c.reply(rawReq.Method, nil, errors.New("invalid data"))
+		return
+	}
+	c.hub.broadcast <- Broadcast{
+		RoomName: c.roomName,
+		Type:     MEMBERS,
+		Message: WsResponse{
+			Method: "m3u8_resp",
+			Data:   data,
+		},
+	}
+}
+
+func (c *Client) reqM3u8Content(rawReq *WsRequestMessage) {
+	var data M3u8ContentRequest
+	if err := json.Unmarshal(rawReq.Data, &data); err != nil {
+		c.reply(rawReq.Method, nil, errors.New("invalid data"))
+		return
+	}
+	c.hub.broadcast <- Broadcast{
+		RoomName: c.roomName,
+		Type:     HOST,
+		Message: WsResponse{
+			Method: "m3u8_req",
+			Data:   data,
+		},
 	}
 }
 
