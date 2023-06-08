@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685806209
+// @version      1686232490
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,7 +22,7 @@
 // ==/UserScript==
 
 (async function () {
-    let version = '1685806209'
+    let version = '1686232490'
     let type = 'website'
     function getBrowser() {
         switch (type) {
@@ -35,7 +35,7 @@
     }
     let isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
     let isWebsite = (type == "website" || type == "website_debug");
-
+    let isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
 
@@ -202,7 +202,7 @@
         }
     }
 
-    let vtRefreshVersion = version+language;
+    let vtRefreshVersion = version + language;
     try {
         let publicVtVersion = await getGM().getValue("PublicVtVersion")
         if (publicVtVersion != null) {
@@ -257,21 +257,34 @@
         }
     }
 
+    function InsertInlineScript(content) {
+        try {
+            let inlineScript = document.createElement("script");
+            inlineScript.textContent = content;
+            document.head.appendChild(inlineScript);
+        } catch { }
+        try {
+            if (isUserscript) {
+                GM_addElement('script', {
+                    textContent: content,
+                    type: 'text/javascript'
+                });
+            }
+        } catch { }
+        try {
+            if (isWebsite) {
+                eval(content);
+            }
+        } catch { }
+    }
+
     function InsertInlineJs(url) {
         try {
             getGM().xmlHttpRequest({
                 method: "GET",
                 url: url,
                 onload: function (response) {
-                    let inlineScript = document.createElement("script");
-                    inlineScript.textContent = response.responseText;
-                    try {
-                        document.head.appendChild(inlineScript);
-                    } finally {
-                        if (isWebsite) {
-                            eval(response.responseText);
-                        }
-                    }
+                    InsertInlineScript(response.responseText);
                 }
             })
         } catch (e) { };
@@ -499,19 +512,25 @@
             break;
     }
 
-    (document.body || document.documentElement).appendChild(script);
-    if (type != "Chrome" && type != "Safari" && type != "Firefox") {
-        try {
-            // keep this inline inject because shark browser needs this
-            if (isWebsite) {
-                InsertInlineJs(script.src);
+    if (isWebsite || isUserscript) {
+        if (cachedVt != null) {
+            InsertInlineScript(cachedVt);
+        }
+        setTimeout(() => {
+            if (!ExtensionInitSuccess) {
+                (document.body || document.documentElement).appendChild(script);
+                if (isWebsite) {
+                    // keep this inline inject because shark browser needs this
+                    InsertInlineJs(script.src);
+                }
+                GM_addElement('script', {
+                    src: script.src,
+                    type: 'text/javascript'
+                })
             }
-
-            GM_addElement('script', {
-                src: script.src,
-                type: 'text/javascript'
-            })
-        } catch (e) { };
+        }, 10);
+    } else {
+        (document.body || document.documentElement).appendChild(script);
     }
 
     // fallback to china service
