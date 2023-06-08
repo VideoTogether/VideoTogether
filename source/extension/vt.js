@@ -438,7 +438,7 @@
                 }
             })
         },
-        async m3u8ContentReq(m3u8Url){
+        async m3u8ContentReq(m3u8Url) {
             this.send({
                 "method": "m3u8_req",
                 "data": {
@@ -1302,6 +1302,7 @@
             this.cspBlockedHost = {};
 
             this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
+            this.video_together_main_host = '{{{ {"":"./config/release_host","order":0} }}}';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video"]
 
@@ -1652,12 +1653,12 @@
             });
         }
 
-        async FetchRemoteM3u8Content(m3u8Url){
-            if(m3u8ContentCache[m3u8Url]!=undefined){
+        async FetchRemoteM3u8Content(m3u8Url) {
+            if (m3u8ContentCache[m3u8Url] != undefined) {
                 return m3u8ContentCache[m3u8Url];
             }
             WS.m3u8ContentReq(m3u8Url);
-            return new Promise((res,rej)=>{
+            return new Promise((res, rej) => {
                 let id = setInterval(() => {
                     if (m3u8ContentCache[m3u8Url] != undefined) {
                         res(m3u8ContentCache[m3u8Url]);
@@ -1671,7 +1672,7 @@
             })
         }
 
-        GetM3u8Content(m3u8Url){
+        GetM3u8Content(m3u8Url) {
             let m3u8Content = "";
             for (let id in this.m3u8Files) {
                 this.m3u8Files[id].forEach(m3u8 => {
@@ -2020,10 +2021,8 @@
             let response = await this.Fetch(url + "/timestamp");
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
-            if (!this.httpSucc) {
-                this.httpSucc = true
-                this.video_together_host = url;
-            }
+            this.httpSucc = true
+            this.video_together_host = url;
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             sendMessageToTop(MessageType.SetStorageValue, { key: "PublicVtVersion", value: data["vtVersion"] });
         }
@@ -2206,12 +2205,16 @@
                 } catch { }
                 try {
                     if (this.minTrip == 1e9 || !this.httpSucc) {
-                        this.SyncTimeWithServer(this.video_together_host);
+                        this.SyncTimeWithServer(this.video_together_main_host);
                         setTimeout(() => {
                             if (this.minTrip == 1e9 || !this.httpSucc) {
                                 this.SyncTimeWithServer(this.video_together_backup_host);
                             }
                         }, 3000);
+                    } else {
+                        if (this.video_together_host == this.video_together_backup_host) {
+                            this.SyncTimeWithServer(this.video_together_main_host);
+                        }
                     }
                 } catch { };
             }
