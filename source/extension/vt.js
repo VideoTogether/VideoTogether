@@ -1255,7 +1255,7 @@
         RoomDataNotification: 22,
         UpdateMemberStatus: 23,
         TimestampV2Resp: 24,
-        EasyShareCheckSucc: 25,
+        // EasyShareCheckSucc: 25,
         FetchRealUrlReq: 26,
         FetchRealUrlResp: 27,
         FetchRealUrlFromIframeReq: 28,
@@ -1332,10 +1332,6 @@
             this.m3u8Files = {};
             this.m3u8PostWindows = {};
             this.m3u8MediaUrls = {};
-
-            // blockedFiles won't be set to false, if allowed
-            this.blockedM3u8Files = {};
-            this.allowedM3u8Files = {};
             this.currentM3u8Url = undefined;
 
             // we need a common callback function to deal with all message
@@ -1739,25 +1735,11 @@
                             let selected = null;
                             for (let id in this.m3u8Files) {
                                 this.m3u8Files[id].forEach(m3u8 => {
-                                    if (this.allowedM3u8Files[m3u8.m3u8Url] == true) {
-                                        if (isNaN(d) || Math.abs(data.duration - m3u8.duration) < d) {
-                                            d = Math.abs(data.duration - m3u8.duration);
-                                            selected = m3u8;
-                                        }
-                                        return;
+                                    if (isNaN(d) || Math.abs(data.duration - m3u8.duration) < d) {
+                                        d = Math.abs(data.duration - m3u8.duration);
+                                        selected = m3u8;
                                     }
-
-                                    if (this.blockedM3u8Files[m3u8.m3u8Url] != true) {
-                                        try {
-                                            // run once
-                                            this.blockedM3u8Files[m3u8.m3u8Url] = true;
-                                            let checkFrame = document.createElement("iframe");
-                                            checkFrame.src = this.video_together_host + '/static/check_easy_share#' + m3u8.m3u8Url;
-                                            hide(checkFrame);
-                                            document.body.append(checkFrame);
-                                            setTimeout(() => checkFrame.remove(), 100000);
-                                        } catch (e) { console.error(e) }
-                                    }
+                                    return;
                                 })
                             }
                             if (d < 3) {
@@ -1894,11 +1876,6 @@
                 case MessageType.UpdateM3u8Files: {
                     this.m3u8Files[data['id']] = data['m3u8Files'];
                     this.m3u8PostWindows[data['id']] = _msg.source;
-                    break;
-                }
-                case MessageType.EasyShareCheckSucc: {
-                    console.log('easyShare', data);
-                    this.allowedM3u8Files[data['m3u8Url']] = true;
                     break;
                 }
                 case MessageType.FetchRealUrlReq: {
