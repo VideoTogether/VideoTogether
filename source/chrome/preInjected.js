@@ -11,19 +11,15 @@
             HTMLVideoElement.prototype.setAttribute = function (name, value) {
                 try {
                     if (name == 'src' && value.startsWith("http")) {
-                        fetch(value, { method: "HEAD" }).then(r => {
+                        const controller = new AbortController();
+                        fetch(value, { method: "GET", signal: controller.signal }).then(r => {
+                            controller.abort();
                             if (this.getAttribute("src") != value) {
                                 return;
                             }
                             console.log("use real media url", r.url);
                             originalSetAttribute.call(this, name, r.url);
-                        }).catch(e => {
-                            if (this.getAttribute("src") != value) {
-                                return;
-                            }
-                            console.log("use original url", value);
-                            originalSetAttribute.call(this, name, value);
-                        })
+                        }).catch(e => { })
                     }
                 } catch (e) { }
                 originalSetAttribute.call(this, name, value);

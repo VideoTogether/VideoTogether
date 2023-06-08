@@ -212,6 +212,15 @@
         }
     }
 
+    async function Fetch(url, init) {
+        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
+            return await fetch(url, init);
+        } else {
+            GetNativeFunction();
+            Global.NativeFetch.call(window, url, init);
+        }
+    }
+
     function sendMessageToTop(type, data) {
         PostMessage(window.top, {
             source: "VideoTogether",
@@ -1881,7 +1890,12 @@
                 case MessageType.FetchRealUrlReq: {
                     console.log(data);
                     if (realUrlCache[data.url] == undefined) {
-                        let r = await fetch(data.url, { method: "HEAD" });
+                        const controller = new AbortController();
+                        let r = await Fetch(data.url, {
+                            method: "GET",
+                            signal: controller.signal
+                        });
+                        controller.abort();
                         realUrlCache[data.url] = r.url;
                     }
                     sendMessageToTop(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });

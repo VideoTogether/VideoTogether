@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686223024
+// @version      1686225081
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -209,6 +209,15 @@
         } else {
             GetNativeFunction();
             Global.NativePostMessageFunction.call(window, data, "*");
+        }
+    }
+
+    async function Fetch(url, init) {
+        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
+            return await fetch(url, init);
+        } else {
+            GetNativeFunction();
+            Global.NativeFetch.call(window, url, init);
         }
     }
 
@@ -2026,7 +2035,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1686223024';
+            this.version = '1686225081';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2586,7 +2595,12 @@
                 case MessageType.FetchRealUrlReq: {
                     console.log(data);
                     if (realUrlCache[data.url] == undefined) {
-                        let r = await fetch(data.url, { method: "HEAD" });
+                        const controller = new AbortController();
+                        let r = await Fetch(data.url, {
+                            method: "GET",
+                            signal: controller.signal
+                        });
+                        controller.abort();
                         realUrlCache[data.url] = r.url;
                     }
                     sendMessageToTop(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
