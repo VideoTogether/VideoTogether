@@ -1,29 +1,45 @@
-setTimeout(() => {
-    if (sessionStorage.getItem("VideoTogetherSuperEasyShare") === 'true') {
-        console.log("VideoTogetherSuperEasyShare");
-        // do I need to overwrite setAttribute?
-        Object.defineProperty(HTMLVideoElement.prototype, 'src', {
-            set: function (v) {
-                fetch(v, { method: "HEAD" }).then(r => {
-                    this.setAttribute('src', r.url);
-                }).catch(e => {
-                    this.setAttribute('src', v);
-                })
-            },
-            get: function () { return this.getAttribute('src') }
-        })
-    }
-}, 1);
-
 (() => {
-    let MessageType = {
-        UpdateM3u8Files: 1001,
-    }
-
     if (window.VideoTogetherPreinjected) {
         return;
     }
     window.VideoTogetherPreinjected = true;
+
+    setTimeout(() => {
+        if (sessionStorage.getItem("VideoTogetherSuperEasyShare") === 'true') {
+            console.log("VideoTogetherSuperEasyShare");
+            let originalSetAttribute = HTMLVideoElement.prototype.setAttribute;
+            HTMLVideoElement.prototype.setAttribute = function (name, value) {
+                try {
+                    if (name == 'src' && value.startsWith("http")) {
+                        fetch(value, { method: "HEAD" }).then(r => {
+                            if (this.getAttribute("src") != value) {
+                                return;
+                            }
+                            console.log("use real media url", r.url);
+                            originalSetAttribute.call(this, name, r.url);
+                        }).catch(e => {
+                            if (this.getAttribute("src") != value) {
+                                return;
+                            }
+                            console.log("use original url", value);
+                            originalSetAttribute.call(this, name, value);
+                        })
+                    }
+                } catch (e) { }
+                originalSetAttribute.call(this, name, value);
+            }
+
+            Object.defineProperty(HTMLVideoElement.prototype, 'src', {
+                set: function (v) { this.setAttribute("src", v); },
+                get: function () { return this.getAttribute('src') }
+            })
+        }
+    }, 1);
+
+
+    let MessageType = {
+        UpdateM3u8Files: 1001,
+    }
 
     const Global = {
         NativePostMessageFunction: null
