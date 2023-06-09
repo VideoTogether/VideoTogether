@@ -63,7 +63,10 @@
             if (hostname.endsWith(".iqiyi.com") || hostname == "iqiyi.com"
                 || hostname.endsWith(".qq.com") || hostname == "qq.com"
                 || hostname.endsWith(".youku.com") || hostname == "youku.com"
-                || hostname.endsWith(".bilibili.com") || hostname == "bilibili.com") {
+                || hostname.endsWith(".bilibili.com") || hostname == "bilibili.com"
+                || hostname.endsWith(".baidu.com") || hostname == "baidu.com"
+                || hostname.endsWith(".quark.cn") || hostname == "quark.cn"
+                || hostname.endsWith(".aliyundrive.com") || hostname == "aliyundrive.com") {
                 return false;
             }
             return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare != false;
