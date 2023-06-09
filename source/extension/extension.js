@@ -480,10 +480,12 @@
                     // keep this inline inject because shark browser needs this
                     InsertInlineJs(script.src);
                 }
-                GM_addElement('script', {
-                    src: script.src,
-                    type: 'text/javascript'
-                })
+                try {
+                    GM_addElement('script', {
+                        src: script.src,
+                        type: 'text/javascript'
+                    })
+                } catch { }
             }
         }, 10);
     } else {

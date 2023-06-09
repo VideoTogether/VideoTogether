@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686232490
+// @version      1686327299
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,7 +22,7 @@
 // ==/UserScript==
 
 (async function () {
-    let version = '1686232490'
+    let version = '1686327299'
     let type = 'Safari'
     function getBrowser() {
         switch (type) {
@@ -523,10 +523,12 @@
                     // keep this inline inject because shark browser needs this
                     InsertInlineJs(script.src);
                 }
-                GM_addElement('script', {
-                    src: script.src,
-                    type: 'text/javascript'
-                })
+                try {
+                    GM_addElement('script', {
+                        src: script.src,
+                        type: 'text/javascript'
+                    })
+                } catch { }
             }
         }, 10);
     } else {

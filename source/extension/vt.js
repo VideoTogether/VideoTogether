@@ -1004,6 +1004,7 @@
                 let wrapper;
                 try {
                     wrapper = AttachShadow(shadowWrapper, { mode: "open" });
+                    wrapper.addEventListener('keydown', (e) => e.stopPropagation())
                 } catch (e) { console.error(e); }
 
                 this.shadowWrapper = shadowWrapper;
