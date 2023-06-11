@@ -54,19 +54,27 @@
     function emptyStrIfUdf(s) {
         return s == undefined ? "" : s;
     }
+
+    let isEasyShareBlackListDomainCache = undefined;
+    function isEasyShareBlackListDomain() {
+        const domains = [
+            'iqiyi.com', 'qq.com', 'youku.com',
+            'bilibili.com', 'baidu.com', 'quark.cn',
+            'aliyundrive.com', "115.com", "pornhub.com"
+        ];
+        if (isEasyShareBlackListDomainCache == undefined) {
+            const hostname = window.location.hostname;
+            isEasyShareBlackListDomainCache = domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+        }
+        return isEasyShareBlackListDomainCache;
+    }
+
     function isEasyShareEnabled() {
         try {
             if (isWeb()) {
                 return false;
             }
-            const hostname = window.location.hostname;
-            if (hostname.endsWith(".iqiyi.com") || hostname == "iqiyi.com"
-                || hostname.endsWith(".qq.com") || hostname == "qq.com"
-                || hostname.endsWith(".youku.com") || hostname == "youku.com"
-                || hostname.endsWith(".bilibili.com") || hostname == "bilibili.com"
-                || hostname.endsWith(".baidu.com") || hostname == "baidu.com"
-                || hostname.endsWith(".quark.cn") || hostname == "quark.cn"
-                || hostname.endsWith(".aliyundrive.com") || hostname == "aliyundrive.com") {
+            if (isEasyShareBlackListDomain()) {
                 return false;
             }
             return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare != false;

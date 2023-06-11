@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686328298
+// @version      1686481202
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -54,19 +54,27 @@
     function emptyStrIfUdf(s) {
         return s == undefined ? "" : s;
     }
+
+    let isEasyShareBlackListDomainCache = undefined;
+    function isEasyShareBlackListDomain() {
+        const domains = [
+            'iqiyi.com', 'qq.com', 'youku.com',
+            'bilibili.com', 'baidu.com', 'quark.cn',
+            'aliyundrive.com', "115.com", "pornhub.com"
+        ];
+        if (isEasyShareBlackListDomainCache == undefined) {
+            const hostname = window.location.hostname;
+            isEasyShareBlackListDomainCache = domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+        }
+        return isEasyShareBlackListDomainCache;
+    }
+
     function isEasyShareEnabled() {
         try {
             if (isWeb()) {
                 return false;
             }
-            const hostname = window.location.hostname;
-            if (hostname.endsWith(".iqiyi.com") || hostname == "iqiyi.com"
-                || hostname.endsWith(".qq.com") || hostname == "qq.com"
-                || hostname.endsWith(".youku.com") || hostname == "youku.com"
-                || hostname.endsWith(".bilibili.com") || hostname == "bilibili.com"
-                || hostname.endsWith(".baidu.com") || hostname == "baidu.com"
-                || hostname.endsWith(".quark.cn") || hostname == "quark.cn"
-                || hostname.endsWith(".aliyundrive.com") || hostname == "aliyundrive.com") {
+            if (isEasyShareBlackListDomain()) {
                 return false;
             }
             return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare != false;
@@ -2039,7 +2047,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1686328298';
+            this.version = '1686481202';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
