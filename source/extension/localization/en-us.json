@@ -37,6 +37,6 @@
     "copy_easy_share_link": "Copy Easy Share Link",
     "easy_share_link_copied": "Copied",
     "easy_share_link_copy_failed": "Copy failed",
-    "easy_share_line_template": "Click the link to watch together with me：<main_share_link>",
+    "easy_share_line_template": "Click the link to watch together with me: <main_share_link>",
     "video_not_supported": "Can't sync this video"
 }
