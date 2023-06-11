@@ -12,7 +12,6 @@ Welcome to join our Telegram: https://t.me/videotogether_group
 
 Please visit our website https://2gether.video/ for installation guide
 
-This extension will never support Firefox.
 
 ## Development
 
