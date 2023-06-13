@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686664095
+// @version      1686669881
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1132,7 +1132,10 @@
             </button>
           </div>
           <div id="textMessageConnecting" style="display: none;">
-            <span></span>
+            <span id="textMessageConnectingStatus"></span>
+            <button id="textMessageConnectBtn" style="display: none;" class="vt-btn vt-btn-primary" type="button">
+              <span></span>
+            </button>
           </div>
         </div>
       </div>
@@ -1819,6 +1822,21 @@
                 this.easyShareCopyBtn = wrapper.querySelector("#easyShareCopyBtn");
                 this.textMessageChat = wrapper.querySelector("#textMessageChat");
                 this.textMessageConnecting = wrapper.querySelector("#textMessageConnecting");
+                this.textMessageConnectingStatus = wrapper.querySelector("#textMessageConnectingStatus");
+                this.textMessageConnectBtn = wrapper.querySelector("#textMessageConnectBtn");
+                this.textMessageConnectBtn.onclick = () => {
+                    extension.iosTtsEnabled = true;
+                    extension.gotTextMsg("ios", "");
+                    show(this.textMessageConnectingStatus);
+                    hide(this.textMessageConnectBtn);
+                    extension.ScheduledTask();
+                }
+                isAudioVolumeRO().then(ro => {
+                    if (ro) {
+                        hide(this.textMessageConnectingStatus);
+                        show(this.textMessageConnectBtn);
+                    }
+                });
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
                         await navigator.clipboard.writeText("Click the link to watch together with me: <main_share_link>"
@@ -2112,7 +2130,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1686664095';
+            this.version = '1686669881';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2126,6 +2144,8 @@
             this.currentM3u8Url = undefined;
 
             this.currentSendingMsgId = null;
+            this.iosTtsEnabled = false;
+            this.isIos = undefined;
 
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
@@ -2986,9 +3006,12 @@
 
 
             if (this.role != this.RoleEnum.Null) {
+                if (this.isIos == null) {
+                    this.isIos = await isAudioVolumeRO();
+                }
                 WS.connect();
                 if (language == "zh-cn") {
-                    if (WS.isOpen()) {
+                    if (WS.isOpen() && (!this.isIos) || this.iosTtsEnabled) {
                         show(windowPannel.textMessageChat);
                         hide(windowPannel.textMessageConnecting);
                     } else {

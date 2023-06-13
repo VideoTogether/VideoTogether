@@ -1089,6 +1089,21 @@
                 this.easyShareCopyBtn = wrapper.querySelector("#easyShareCopyBtn");
                 this.textMessageChat = wrapper.querySelector("#textMessageChat");
                 this.textMessageConnecting = wrapper.querySelector("#textMessageConnecting");
+                this.textMessageConnectingStatus = wrapper.querySelector("#textMessageConnectingStatus");
+                this.textMessageConnectBtn = wrapper.querySelector("#textMessageConnectBtn");
+                this.textMessageConnectBtn.onclick = () => {
+                    extension.iosTtsEnabled = true;
+                    extension.gotTextMsg("ios", "");
+                    show(this.textMessageConnectingStatus);
+                    hide(this.textMessageConnectBtn);
+                    extension.ScheduledTask();
+                }
+                isAudioVolumeRO().then(ro => {
+                    if (ro) {
+                        hide(this.textMessageConnectingStatus);
+                        show(this.textMessageConnectBtn);
+                    }
+                });
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
                         await navigator.clipboard.writeText("{$easy_share_line_template$}"
@@ -1396,6 +1411,8 @@
             this.currentM3u8Url = undefined;
 
             this.currentSendingMsgId = null;
+            this.iosTtsEnabled = false;
+            this.isIos = undefined;
 
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
@@ -2256,9 +2273,12 @@
 
 
             if (this.role != this.RoleEnum.Null) {
+                if (this.isIos == null) {
+                    this.isIos = await isAudioVolumeRO();
+                }
                 WS.connect();
                 if (language == "zh-cn") {
-                    if (WS.isOpen()) {
+                    if (WS.isOpen() && (!this.isIos) || this.iosTtsEnabled) {
                         show(windowPannel.textMessageChat);
                         hide(windowPannel.textMessageConnecting);
                     } else {
