@@ -251,6 +251,11 @@ type M3u8ContentResponse struct {
 	Content string `json:"content"`
 }
 
+type SingleTextMessage struct {
+	Msg string `json:"msg"`
+	Id  string `json:"id"`
+}
+
 type UpdateRoomRequest struct {
 	*Room
 	TempUser           string  `json:"tempUser"`
@@ -303,9 +308,27 @@ func (c *Client) readPump() {
 			c.reqM3u8Content(&req)
 		case "m3u8_resp":
 			c.respM3u8Content(&req)
+		case "send_txtmsg":
+			c.sendTextMessage(&req)
 		default:
 			c.reply(req.Method, nil, errors.New("unknown method"))
 		}
+	}
+}
+
+func (c *Client) sendTextMessage(rawReq *WsRequestMessage) {
+	var data SingleTextMessage
+	if err := json.Unmarshal(rawReq.Data, &data); err != nil {
+		c.reply(rawReq.Method, nil, errors.New("invalid data"))
+		return
+	}
+	c.hub.broadcast <- Broadcast{
+		RoomName: c.roomName,
+		Type:     ALL,
+		Message: WsResponse{
+			Method: rawReq.Method,
+			Data:   data,
+		},
 	}
 }
 
@@ -426,9 +449,24 @@ func (c *Client) updateMember(rawReq *WsRequestMessage) {
 		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).WrongPassword))
 		return
 	}
-	room.UpdateMember(*req.Member)
+	needNotification := room.UpdateMember(*req.Member)
+	if needNotification {
+		c.hub.broadcast <- Broadcast{
+			RoomName: room.Name,
+			Type:     ALL,
+			Message: WsRoomResponse{
+				Method: rawReq.Method,
+				Data: RoomResponse{
+					// TODO remove this timestamp
+					TimestampResponse: &TimestampResponse{
+						Timestamp: c.hub.vtSrv.Timestamp(),
+					},
+					Room: room,
+				},
+			},
+		}
+	}
 	var endTime = Timestamp()
-
 	c.replyTimestamp(req.SendLocalTimestamp, startTime, endTime)
 }
 

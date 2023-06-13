@@ -13,7 +13,6 @@
     "memeber_role": "Member",
     "no_video_in_this_page": "No video in this page",
     "sync_success": "Sync",
-    "voice_call_experimental_alert": "Voice Call is experimental now",
     "timeout": "timeout",
     "need_to_play_manually": "Need to play manually",
     "no_video": "No video",
@@ -38,5 +37,8 @@
     "easy_share_link_copied": "Copied",
     "easy_share_link_copy_failed": "Copy failed",
     "easy_share_line_template": "Click the link to watch together with me: <main_share_link>",
-    "video_not_supported": "Can't sync this video"
+    "video_not_supported": "Can't sync this video",
+    "textMessageConnecting": "",
+    "textMessageSend": "",
+    "textMessageInput": ""
 }

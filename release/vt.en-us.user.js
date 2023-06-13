@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686481202
+// @version      1686663611
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -348,6 +348,7 @@
             this.timestamp = null;
             this.url = null;
             this.videoTitle = null;
+            this.waitForLoadding = null;
         }
     }
 
@@ -359,6 +360,12 @@
         _lastUpdateTime: 0,
         _lastErrorMessage: null,
         _lastRoom: new Room(),
+        _connectedToService: false,
+        isOpen() {
+            try {
+                return this._socket.readyState = 1 && this._connectedToService;
+            } catch { return false; }
+        },
         async connect() {
             if (this._socket != null) {
                 try {
@@ -373,6 +380,7 @@
             }
             console.log('ws connect');
             this._lastConnectTime = Date.now() / 1000
+            _connectedToService = false;
             try {
                 this.disconnect()
                 this._socket = new WebSocket(`wss://vt.panghair.com:5000/ws?language=${language}`);
@@ -398,11 +406,18 @@
             if (data['method'] == "/room/join") {
                 this._joinedName = data['data']['name'];
             }
-            if (data['method'] == "/room/join" || data['method'] == "/room/update") {
+            if (data['method'] == "/room/join" || data['method'] == "/room/update" || data['method'] == "/room/update_member") {
+                this._connectedToService = true;
                 this._lastRoom = Object.assign(data['data'], Room);
                 this._lastUpdateTime = Date.now() / 1000;
-                if (!isLimited() && extension.role == extension.RoleEnum.Member) {
-                    extension.ScheduledTask();
+                if (!isLimited()) {
+                    if (extension.role == extension.RoleEnum.Member) {
+                        extension.ScheduledTask();
+                    }
+                    if (extension.role == extension.RoleEnum.Master && data['method'] == "/room/update_member") {
+                        extension.setWaitForLoadding(this._lastRoom.waitForLoadding);
+                        extension.ScheduledTask();
+                    }
                 }
             }
             if (data['method'] == 'replay_timestamp') {
@@ -420,6 +435,9 @@
             }
             if (data['method'] == 'm3u8_resp') {
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
+            }
+            if (data['method'] == 'send_txtmsg') {
+                extension.gotTextMsg(data['data'].id, data['data'].msg);
             }
         },
         getRoom() {
@@ -463,6 +481,15 @@
                 "method": "m3u8_req",
                 "data": {
                     "m3u8Url": m3u8Url,
+                }
+            })
+        },
+        async sendTextMessage(id, msg) {
+            this.send({
+                "method": "send_txtmsg",
+                "data": {
+                    "msg": msg,
+                    "id": id
                 }
             })
         },
@@ -1029,6 +1056,18 @@
       <div class="vt-modal-title">VideoTogether</div>
     </div>
 
+    <button style="display: none;" id="easyShareCopyBtn" type="button" class="vt-modal-title-button vt-modal-easyshare">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32">
+            <path fill="currentColor"
+              d="M0 25.472q0 2.368 1.664 4.032t4.032 1.664h18.944q2.336 0 4-1.664t1.664-4.032v-8.192l-3.776 3.168v5.024q0 0.8-0.544 1.344t-1.344 0.576h-18.944q-0.8 0-1.344-0.576t-0.544-1.344v-18.944q0-0.768 0.544-1.344t1.344-0.544h9.472v-3.776h-9.472q-2.368 0-4.032 1.664t-1.664 4v18.944zM5.696 19.808q0 2.752 1.088 5.28 0.512-2.944 2.24-5.344t4.288-3.872 5.632-1.664v5.6l11.36-9.472-11.36-9.472v5.664q-2.688 0-5.152 1.056t-4.224 2.848-2.848 4.224-1.024 5.152zM32 22.080v0 0 0z">
+            </path>
+          </svg>
+        </span>
+      </span>
+    </button>
+
     <a href="https://afdian.net/a/videotogether" target="_blank" id="vtDonate" type="button"
       class="vt-modal-donate vt-modal-title-button">
       <span class="vt-modal-close-x">
@@ -1083,9 +1122,15 @@
           <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="Host's password">
         </div>
         <div>
-          <button id="easyShareCopyBtn" class="vt-btn vt-btn-secondary" type="button" style="display: none;">
-            <span>Copy Easy Share Link</span>
-          </button>
+          <div id="textMessageChat" style="display: none;">
+            <input id="textMessageInput" autocomplete="off" placeholder="">
+            <button id="textMessageSend" class="vt-btn vt-btn-primary" type="button">
+              <span></span>
+            </button>
+          </div>
+          <div id="textMessageConnecting" style="display: none;">
+            <span></span>
+          </div>
         </div>
       </div>
 
@@ -1279,6 +1324,13 @@
     position: absolute;
     top: -1px;
     right: 65px;
+  }
+
+  .vt-modal-easyshare {
+    position: absolute;
+    top: -1px;
+    right: 90px;
+    color: #1aa489 !important;
   }
 
   .vt-modal-donate {
@@ -1483,16 +1535,16 @@
 
   #videoTogetherRoomNameInput,
   #videoTogetherRoomPasswordInput {
-    width: 150px !important;
-    height: auto !important;
-    font-family: inherit !important;
-    font-size: inherit !important;
+    width: 150px;
+    height: auto;
+    font-family: inherit;
+    font-size: inherit;
     display: inline-block;
-    padding: 0 !important;
+    padding: 0;
     color: #00000073;
     background-color: #ffffff;
     border: 1px solid #e9e9e9;
-    margin: 0 !important;
+    margin: 0;
   }
 
   .lds-ellipsis {
@@ -1744,7 +1796,10 @@
                         }
                     });
                 });
-
+                wrapper.querySelector("#textMessageSend").onclick = async () => {
+                    extension.currentSendingMsgId = generateUUID();
+                    WS.sendTextMessage(extension.currentSendingMsgId, select("#textMessageInput").value);
+                }
                 this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
                 this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
                 this.joinRoomButton = wrapper.querySelector("#videoTogetherJoinButton");
@@ -1759,9 +1814,11 @@
                 this.callVolumeSlider = wrapper.querySelector("#callVolume");
                 this.callErrorBtn = wrapper.querySelector("#callErrorBtn");
                 this.easyShareCopyBtn = wrapper.querySelector("#easyShareCopyBtn");
+                this.textMessageChat = wrapper.querySelector("#textMessageChat");
+                this.textMessageConnecting = wrapper.querySelector("#textMessageConnecting");
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
-                        await navigator.clipboard.writeText("Click the link to watch together with me：<main_share_link>"
+                        await navigator.clipboard.writeText("Click the link to watch together with me: <main_share_link>"
                             .replace("<main_share_link>", extension.generateEasyShareLink())
                             .replace("<china_share_link>", extension.generateEasyShareLink(true)));
                         popupError("Copied");
@@ -1889,6 +1946,9 @@
         }
 
         InRoom() {
+            try {
+                speechSynthesis.getVoices();
+            } catch { };
             this.Maximize();
             this.inputRoomName.disabled = true;
             hide(this.lobbyBtnGroup)
@@ -1911,6 +1971,8 @@
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
             hide(this.easyShareCopyBtn);
+            hide(this.textMessageChat);
+            hide(this.textMessageConnecting);
             this.isInRoom = false;
         }
 
@@ -2047,7 +2109,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1686481202';
+            this.version = '1686663611';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2059,6 +2121,8 @@
             this.m3u8PostWindows = {};
             this.m3u8MediaUrls = {};
             this.currentM3u8Url = undefined;
+
+            this.currentSendingMsgId = null;
 
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
@@ -2107,6 +2171,21 @@
                     }, 2000);
                 } catch (e) { console.error(e) }
             }
+        }
+
+        gotTextMsg(id, msg) {
+            try {
+                if (id == this.currentSendingMsgId && msg == select("#textMessageInput").value) {
+                    select("#textMessageInput").value = "";
+                }
+            } catch { }
+            let ssu = new SpeechSynthesisUtterance();
+            ssu.text = msg;
+            ssu.volume = 1;
+            ssu.rate = 1;
+            ssu.pitch = 1;
+            ssu.voice = speechSynthesis.getVoices().find(v => v.lang.toLowerCase() == "zh-cn");
+            speechSynthesis.speak(ssu);
         }
 
         setRole(role) {
@@ -2905,6 +2984,15 @@
 
             if (this.role != this.RoleEnum.Null) {
                 WS.connect();
+                if (language == "zh-cn") {
+                    if (WS.isOpen()) {
+                        show(windowPannel.textMessageChat);
+                        hide(windowPannel.textMessageConnecting);
+                    } else {
+                        hide(windowPannel.textMessageChat);
+                        show(windowPannel.textMessageConnecting);
+                    }
+                }
                 try {
                     if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
                         this.allLinksTargetModified = true;

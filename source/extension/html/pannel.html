@@ -7,6 +7,18 @@
       <div class="vt-modal-title">VideoTogether</div>
     </div>
 
+    <button style="display: none;" id="easyShareCopyBtn" type="button" class="vt-modal-title-button vt-modal-easyshare">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32">
+            <path fill="currentColor"
+              d="M0 25.472q0 2.368 1.664 4.032t4.032 1.664h18.944q2.336 0 4-1.664t1.664-4.032v-8.192l-3.776 3.168v5.024q0 0.8-0.544 1.344t-1.344 0.576h-18.944q-0.8 0-1.344-0.576t-0.544-1.344v-18.944q0-0.768 0.544-1.344t1.344-0.544h9.472v-3.776h-9.472q-2.368 0-4.032 1.664t-1.664 4v18.944zM5.696 19.808q0 2.752 1.088 5.28 0.512-2.944 2.24-5.344t4.288-3.872 5.632-1.664v5.6l11.36-9.472-11.36-9.472v5.664q-2.688 0-5.152 1.056t-4.224 2.848-2.848 4.224-1.024 5.152zM32 22.080v0 0 0z">
+            </path>
+          </svg>
+        </span>
+      </span>
+    </button>
+
     <a href="https://afdian.net/a/videotogether" target="_blank" id="vtDonate" type="button"
       class="vt-modal-donate vt-modal-title-button">
       <span class="vt-modal-close-x">
@@ -61,9 +73,15 @@
           <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="{$password_input_placeholder$}">
         </div>
         <div>
-          <button id="easyShareCopyBtn" class="vt-btn vt-btn-secondary" type="button" style="display: none;">
-            <span>{$copy_easy_share_link$}</span>
-          </button>
+          <div id="textMessageChat" style="display: none;">
+            <input id="textMessageInput" autocomplete="off" placeholder="{$textMessageInput$}">
+            <button id="textMessageSend" class="vt-btn vt-btn-primary" type="button">
+              <span>{$textMessageSend$}</span>
+            </button>
+          </div>
+          <div id="textMessageConnecting" style="display: none;">
+            <span>{$textMessageConnecting$}</span>
+          </div>
         </div>
       </div>
 
@@ -257,6 +275,13 @@
     position: absolute;
     top: -1px;
     right: 65px;
+  }
+
+  .vt-modal-easyshare {
+    position: absolute;
+    top: -1px;
+    right: 90px;
+    color: #1aa489 !important;
   }
 
   .vt-modal-donate {
@@ -461,16 +486,16 @@
 
   #videoTogetherRoomNameInput,
   #videoTogetherRoomPasswordInput {
-    width: 150px !important;
-    height: auto !important;
-    font-family: inherit !important;
-    font-size: inherit !important;
+    width: 150px;
+    height: auto;
+    font-family: inherit;
+    font-size: inherit;
     display: inline-block;
-    padding: 0 !important;
+    padding: 0;
     color: #00000073;
     background-color: #ffffff;
     border: 1px solid #e9e9e9;
-    margin: 0 !important;
+    margin: 0;
   }
 
   .lds-ellipsis {

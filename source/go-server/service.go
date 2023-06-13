@@ -135,10 +135,18 @@ func (r *Room) NewUser(userId string) {
 	r.userIds.Store(userId, true)
 }
 
-func (r *Room) UpdateMember(m Member) {
+func (r *Room) UpdateMember(m Member) bool /*Need to notification room*/ {
 	m.lastUpdateTimestamp = Timestamp()
 	m.room = r
 	r.members.Store(m.UserId, &m)
+	MemberCount := r.MemberCount
+	Loading := r.WaitForLoadding
+	r.UpdateMemberData()
+	if MemberCount == r.MemberCount && Loading == r.WaitForLoadding {
+		return false
+	} else {
+		return true
+	}
 }
 
 type Statistics struct {

@@ -348,6 +348,7 @@
             this.timestamp = null;
             this.url = null;
             this.videoTitle = null;
+            this.waitForLoadding = null;
         }
     }
 
@@ -359,6 +360,12 @@
         _lastUpdateTime: 0,
         _lastErrorMessage: null,
         _lastRoom: new Room(),
+        _connectedToService: false,
+        isOpen() {
+            try {
+                return this._socket.readyState = 1 && this._connectedToService;
+            } catch { return false; }
+        },
         async connect() {
             if (this._socket != null) {
                 try {
@@ -373,6 +380,7 @@
             }
             console.log('ws connect');
             this._lastConnectTime = Date.now() / 1000
+            _connectedToService = false;
             try {
                 this.disconnect()
                 this._socket = new WebSocket(`wss://vt.panghair.com:5000/ws?language=${language}`);
@@ -398,11 +406,18 @@
             if (data['method'] == "/room/join") {
                 this._joinedName = data['data']['name'];
             }
-            if (data['method'] == "/room/join" || data['method'] == "/room/update") {
+            if (data['method'] == "/room/join" || data['method'] == "/room/update" || data['method'] == "/room/update_member") {
+                this._connectedToService = true;
                 this._lastRoom = Object.assign(data['data'], Room);
                 this._lastUpdateTime = Date.now() / 1000;
-                if (!isLimited() && extension.role == extension.RoleEnum.Member) {
-                    extension.ScheduledTask();
+                if (!isLimited()) {
+                    if (extension.role == extension.RoleEnum.Member) {
+                        extension.ScheduledTask();
+                    }
+                    if (extension.role == extension.RoleEnum.Master && data['method'] == "/room/update_member") {
+                        extension.setWaitForLoadding(this._lastRoom.waitForLoadding);
+                        extension.ScheduledTask();
+                    }
                 }
             }
             if (data['method'] == 'replay_timestamp') {
@@ -420,6 +435,9 @@
             }
             if (data['method'] == 'm3u8_resp') {
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
+            }
+            if (data['method'] == 'send_txtmsg') {
+                extension.gotTextMsg(data['data'].id, data['data'].msg);
             }
         },
         getRoom() {
@@ -463,6 +481,15 @@
                 "method": "m3u8_req",
                 "data": {
                     "m3u8Url": m3u8Url,
+                }
+            })
+        },
+        async sendTextMessage(id, msg) {
+            this.send({
+                "method": "send_txtmsg",
+                "data": {
+                    "msg": msg,
+                    "id": id
                 }
             })
         },
@@ -1039,7 +1066,10 @@
                         }
                     });
                 });
-
+                wrapper.querySelector("#textMessageSend").onclick = async () => {
+                    extension.currentSendingMsgId = generateUUID();
+                    WS.sendTextMessage(extension.currentSendingMsgId, select("#textMessageInput").value);
+                }
                 this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
                 this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
                 this.joinRoomButton = wrapper.querySelector("#videoTogetherJoinButton");
@@ -1054,6 +1084,8 @@
                 this.callVolumeSlider = wrapper.querySelector("#callVolume");
                 this.callErrorBtn = wrapper.querySelector("#callErrorBtn");
                 this.easyShareCopyBtn = wrapper.querySelector("#easyShareCopyBtn");
+                this.textMessageChat = wrapper.querySelector("#textMessageChat");
+                this.textMessageConnecting = wrapper.querySelector("#textMessageConnecting");
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
                         await navigator.clipboard.writeText("{$easy_share_line_template$}"
@@ -1184,6 +1216,9 @@
         }
 
         InRoom() {
+            try {
+                speechSynthesis.getVoices();
+            } catch { };
             this.Maximize();
             this.inputRoomName.disabled = true;
             hide(this.lobbyBtnGroup)
@@ -1206,6 +1241,8 @@
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
             hide(this.easyShareCopyBtn);
+            hide(this.textMessageChat);
+            hide(this.textMessageConnecting);
             this.isInRoom = false;
         }
 
@@ -1355,6 +1392,8 @@
             this.m3u8MediaUrls = {};
             this.currentM3u8Url = undefined;
 
+            this.currentSendingMsgId = null;
+
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
@@ -1402,6 +1441,21 @@
                     }, 2000);
                 } catch (e) { console.error(e) }
             }
+        }
+
+        gotTextMsg(id, msg) {
+            try {
+                if (id == this.currentSendingMsgId && msg == select("#textMessageInput").value) {
+                    select("#textMessageInput").value = "";
+                }
+            } catch { }
+            let ssu = new SpeechSynthesisUtterance();
+            ssu.text = msg;
+            ssu.volume = 1;
+            ssu.rate = 1;
+            ssu.pitch = 1;
+            ssu.voice = speechSynthesis.getVoices().find(v => v.lang.toLowerCase() == "zh-cn");
+            speechSynthesis.speak(ssu);
         }
 
         setRole(role) {
@@ -2200,6 +2254,15 @@
 
             if (this.role != this.RoleEnum.Null) {
                 WS.connect();
+                if (language == "zh-cn") {
+                    if (WS.isOpen()) {
+                        show(windowPannel.textMessageChat);
+                        hide(windowPannel.textMessageConnecting);
+                    } else {
+                        hide(windowPannel.textMessageChat);
+                        show(windowPannel.textMessageConnecting);
+                    }
+                }
                 try {
                     if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
                         this.allLinksTargetModified = true;
