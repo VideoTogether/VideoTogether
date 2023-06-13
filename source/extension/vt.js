@@ -410,11 +410,14 @@
                 this._connectedToService = true;
                 this._lastRoom = Object.assign(data['data'], Room);
                 this._lastUpdateTime = Date.now() / 1000;
-                if (!isLimited()) {
-                    if (extension.role == extension.RoleEnum.Member) {
+
+                if (extension.role == extension.RoleEnum.Member) {
+                    if (!isLimited()) {
                         extension.ScheduledTask();
                     }
-                    if (extension.role == extension.RoleEnum.Master && data['method'] == "/room/update_member") {
+                }
+                if (extension.role == extension.RoleEnum.Master && data['method'] == "/room/update_member") {
+                    if (!isLimited()) {
                         extension.setWaitForLoadding(this._lastRoom.waitForLoadding);
                         extension.ScheduledTask();
                     }
