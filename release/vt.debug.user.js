@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686750627
+// @version      1686751752
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2196,7 +2196,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1686750627';
+            this.version = '1686751752';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3080,11 +3080,11 @@
                 WS.connect();
                 if (language == "zh-cn") {
                     if (WS.isOpen()) {
-                        if (speechSynthesis.getVoices().find(v => v.lang.toLowerCase() == "zh-cn") == undefined) {
-                            windowPannel.setTxtMsgInterface(3);
-                        } else {
-                            windowPannel.setTxtMsgInterface(1);
-                        }
+                        // if (speechSynthesis.getVoices().find(v => v.lang.toLowerCase() == "zh-cn") == undefined) {
+                        //     windowPannel.setTxtMsgInterface(3);
+                        // } else {
+                        windowPannel.setTxtMsgInterface(1);
+                        // }
                     } else {
                         windowPannel.setTxtMsgInterface(2);
                     }

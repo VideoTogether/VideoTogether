@@ -2349,11 +2349,11 @@
                 WS.connect();
                 if (language == "zh-cn") {
                     if (WS.isOpen()) {
-                        if (speechSynthesis.getVoices().find(v => v.lang.toLowerCase() == "zh-cn") == undefined) {
-                            windowPannel.setTxtMsgInterface(3);
-                        } else {
-                            windowPannel.setTxtMsgInterface(1);
-                        }
+                        // if (speechSynthesis.getVoices().find(v => v.lang.toLowerCase() == "zh-cn") == undefined) {
+                        //     windowPannel.setTxtMsgInterface(3);
+                        // } else {
+                        windowPannel.setTxtMsgInterface(1);
+                        // }
                     } else {
                         windowPannel.setTxtMsgInterface(2);
                     }
