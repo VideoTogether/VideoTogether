@@ -40,5 +40,7 @@
     "video_not_supported": "该视频无法同步",
     "textMessageConnecting": "连接文字聊天服务器中...",
     "textMessageSend": "发送",
-    "textMessageInput": "文字聊天(测试中)"
+    "textMessageInput": "文字聊天(测试中)",
+    "zhcnTtsMissing": "缺少中文语音包",
+    "you_have_a_new_msg": "VideoTogether: 您有一条新消息，点击屏幕接收"
 }

@@ -1039,6 +1039,9 @@
 
             this.isMain = (window.self == window.top);
             if (this.isMain) {
+                document.addEventListener("click", () => {
+                    this.enableSpeechSynthesis();
+                });
                 this.minimized = false;
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
@@ -1090,20 +1093,8 @@
                 this.textMessageChat = wrapper.querySelector("#textMessageChat");
                 this.textMessageConnecting = wrapper.querySelector("#textMessageConnecting");
                 this.textMessageConnectingStatus = wrapper.querySelector("#textMessageConnectingStatus");
-                this.textMessageConnectBtn = wrapper.querySelector("#textMessageConnectBtn");
-                this.textMessageConnectBtn.onclick = () => {
-                    extension.iosTtsEnabled = true;
-                    extension.gotTextMsg("ios", "");
-                    show(this.textMessageConnectingStatus);
-                    hide(this.textMessageConnectBtn);
-                    extension.ScheduledTask();
-                }
-                isAudioVolumeRO().then(ro => {
-                    if (ro) {
-                        hide(this.textMessageConnectingStatus);
-                        show(this.textMessageConnectBtn);
-                    }
-                });
+                this.zhcnTtsMissing = wrapper.querySelector("#zhcnTtsMissing");
+
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
                         await navigator.clipboard.writeText("{$easy_share_line_template$}"
@@ -1194,6 +1185,84 @@
             } catch { }
         }
 
+        ShowTxtMsgTouchPannel() {
+            try {
+                function exitFullScreen() {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) { /* Safari */
+                        document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) { /* Firefox */
+                        document.mozCancelFullScreen();
+                    }
+                }
+                exitFullScreen();
+            } catch { }
+            if (this.txtMsgTouchPannel == undefined) {
+                this.txtMsgTouchPannel = document.createElement('div');
+                let touch = this.txtMsgTouchPannel;
+                touch.id = "videoTogetherTxtMsgTouch";
+                touch.style.width = "100%";
+                touch.style.height = "100%";
+                touch.style.position = "fixed";
+                touch.style.top = "0";
+                touch.style.left = "0";
+                touch.style.zIndex = "2147483647";
+                touch.style.background = "#fff";
+                touch.style.display = "flex";
+                touch.style.justifyContent = "center";
+                touch.style.alignItems = "center";
+                touch.style.fontSize = "40px";
+                touch.style.color = "black";
+                touch.addEventListener('click', function () {
+                    document.body.removeChild(touch);
+                    windowPannel.txtMsgTouchPannel = undefined;
+                    windowPannel.enableSpeechSynthesis();
+                });
+                document.body.appendChild(touch);
+            }
+            this.setTxtMsgTouchPannelText("{$you_have_a_new_msg$}");
+        }
+
+        setTxtMsgInterface(type) {
+            hide(this.textMessageChat);
+            hide(this.textMessageConnecting);
+            hide(this.textMessageConnectingStatus);
+            hide(this.zhcnTtsMissing);
+            if (language != "zh-cn") {
+                return;
+            }
+            if (type == 0) {
+
+            }
+            if (type == 1) {
+                show(this.textMessageChat);
+            }
+            if (type == 2) {
+                show(this.textMessageConnecting);
+                show(this.textMessageConnectingStatus);
+            }
+            if (type == 3) {
+                show(this.textMessageConnecting);
+                show(this.zhcnTtsMissing);
+            }
+        }
+
+        enableSpeechSynthesis() {
+            if (!extension.speechSynthesisEnabled) {
+                extension.gotTextMsg("", "", true);
+                extension.speechSynthesisEnabled = true;
+            }
+        }
+
+        setTxtMsgTouchPannelText(s) {
+            try {
+                this.txtMsgTouchPannel.removeChild(this.txtMsgTouchTxtNode);
+            } catch { }
+            this.txtMsgTouchTxtNode = document.createTextNode(s);
+            this.txtMsgTouchPannel.appendChild(this.txtMsgTouchTxtNode);
+        }
+
         ShowPannel() {
             if (!document.documentElement.contains(this.shadowWrapper)) {
                 (document.body || document.documentElement).appendChild(this.shadowWrapper);
@@ -1259,8 +1328,7 @@
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
             hide(this.easyShareCopyBtn);
-            hide(this.textMessageChat);
-            hide(this.textMessageConnecting);
+            this.setTxtMsgInterface(0);
             this.isInRoom = false;
         }
 
@@ -1411,9 +1479,9 @@
             this.currentM3u8Url = undefined;
 
             this.currentSendingMsgId = null;
-            this.iosTtsEnabled = false;
-            this.isIos = undefined;
 
+            this.isIos = undefined;
+            this.speechSynthesisEnabled = false;
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
@@ -1463,7 +1531,13 @@
             }
         }
 
-        gotTextMsg(id, msg) {
+        async gotTextMsg(id, msg, prepare = false) {
+            if (!prepare && !extension.speechSynthesisEnabled) {
+                windowPannel.ShowTxtMsgTouchPannel();
+                for (let i = 0; i <= 1000 && !extension.speechSynthesisEnabled; i++) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
             try {
                 if (id == this.currentSendingMsgId && msg == select("#textMessageInput").value) {
                     select("#textMessageInput").value = "";
@@ -1844,10 +1918,6 @@
                         if (data.m3u8Url == undefined) {
                             data.m3u8Url = m3u8Url;
                         }
-                        // if (m3u8Url != undefined) {
-                        //     data.m3u8Url
-                        //     data.url = 'https://2gether.video/zh-cn/easyshare.html#' + m3u8Url;
-                        // }
                     } else {
                         data.m3u8Url = "";
                     }
@@ -2278,12 +2348,14 @@
                 }
                 WS.connect();
                 if (language == "zh-cn") {
-                    if (WS.isOpen() && (!this.isIos) || this.iosTtsEnabled) {
-                        show(windowPannel.textMessageChat);
-                        hide(windowPannel.textMessageConnecting);
+                    if (WS.isOpen()) {
+                        if (speechSynthesis.getVoices().find(v => v.lang.toLowerCase() == "zh-cn") == undefined) {
+                            windowPannel.setTxtMsgInterface(3);
+                        } else {
+                            windowPannel.setTxtMsgInterface(1);
+                        }
                     } else {
-                        hide(windowPannel.textMessageChat);
-                        show(windowPannel.textMessageConnecting);
+                        windowPannel.setTxtMsgInterface(2);
                     }
                 }
                 try {

@@ -16,6 +16,7 @@ import (
 
 var joinPanic = 0
 var updatePanic = 0
+var TxtMsg = 0
 
 func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -317,6 +318,7 @@ func (c *Client) readPump() {
 }
 
 func (c *Client) sendTextMessage(rawReq *WsRequestMessage) {
+	TxtMsg++
 	var data SingleTextMessage
 	if err := json.Unmarshal(rawReq.Data, &data); err != nil {
 		c.reply(rawReq.Method, nil, errors.New("invalid data"))

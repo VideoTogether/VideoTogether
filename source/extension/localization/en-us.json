@@ -40,5 +40,7 @@
     "video_not_supported": "Can't sync this video",
     "textMessageConnecting": "",
     "textMessageSend": "",
-    "textMessageInput": ""
+    "textMessageInput": "",
+    "zhcnTtsMissing": "",
+    "you_have_a_new_msg": "VideoTogether: You got a new message, click the screen to reveive"
 }
