@@ -1072,6 +1072,11 @@
                         }
                     });
                 });
+                wrapper.querySelector("#textMessageInput").addEventListener("keyup", e => {
+                    if (e.key == "Enter") {
+                        wrapper.querySelector("#textMessageSend").click();
+                    }
+                });
                 wrapper.querySelector("#textMessageSend").onclick = async () => {
                     extension.currentSendingMsgId = generateUUID();
                     WS.sendTextMessage(extension.currentSendingMsgId, select("#textMessageInput").value);

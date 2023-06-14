@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686751752
+// @version      1686753897
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1803,6 +1803,11 @@
                         }
                     });
                 });
+                wrapper.querySelector("#textMessageInput").addEventListener("keyup", e => {
+                    if (e.key == "Enter") {
+                        wrapper.querySelector("#textMessageSend").click();
+                    }
+                });
                 wrapper.querySelector("#textMessageSend").onclick = async () => {
                     extension.currentSendingMsgId = generateUUID();
                     WS.sendTextMessage(extension.currentSendingMsgId, select("#textMessageInput").value);
@@ -2196,7 +2201,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1686751752';
+            this.version = '1686753897';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
