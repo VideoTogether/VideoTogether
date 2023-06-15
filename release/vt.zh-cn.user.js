@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686753897
+// @version      1686790728
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1948,8 +1948,8 @@
                 touch.style.display = "flex";
                 touch.style.justifyContent = "center";
                 touch.style.alignItems = "center";
-                touch.style.fontSize = "40px";
-                touch.style.color = "black";
+                touch.style.padding = "1em";
+
                 touch.addEventListener('click', function () {
                     document.body.removeChild(touch);
                     windowPannel.txtMsgTouchPannel = undefined;
@@ -1995,7 +1995,14 @@
             try {
                 this.txtMsgTouchPannel.removeChild(this.txtMsgTouchTxtNode);
             } catch { }
-            this.txtMsgTouchTxtNode = document.createTextNode(s);
+
+            let span = document.createElement('span');
+            span.style.fontSize = "40px";
+            span.style.color = "black";
+            span.style.overflowWrap = "break-word";
+            span.style.textAlign = "center";
+            span.textContent = s;
+            this.txtMsgTouchTxtNode = span;
             this.txtMsgTouchPannel.appendChild(this.txtMsgTouchTxtNode);
         }
 
@@ -2201,7 +2208,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1686753897';
+            this.version = '1686790728';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

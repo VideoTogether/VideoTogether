@@ -1217,8 +1217,8 @@
                 touch.style.display = "flex";
                 touch.style.justifyContent = "center";
                 touch.style.alignItems = "center";
-                touch.style.fontSize = "40px";
-                touch.style.color = "black";
+                touch.style.padding = "1em";
+
                 touch.addEventListener('click', function () {
                     document.body.removeChild(touch);
                     windowPannel.txtMsgTouchPannel = undefined;
@@ -1264,7 +1264,14 @@
             try {
                 this.txtMsgTouchPannel.removeChild(this.txtMsgTouchTxtNode);
             } catch { }
-            this.txtMsgTouchTxtNode = document.createTextNode(s);
+
+            let span = document.createElement('span');
+            span.style.fontSize = "40px";
+            span.style.color = "black";
+            span.style.overflowWrap = "break-word";
+            span.style.textAlign = "center";
+            span.textContent = s;
+            this.txtMsgTouchTxtNode = span;
             this.txtMsgTouchPannel.appendChild(this.txtMsgTouchTxtNode);
         }
 
