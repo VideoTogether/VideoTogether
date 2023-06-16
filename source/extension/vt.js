@@ -1299,9 +1299,14 @@
                 console.log(e);
                 sendMessageToTop(MessageType.SetStorageValue, { key: "PublicMessageVoice", value: voiceSelect.value });
             }
+            voiceSelect.style.fontSize = "20px";
+            voiceSelect.style.height = "50px";
+            voiceSelect.style.maxWidth = "100%";
             try {
                 if (window.VideoTogetherStorage.PublicMessageVoice != undefined) {
                     voiceSelect.value = window.VideoTogetherStorage.PublicMessageVoice;
+                } else {
+                    voiceSelect.value = speechSynthesis.getVoices().find(v => v.default);
                 }
             } catch { };
             this.txtMsgTouchPannel.shadowRoot.appendChild(voiceSelect)
