@@ -32,15 +32,17 @@
     "only_support_https_website": "Only support https website",
     "please_input_room_name": "Please input room name",
     "room_uuid_missing": "uuid is missing",
-    "wait_for_memeber_loadding": "wait for memeber loadding",
+    "wait_for_memeber_loadding": "wait for memeber loading",
     "copy_easy_share_link": "Copy Easy Share Link",
     "easy_share_link_copied": "Copied",
     "easy_share_link_copy_failed": "Copy failed",
     "easy_share_line_template": "Click the link to watch together with me: <main_share_link>",
     "video_not_supported": "Can't sync this video",
-    "textMessageConnecting": "",
-    "textMessageSend": "",
-    "textMessageInput": "",
+    "textMessageConnecting": "Connecting to Message service...",
+    "textMessageSend": "Send",
+    "textMessageInput": "Text Message",
     "zhcnTtsMissing": "",
-    "you_have_a_new_msg": "VideoTogether: You got a new message, click the screen to reveive"
+    "you_have_a_new_msg": "VideoTogether: You got a new message, click the screen to receive",
+    "new_message_change_voice": "New Messages (<a id='changeVoiceBtn' style='color:inherit' href='#''>Change Voice</a>)",
+    "choose_voice_below": "You can select the voice for reading messages:"
 }

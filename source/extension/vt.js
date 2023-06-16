@@ -318,6 +318,12 @@
         x.innerHTML = msg;
         x.className = "show";
         setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
+        let changeVoiceBtn = select('#changeVoiceBtn');
+        if (changeVoiceBtn != undefined) {
+            changeVoiceBtn.onclick = () => {
+                windowPannel.ShowTxtMsgTouchPannel();
+            }
+        }
     }
 
     async function waitForRoomUuid(timeout = 10000) {
@@ -440,6 +446,7 @@
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
             }
             if (data['method'] == 'send_txtmsg') {
+                popupError("{$new_message_change_voice$}");
                 extension.gotTextMsg(data['data'].id, data['data'].msg);
             }
         },
@@ -1203,29 +1210,33 @@
                 }
                 exitFullScreen();
             } catch { }
-            if (this.txtMsgTouchPannel == undefined) {
-                this.txtMsgTouchPannel = document.createElement('div');
-                let touch = this.txtMsgTouchPannel;
-                touch.id = "videoTogetherTxtMsgTouch";
-                touch.style.width = "100%";
-                touch.style.height = "100%";
-                touch.style.position = "fixed";
-                touch.style.top = "0";
-                touch.style.left = "0";
-                touch.style.zIndex = "2147483647";
-                touch.style.background = "#fff";
-                touch.style.display = "flex";
-                touch.style.justifyContent = "center";
-                touch.style.alignItems = "center";
-                touch.style.padding = "1em";
+            try {
+                this.txtMsgTouchPannel.remove();
+            } catch { }
+            this.txtMsgTouchPannel = document.createElement('div');
+            let touch = this.txtMsgTouchPannel;
+            touch.id = "videoTogetherTxtMsgTouch";
+            touch.style.width = "100%";
+            touch.style.height = "100%";
+            touch.style.position = "fixed";
+            touch.style.top = "0";
+            touch.style.left = "0";
+            touch.style.zIndex = "2147483647";
+            touch.style.background = "#fff";
+            touch.style.display = "flex";
+            touch.style.justifyContent = "center";
+            touch.style.alignItems = "center";
+            touch.style.padding = "0px";
+            touch.style.flexDirection = "column";
+            touch.style.lineHeight = "40px";
+            AttachShadow(this.txtMsgTouchPannel, { mode: "open" })
+            touch.addEventListener('click', function () {
+                windowPannel.enableSpeechSynthesis();
+                document.body.removeChild(touch);
+                windowPannel.txtMsgTouchPannel = undefined;
+            });
+            document.body.appendChild(touch);
 
-                touch.addEventListener('click', function () {
-                    document.body.removeChild(touch);
-                    windowPannel.txtMsgTouchPannel = undefined;
-                    windowPannel.enableSpeechSynthesis();
-                });
-                document.body.appendChild(touch);
-            }
             this.setTxtMsgTouchPannelText("{$you_have_a_new_msg$}");
         }
 
@@ -1234,9 +1245,6 @@
             hide(this.textMessageConnecting);
             hide(this.textMessageConnectingStatus);
             hide(this.zhcnTtsMissing);
-            if (language != "zh-cn") {
-                return;
-            }
             if (type == 0) {
 
             }
@@ -1255,24 +1263,48 @@
 
         enableSpeechSynthesis() {
             if (!extension.speechSynthesisEnabled) {
-                extension.gotTextMsg("", "", true);
-                extension.speechSynthesisEnabled = true;
+                try {
+                    extension.gotTextMsg("", "", true);
+                    extension.speechSynthesisEnabled = true;
+                } catch { }
             }
         }
 
         setTxtMsgTouchPannelText(s) {
-            try {
-                this.txtMsgTouchPannel.removeChild(this.txtMsgTouchTxtNode);
-            } catch { }
-
             let span = document.createElement('span');
             span.style.fontSize = "40px";
             span.style.color = "black";
             span.style.overflowWrap = "break-word";
             span.style.textAlign = "center";
+            span.style.lineHeight = "40px";
             span.textContent = s;
-            this.txtMsgTouchTxtNode = span;
-            this.txtMsgTouchPannel.appendChild(this.txtMsgTouchTxtNode);
+            this.txtMsgTouchPannel.shadowRoot.appendChild(span);
+            let voiceSelect = document.createElement('select');
+            this.voiceSelect = voiceSelect;
+            voiceSelect.onclick = (e) => {
+                e.stopPropagation();
+            }
+            let label = span.cloneNode(true);
+            label.textContent = "{$choose_voice_below$}";
+            this.txtMsgTouchPannel.shadowRoot.appendChild(document.createElement('br'));
+            this.txtMsgTouchPannel.shadowRoot.appendChild(label);
+            let voices = speechSynthesis.getVoices();
+            voices.forEach(function (voice, index) {
+                var option = document.createElement('option');
+                option.value = voice.voiceURI;
+                option.textContent = voice.name + ' (' + voice.lang + ')';
+                voiceSelect.appendChild(option);
+            });
+            voiceSelect.oninput = (e) => {
+                console.log(e);
+                sendMessageToTop(MessageType.SetStorageValue, { key: "PublicMessageVoice", value: voiceSelect.value });
+            }
+            try {
+                if (window.VideoTogetherStorage.PublicMessageVoice != undefined) {
+                    voiceSelect.value = window.VideoTogetherStorage.PublicMessageVoice;
+                }
+            } catch { };
+            this.txtMsgTouchPannel.shadowRoot.appendChild(voiceSelect)
         }
 
         ShowPannel() {
@@ -1543,7 +1575,10 @@
             }
         }
 
-        async gotTextMsg(id, msg, prepare = false) {
+        async gotTextMsg(id, msg, prepare = false, idx = -1) {
+            if (idx > speechSynthesis.getVoices().length) {
+                return;
+            }
             if (!prepare && !extension.speechSynthesisEnabled) {
                 windowPannel.ShowTxtMsgTouchPannel();
                 for (let i = 0; i <= 1000 && !extension.speechSynthesisEnabled; i++) {
@@ -1560,7 +1595,23 @@
             ssu.volume = 1;
             ssu.rate = 1;
             ssu.pitch = 1;
-            ssu.voice = speechSynthesis.getVoices().find(v => v.lang.toLowerCase() == "zh-cn");
+            if (idx == -1) {
+                try {
+                    ssu.voice = speechSynthesis.getVoices().find(v => v.voiceURI == window.VideoTogetherStorage.PublicMessageVoice);
+                } catch { }
+            } else {
+                ssu.voice = speechSynthesis.getVoices()[idx];
+            }
+            if (!prepare) {
+                let startTs = 0;
+                ssu.onstart = (e => { startTs = e.timeStamp });
+                ssu.onend = (e => {
+                    const duration = e.timeStamp - startTs;
+                    if (duration < 100) {
+                        this.gotTextMsg(id, msg, prepare, idx + 1);
+                    }
+                });
+            }
             speechSynthesis.speak(ssu);
         }
 
@@ -1998,7 +2049,11 @@
                             this.RecoveryState()
                         }
                     } catch (e) { };
-
+                    try {
+                        if (data.PublicMessageVoice != null) {
+                            windowPannel.voiceSelect.value = data.PublicMessageVoice;
+                        }
+                    } catch { };
                     if (!window.videoTogetherFlyPannel.disableDefaultSize && !window.VideoTogetherSettingEnabled) {
                         if (data.MinimiseDefault) {
                             window.videoTogetherFlyPannel.Minimize(true);
@@ -2359,16 +2414,10 @@
                     this.isIos = await isAudioVolumeRO();
                 }
                 WS.connect();
-                if (language == "zh-cn") {
-                    if (WS.isOpen()) {
-                        // if (speechSynthesis.getVoices().find(v => v.lang.toLowerCase() == "zh-cn") == undefined) {
-                        //     windowPannel.setTxtMsgInterface(3);
-                        // } else {
-                        windowPannel.setTxtMsgInterface(1);
-                        // }
-                    } else {
-                        windowPannel.setTxtMsgInterface(2);
-                    }
+                if (WS.isOpen()) {
+                    windowPannel.setTxtMsgInterface(1);
+                } else {
+                    windowPannel.setTxtMsgInterface(2);
                 }
                 try {
                     if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
