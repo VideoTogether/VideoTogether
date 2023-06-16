@@ -1277,7 +1277,6 @@
             span.style.color = "black";
             span.style.overflowWrap = "break-word";
             span.style.textAlign = "center";
-            span.style.lineHeight = "40px";
             span.textContent = s;
             this.txtMsgTouchPannel.shadowRoot.appendChild(span);
             let voiceSelect = document.createElement('select');
