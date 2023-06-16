@@ -1273,6 +1273,7 @@
         setTxtMsgTouchPannelText(s) {
             let span = document.createElement('span');
             span.style.fontSize = "40px";
+            span.style.lineHeight = "40px";
             span.style.color = "black";
             span.style.overflowWrap = "break-word";
             span.style.textAlign = "center";

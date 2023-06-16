@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686790728
+// @version      1686840680
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1998,6 +1998,7 @@
 
             let span = document.createElement('span');
             span.style.fontSize = "40px";
+            span.style.lineHeight = "40px";
             span.style.color = "black";
             span.style.overflowWrap = "break-word";
             span.style.textAlign = "center";
@@ -2208,7 +2209,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1686790728';
+            this.version = '1686840680';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
