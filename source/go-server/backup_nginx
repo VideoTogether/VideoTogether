@@ -1,0 +1,24 @@
+server {
+    listen 5002 ssl;
+    ssl_certificate /home/maggch/cert/certificate.crt;
+    ssl_certificate_key /home/maggch/cert/private.pem;
+    location / {
+        proxy_pass https://vt.panghair.com:5000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+}
+server {
+    listen 5003 ssl;
+    ssl_certificate /home/maggch/cert/certificate.crt;
+    ssl_certificate_key /home/maggch/cert/private.pem;
+    location / {
+        proxy_pass https://2gether.video/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $proxy_host;
+    }
+}
