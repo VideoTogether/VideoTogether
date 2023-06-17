@@ -2029,6 +2029,13 @@
                     break;
                 case MessageType.JumpToNewPage:
                     window.location = data.url;
+                    let currentUrl = new URL(window.location);
+                    let newUrl = new URL(data.url);
+                    currentUrl.hash = "";
+                    newUrl.hash = "";
+                    if (currentUrl.href == newUrl.href) {
+                        extension.url = data.url;
+                    }
                     // window.location.reload();// for hash change
                     break;
                 case MessageType.ChangeVideoVolume:
