@@ -44,5 +44,6 @@
     "zhcnTtsMissing": "缺少中文语音包",
     "you_have_a_new_msg": "VideoTogether: 您有一条新消息，点击屏幕接收",
     "new_message_change_voice": "有新消息 (<a id='changeVoiceBtn' style='color:inherit' href='#''>修改语音包</a>)",
-    "choose_voice_below": "你可以在下方选择朗读信息的语音:"
+    "choose_voice_below": "你可以在下方选择朗读信息的语音:",
+    "global_notification": "<a target='_blank' href='https://www.bilibili.com/video/BV1hM4y1n7aV/'>最新功能介绍</a>"
 }
