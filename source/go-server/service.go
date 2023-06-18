@@ -77,7 +77,7 @@ func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(ctx *VtContext
 	}
 
 	if room.password != roomPassword {
-		return nil, errors.New(GetErrorMessage(ctx.Language).WrongPassword)
+		return nil, errors.New(GetErrorMessage(ctx.Language).HostWrongPassword)
 	}
 
 	if !room.IsHost(userId) {

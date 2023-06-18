@@ -1,21 +1,24 @@
 package main
 
 type ErrorMessage struct {
-	WrongPassword    string
-	RoomNotExist     string
-	OtherHostSyncing string
+	HostWrongPassword string
+	WrongPassword     string
+	RoomNotExist      string
+	OtherHostSyncing  string
 }
 
 var emLanguages = map[string]*ErrorMessage{
 	"zh-cn": {
-		WrongPassword:    "密码错误",
-		RoomNotExist:     "房间不存在",
-		OtherHostSyncing: "其他房主正在同步",
+		HostWrongPassword: "房间已存在,密码错误",
+		WrongPassword:     "密码错误",
+		RoomNotExist:      "房间不存在",
+		OtherHostSyncing:  "其他房主正在同步",
 	},
 	"en-us": {
-		WrongPassword:    "Wrong Password",
-		RoomNotExist:     "Room Not Exists",
-		OtherHostSyncing: "Other Host Is Syncing",
+		HostWrongPassword: "Room exists, wrong password",
+		WrongPassword:     "Wrong Password",
+		RoomNotExist:      "Room Not Exists",
+		OtherHostSyncing:  "Other Host Is Syncing",
 	},
 }
 
