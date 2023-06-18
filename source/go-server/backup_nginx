@@ -12,13 +12,17 @@ server {
 }
 server {
     listen 5003 ssl;
+    resolver 114.114.114.114;
     ssl_certificate /home/maggch/cert/certificate.crt;
     ssl_certificate_key /home/maggch/cert/private.pem;
-    location / {
-        proxy_pass https://2gether.video/;
+    location ~ ^/release/(.*)$  {
+        proxy_pass https://2gether.video/release/$1;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $proxy_host;
+    }
+    location / {
+        return 404;
     }
 }

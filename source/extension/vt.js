@@ -389,7 +389,7 @@
             _connectedToService = false;
             try {
                 this.disconnect()
-                this._socket = new WebSocket(`wss://vt.panghair.com:5000/ws?language=${language}`);
+                this._socket = new WebSocket(`wss://${extension.video_together_host.replace("https://", "")}/ws?language=${language}`);
                 this._socket.onmessage = async e => {
                     let lines = e.data.split('\n');
                     for (let i = 0; i < lines.length; i++) {
