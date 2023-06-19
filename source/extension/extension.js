@@ -213,6 +213,7 @@
 
     let cachedVt = null;
     try {
+        let vtType = isWebsite ? "website" : "user";
         let privateCachedVt = await getGM().getValue("PrivateCachedVt");
         let cachedVersion = null;
         try {
@@ -222,14 +223,14 @@
             cachedVt = privateCachedVt['data'];
         } else {
             console.log("Refresh VT");
-            fetch(`https://2gether.video/release/vt.${language}.user.js?vtRefreshVersion=` + vtRefreshVersion)
+            fetch(`https://2gether.video/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                 .then(r => r.text())
                 .then(data => getGM().setValue('PrivateCachedVt', {
                     'version': vtRefreshVersion,
                     'data': data
                 }))
                 .catch(() => {
-                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js?vtRefreshVersion=` + vtRefreshVersion)
+                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                         .then(r => r.text())
                         .then(data => getGM().setValue('PrivateCachedVt', {
                             'version': vtRefreshVersion,
