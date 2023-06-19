@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1687062348
+// @version      1687170575
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -120,9 +120,15 @@
         return decodeURIComponent(str.replace(/\+/g, ' '));
     }
 
-    function isWeb(type) {
-        return type == 'website' || type == 'website_debug';
+    function isWeb() {
+        try {
+            let type = window.VideoTogetherStorage.UserscriptType;
+            return type == 'website' || type == 'website_debug';
+        } catch {
+            return false;
+        }
     }
+
     /**
      * @returns {Element}
      */
@@ -2245,7 +2251,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1687062348';
+            this.version = '1687170575';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2809,7 +2815,7 @@
                     }
                     try {
                         if (window.VideoTogetherSettingEnabled == undefined) {
-                            if (!isWeb(window.VideoTogetherStorage.UserscriptType)) {
+                            if (!isWeb()) {
                                 window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
                                 show(select('#videoTogetherSetting'));
                             } else {
@@ -3239,7 +3245,7 @@
                                 setInterval(() => {
                                     if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == newUrl) {
                                         try {
-                                            if (isWeb(window.VideoTogetherStorage.UserscriptType)) {
+                                            if (isWeb()) {
                                                 if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
                                                     this._jumping = true;
                                                     alert("请在跳转后再次加入");

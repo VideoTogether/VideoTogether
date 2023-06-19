@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1686327299
+// @version      1687170531
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,7 +22,7 @@
 // ==/UserScript==
 
 (async function () {
-    let version = '1686327299'
+    let version = '1687170531'
     let type = 'Safari'
     function getBrowser() {
         switch (type) {
@@ -213,6 +213,7 @@
 
     let cachedVt = null;
     try {
+        let vtType = isWebsite ? "website" : "user";
         let privateCachedVt = await getGM().getValue("PrivateCachedVt");
         let cachedVersion = null;
         try {
@@ -222,14 +223,14 @@
             cachedVt = privateCachedVt['data'];
         } else {
             console.log("Refresh VT");
-            fetch(`https://2gether.video/release/vt.${language}.user.js?vtRefreshVersion=` + vtRefreshVersion)
+            fetch(`https://2gether.video/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                 .then(r => r.text())
                 .then(data => getGM().setValue('PrivateCachedVt', {
                     'version': vtRefreshVersion,
                     'data': data
                 }))
                 .catch(() => {
-                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js?vtRefreshVersion=` + vtRefreshVersion)
+                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                         .then(r => r.text())
                         .then(data => getGM().setValue('PrivateCachedVt', {
                             'version': vtRefreshVersion,

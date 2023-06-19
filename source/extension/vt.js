@@ -120,9 +120,15 @@
         return decodeURIComponent(str.replace(/\+/g, ' '));
     }
 
-    function isWeb(type) {
-        return type == 'website' || type == 'website_debug';
+    function isWeb() {
+        try {
+            let type = window.VideoTogetherStorage.UserscriptType;
+            return type == 'website' || type == 'website_debug';
+        } catch {
+            return false;
+        }
     }
+
     /**
      * @returns {Element}
      */
@@ -2078,7 +2084,7 @@
                     }
                     try {
                         if (window.VideoTogetherSettingEnabled == undefined) {
-                            if (!isWeb(window.VideoTogetherStorage.UserscriptType)) {
+                            if (!isWeb()) {
                                 window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
                                 show(select('#videoTogetherSetting'));
                             } else {
@@ -2508,7 +2514,7 @@
                                 setInterval(() => {
                                     if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == newUrl) {
                                         try {
-                                            if (isWeb(window.VideoTogetherStorage.UserscriptType)) {
+                                            if (isWeb()) {
                                                 if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
                                                     this._jumping = true;
                                                     alert("{$please_join_again_after_jump$}");
