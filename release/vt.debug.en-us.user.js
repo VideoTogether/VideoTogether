@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1687170575
+// @version      1687177510
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -234,7 +234,7 @@
             return await fetch(url, init);
         } else {
             GetNativeFunction();
-            Global.NativeFetch.call(window, url, init);
+            return await Global.NativeFetch.call(window, url, init);
         }
     }
 
@@ -2251,7 +2251,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1687170575';
+            this.version = '1687177510';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

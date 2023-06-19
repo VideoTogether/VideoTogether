@@ -234,7 +234,7 @@
             return await fetch(url, init);
         } else {
             GetNativeFunction();
-            Global.NativeFetch.call(window, url, init);
+            return await Global.NativeFetch.call(window, url, init);
         }
     }
 
