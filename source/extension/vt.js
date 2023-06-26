@@ -1312,7 +1312,7 @@
                 if (window.VideoTogetherStorage.PublicMessageVoice != undefined) {
                     voiceSelect.value = window.VideoTogetherStorage.PublicMessageVoice;
                 } else {
-                    voiceSelect.value = speechSynthesis.getVoices().find(v => v.default);
+                    voiceSelect.value = speechSynthesis.getVoices().find(v => v.default).voiceURI;
                 }
             } catch { };
             this.txtMsgTouchPannel.shadowRoot.appendChild(voiceSelect)

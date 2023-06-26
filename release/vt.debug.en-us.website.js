@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1687177510
+// @version      1687779664
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2043,7 +2043,7 @@
                 if (window.VideoTogetherStorage.PublicMessageVoice != undefined) {
                     voiceSelect.value = window.VideoTogetherStorage.PublicMessageVoice;
                 } else {
-                    voiceSelect.value = speechSynthesis.getVoices().find(v => v.default);
+                    voiceSelect.value = speechSynthesis.getVoices().find(v => v.default).voiceURI;
                 }
             } catch { };
             this.txtMsgTouchPannel.shadowRoot.appendChild(voiceSelect)
@@ -2251,7 +2251,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1687177510';
+            this.version = '1687779664';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
