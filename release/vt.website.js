@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1687779664
+// @version      1687843928
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -60,7 +60,9 @@
         const domains = [
             'iqiyi.com', 'qq.com', 'youku.com',
             'bilibili.com', 'baidu.com', 'quark.cn',
-            'aliyundrive.com', "115.com", "pornhub.com"
+            'aliyundrive.com', "115.com", "pornhub.com", "acfun.cn", "youtube.com",
+            // --
+            "missav.com", "nivod4.tv"
         ];
         if (isEasyShareBlackListDomainCache == undefined) {
             const hostname = window.location.hostname;
@@ -2251,7 +2253,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1687779664';
+            this.version = '1687843928';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2574,6 +2576,11 @@
                 let videos = document.getElementsByTagName(tag);
                 for (let i = 0; i < videos.length; i++) {
                     try {
+                        try {
+                            if (videos[i].VideoTogetherDisabled) {
+                                continue;
+                            }
+                        } catch { };
                         await func(videos[i]);
                     } catch (e) { console.error(e) };
                 }

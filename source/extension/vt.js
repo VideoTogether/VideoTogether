@@ -60,7 +60,9 @@
         const domains = [
             'iqiyi.com', 'qq.com', 'youku.com',
             'bilibili.com', 'baidu.com', 'quark.cn',
-            'aliyundrive.com', "115.com", "pornhub.com"
+            'aliyundrive.com', "115.com", "pornhub.com", "acfun.cn", "youtube.com",
+            // --
+            "missav.com", "nivod4.tv"
         ];
         if (isEasyShareBlackListDomainCache == undefined) {
             const hostname = window.location.hostname;
@@ -1843,6 +1845,11 @@
                 let videos = document.getElementsByTagName(tag);
                 for (let i = 0; i < videos.length; i++) {
                     try {
+                        try {
+                            if (videos[i].VideoTogetherDisabled) {
+                                continue;
+                            }
+                        } catch { };
                         await func(videos[i]);
                     } catch (e) { console.error(e) };
                 }
