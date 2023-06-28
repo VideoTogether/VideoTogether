@@ -17,6 +17,7 @@ import (
 var joinPanic = 0
 var updatePanic = 0
 var TxtMsg = 0
+var invalidBroadcast = 0
 
 func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -161,6 +162,15 @@ func (h *Hub) run() {
 func (h *Hub) removeClientFromRoom(roomName string, c *Client) {
 	rc := h.getRoomClients(roomName)
 	rc.clients.Delete(c)
+}
+
+func (h *Hub) isVaildClient(roomName string, c *Client) bool {
+	rc := h.getRoomClients(roomName)
+	value, ok := rc.clients.Load(c)
+	if !ok || value != true {
+		return false
+	}
+	return true
 }
 
 func (h *Hub) addClientToRoom(roomName string, c *Client) {
@@ -317,6 +327,24 @@ func (c *Client) readPump() {
 	}
 }
 
+func (c *Client) sendBroadcast(broadcast *Broadcast) {
+	if c.roomName == "" {
+		invalidBroadcast++
+		return
+	}
+	room := c.hub.vtSrv.QueryRoom(c.roomName)
+	if c.isHost && !room.IsHost(c.lastTempUserId) {
+		invalidBroadcast++
+		// this host is not valid
+		return
+	}
+	if !c.hub.isVaildClient(c.roomName, c) {
+		invalidBroadcast++
+		return
+	}
+	c.hub.broadcast <- *broadcast
+}
+
 func (c *Client) sendTextMessage(rawReq *WsRequestMessage) {
 	TxtMsg++
 	var data SingleTextMessage
@@ -324,14 +352,15 @@ func (c *Client) sendTextMessage(rawReq *WsRequestMessage) {
 		c.reply(rawReq.Method, nil, errors.New("invalid data"))
 		return
 	}
-	c.hub.broadcast <- Broadcast{
+
+	c.sendBroadcast(&Broadcast{
 		RoomName: c.roomName,
 		Type:     ALL,
 		Message: WsResponse{
 			Method: rawReq.Method,
 			Data:   data,
 		},
-	}
+	})
 }
 
 // TODO need a template function to do this
@@ -341,14 +370,14 @@ func (c *Client) respM3u8Content(rawReq *WsRequestMessage) {
 		c.reply(rawReq.Method, nil, errors.New("invalid data"))
 		return
 	}
-	c.hub.broadcast <- Broadcast{
+	c.sendBroadcast(&Broadcast{
 		RoomName: c.roomName,
 		Type:     MEMBERS,
 		Message: WsResponse{
 			Method: "m3u8_resp",
 			Data:   data,
 		},
-	}
+	})
 }
 
 func (c *Client) reqM3u8Content(rawReq *WsRequestMessage) {
@@ -357,14 +386,14 @@ func (c *Client) reqM3u8Content(rawReq *WsRequestMessage) {
 		c.reply(rawReq.Method, nil, errors.New("invalid data"))
 		return
 	}
-	c.hub.broadcast <- Broadcast{
+	c.sendBroadcast(&Broadcast{
 		RoomName: c.roomName,
 		Type:     HOST,
 		Message: WsResponse{
 			Method: "m3u8_req",
 			Data:   data,
 		},
-	}
+	})
 }
 
 func (c *Client) respRealUrl(rawReq *WsRequestMessage) {
@@ -373,14 +402,14 @@ func (c *Client) respRealUrl(rawReq *WsRequestMessage) {
 		c.reply(rawReq.Method, nil, errors.New("invalid data"))
 		return
 	}
-	c.hub.broadcast <- Broadcast{
+	c.sendBroadcast(&Broadcast{
 		RoomName: c.roomName,
 		Type:     MEMBERS,
 		Message: WsResponse{
 			Method: "url_resp",
 			Data:   data,
 		},
-	}
+	})
 }
 
 func (c *Client) reqRealUrl(rawReq *WsRequestMessage) {
@@ -389,14 +418,14 @@ func (c *Client) reqRealUrl(rawReq *WsRequestMessage) {
 		c.reply(rawReq.Method, nil, errors.New("invalid data"))
 		return
 	}
-	c.hub.broadcast <- Broadcast{
+	c.sendBroadcast(&Broadcast{
 		RoomName: c.roomName,
 		Type:     HOST,
 		Message: WsResponse{
 			Method: "url_req",
 			Data:   data,
 		},
-	}
+	})
 }
 
 func (c *Client) joinRoom(rawReq *WsRequestMessage) {
@@ -453,7 +482,7 @@ func (c *Client) updateMember(rawReq *WsRequestMessage) {
 	}
 	needNotification := room.UpdateMember(*req.Member)
 	if needNotification {
-		c.hub.broadcast <- Broadcast{
+		c.sendBroadcast(&Broadcast{
 			RoomName: room.Name,
 			Type:     ALL,
 			Message: WsRoomResponse{
@@ -466,7 +495,7 @@ func (c *Client) updateMember(rawReq *WsRequestMessage) {
 					Room: room,
 				},
 			},
-		}
+		})
 	}
 	var endTime = Timestamp()
 	c.replyTimestamp(req.SendLocalTimestamp, startTime, endTime)
@@ -511,7 +540,7 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 	c.isHost = true
 	c.roomName = room.Name
 	c.hub.addClientToRoom(room.Name, c)
-	c.hub.broadcast <- Broadcast{
+	c.sendBroadcast(&Broadcast{
 		RoomName: room.Name,
 		Type:     ALL,
 		Message: WsRoomResponse{
@@ -524,7 +553,7 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 				Room: room,
 			},
 		},
-	}
+	})
 	var endTime = Timestamp()
 	c.replyTimestamp(req.SendLocalTimestamp, startTime, endTime)
 }

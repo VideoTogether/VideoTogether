@@ -161,6 +161,7 @@ type Statistics struct {
 	EasyshareErr                int
 	EasyShareFailedUrl          *[]string
 	TxtMsg                      int
+	InvalidBroadcast            int
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -172,6 +173,7 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	if pwd == adminPassword {
 		stat.EasyShareFailedUrl = &easyShareFailedList
 	}
+	stat.InvalidBroadcast = invalidBroadcast
 	stat.TxtMsg = TxtMsg
 	stat.LoaddingTimeList = make([]float64, 0)
 	stat.MemberCountList = make([]int64, 10)

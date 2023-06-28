@@ -394,7 +394,7 @@
             }
             console.log('ws connect');
             this._lastConnectTime = Date.now() / 1000
-            _connectedToService = false;
+            this._connectedToService = false;
             try {
                 this.disconnect()
                 this._socket = new WebSocket(`wss://${extension.video_together_host.replace("https://", "")}/ws?language=${language}`);
