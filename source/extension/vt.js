@@ -98,7 +98,10 @@
         if (mediaUrlsCache[m3u8Url] == undefined) {
             let lines = m3u8Content.split("\n");
             let mediaUrls = [];
-            let base = new URL(m3u8Url);
+            let base = undefined;
+            try {
+                base = new URL(m3u8Url);
+            } catch { };
             for (let i = 0; i < lines.length; i++) {
                 let line = lines[i].trim();
                 if (line !== "" && !line.startsWith("#")) {
@@ -2131,6 +2134,27 @@
                     break;
                 }
                 case MessageType.UpdateM3u8Files: {
+                    data['m3u8Files'].forEach(m3u8 => {
+                        try {
+                            const cyrb53 = (str, seed = 0) => {
+                                let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+                                for (let i = 0, ch; i < str.length; i++) {
+                                    ch = str.charCodeAt(i);
+                                    h1 = Math.imul(h1 ^ ch, 2654435761);
+                                    h2 = Math.imul(h2 ^ ch, 1597334677);
+                                }
+                                h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+                                h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+                                h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+                                h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+
+                                return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+                            };
+                            if (m3u8.m3u8Url.startsWith("data:")) {
+                                m3u8.m3u8Url = `${cyrb53(m3u8.m3u8Url)}`;
+                            }
+                        } catch { }
+                    })
                     this.m3u8Files[data['id']] = data['m3u8Files'];
                     this.m3u8PostWindows[data['id']] = _msg.source;
                     break;
