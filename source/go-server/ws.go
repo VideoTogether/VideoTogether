@@ -333,6 +333,10 @@ func (c *Client) sendBroadcast(broadcast *Broadcast) {
 		return
 	}
 	room := c.hub.vtSrv.QueryRoom(c.roomName)
+	if room == nil {
+		invalidBroadcast++
+		return
+	}
 	if c.isHost && !room.IsHost(c.lastTempUserId) {
 		invalidBroadcast++
 		// this host is not valid
