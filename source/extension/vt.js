@@ -181,6 +181,7 @@
     }
 
     function changeMemberCount(c) {
+        extension.ctxMemberCount = c;
         select('#memberCount').innerHTML = String.fromCodePoint("0x1f465") + " " + c
     }
 
@@ -459,6 +460,7 @@
             if (data['method'] == 'send_txtmsg') {
                 popupError("{$new_message_change_voice$}");
                 extension.gotTextMsg(data['data'].id, data['data'].msg);
+                sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
         },
         getRoom() {
@@ -1049,6 +1051,7 @@
         } // End Function _utf8_decode
     }
 
+    let GotTxtMsgCallback = undefined;
 
     class VideoTogetherFlyPannel {
         constructor() {
@@ -1056,6 +1059,72 @@
             this.isInRoom = false;
 
             this.isMain = (window.self == window.top);
+            setInterval(() => {
+                if (document.fullscreenElement != undefined && extension.ctxRole != extension.RoleEnum.Null) {
+                    const qs = (s) => this.fullscreenWrapper.querySelector(s);
+                    try {
+                        qs("#memberCount").innerText = extension.ctxMemberCount;
+                        qs("#send-button").disabled = !extension.ctxWsIsOpen;
+                    } catch { };
+                    if (document.fullscreenElement.contains(this.fullscreenSWrapper)) {
+                        return;
+                    }
+                    let shadowWrapper = document.createElement("div");
+                    this.fullscreenSWrapper = shadowWrapper;
+                    shadowWrapper.id = "VideoTogetherfullscreenSWrapper";
+                    let wrapper;
+                    try {
+                        wrapper = AttachShadow(shadowWrapper, { mode: "open" });
+                        wrapper.addEventListener('keydown', (e) => e.stopPropagation());
+                        this.fullscreenWrapper = wrapper;
+                    } catch (e) { console.error(e); }
+                    wrapper.innerHTML = `{{{ {"": "./html/fullscreen.html","order":100} }}}`;
+                    document.fullscreenElement.appendChild(shadowWrapper);
+                    var container = wrapper.getElementById('container');
+                    let expandBtn = wrapper.getElementById('expand-button');
+                    let msgInput = wrapper.getElementById('text-input');
+                    let sendBtn = wrapper.getElementById('send-button');
+                    let closeBtn = wrapper.getElementById('close-btn');
+                    let expanded = true;
+                    function expand() {
+                        if (expanded) {
+                            expandBtn.innerText = '>'
+                            sendBtn.style.display = 'none';
+                            msgInput.classList.remove('expand');
+
+                        } else {
+                            expandBtn.innerText = '<';
+                            sendBtn.style.display = 'inline-block';
+                            msgInput.classList.add("expand");
+                        }
+                        expanded = !expanded;
+                    }
+                    closeBtn.onclick = () => { shadowWrapper.style.display = "none"; }
+                    wrapper.getElementById('expand-button').addEventListener('click', () => expand());
+                    sendBtn.onclick = () => {
+                        extension.currentSendingMsgId = generateUUID();
+                        sendMessageToTop(MessageType.SendTxtMsg, { currentSendingMsgId: extension.currentSendingMsgId, value: msgInput.value });
+                    }
+                    GotTxtMsgCallback = (id, msg) => {
+                        console.log(id, msg);
+                        if (id == extension.currentSendingMsgId && msg == msgInput.value) {
+                            msgInput.value = "";
+                        }
+                    }
+                    msgInput.addEventListener("keyup", e => {
+                        if (e.key == "Enter") {
+                            sendBtn.click();
+                        }
+                    });
+                } else {
+                    if (this.fullscreenSWrapper != undefined) {
+                        this.fullscreenSWrapper.remove();
+                        this.fullscreenSWrapper = undefined;
+                        this.fullscreenWrapper = undefined;
+                        GotTxtMsgCallback = undefined;
+                    }
+                }
+            }, 500);
             if (this.isMain) {
                 document.addEventListener("click", () => {
                     this.enableSpeechSynthesis();
@@ -1464,6 +1533,8 @@
         FetchRealUrlResp: 27,
         FetchRealUrlFromIframeReq: 28,
         FetchRealUrlFromIframeResp: 29,
+        SendTxtMsg: 30,
+        GotTxtMsg: 31,
 
         UpdateM3u8Files: 1001,
     }
@@ -1537,6 +1608,7 @@
             this.m3u8PostWindows = {};
             this.m3u8MediaUrls = {};
             this.currentM3u8Url = undefined;
+            this.ctxMemberCount = 0;
 
             this.currentSendingMsgId = null;
 
@@ -1559,6 +1631,9 @@
                     this.videoTitle = message.data.context.videoTitle;
                     this.voiceStatus = message.data.context.voiceStatus;
                     this.timeOffset = message.data.context.timeOffset;
+                    this.ctxRole = message.data.context.ctxRole;
+                    this.ctxMemberCount = message.data.context.ctxMemberCount;
+                    this.ctxWsIsOpen = message.data.context.ctxWsIsOpen;
                     // sub frame has 2 storage data source, top frame or extension.js in this frame
                     // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
@@ -1860,6 +1935,9 @@
         }
 
         sendMessageToSonWithContext(type, data) {
+            if (this.isMain) {
+                this.ctxRole = this.role;
+            }
             let iframs = document.getElementsByTagName("iframe");
             for (let i = 0; i < iframs.length; i++) {
                 PostMessage(iframs[i].contentWindow, {
@@ -1871,7 +1949,10 @@
                         videoTitle: this.isMain ? document.title : this.videoTitle,
                         voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
                         VideoTogetherStorage: window.VideoTogetherStorage,
-                        timeOffset: this.timeOffset
+                        timeOffset: this.timeOffset,
+                        ctxRole: this.ctxRole,
+                        ctxMemberCount: this.ctxMemberCount,
+                        ctxWsIsOpen: this.ctxWsIsOpen
                     }
                 });
                 // console.info("send ", type, iframs[i].contentWindow, data)
@@ -1988,7 +2069,7 @@
                             let selected = null;
                             for (let id in this.m3u8Files) {
                                 this.m3u8Files[id].forEach(m3u8 => {
-                                    if (isNaN(d) || Math.abs(data.duration - m3u8.duration) < d) {
+                                    if (isNaN(d) || Math.abs(data.duration - m3u8.duration) <= d) {
                                         d = Math.abs(data.duration - m3u8.duration);
                                         selected = m3u8;
                                     }
@@ -2185,6 +2266,17 @@
                 }
                 case MessageType.FetchRealUrlFromIframeResp: {
                     realUrlCache[data.origin] = data.real;
+                    break;
+                }
+                case MessageType.SendTxtMsg: {
+                    WS.sendTextMessage(data.currentSendingMsgId, data.value);
+                    break;
+                }
+                case MessageType.GotTxtMsg: {
+                    try {
+                        GotTxtMsgCallback(data.id, data.msg);
+                    } catch { };
+                    this.sendMessageToSonWithContext(MessageType.GotTxtMsg, data);
                     break;
                 }
                 default:
@@ -2463,7 +2555,8 @@
                     this.isIos = await isAudioVolumeRO();
                 }
                 WS.connect();
-                if (WS.isOpen()) {
+                this.ctxWsIsOpen = WS.isOpen();
+                if (this.ctxWsIsOpen) {
                     windowPannel.setTxtMsgInterface(1);
                 } else {
                     windowPannel.setTxtMsgInterface(2);

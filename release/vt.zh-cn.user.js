@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1687968082
+// @version      1688267592
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -181,6 +181,7 @@
     }
 
     function changeMemberCount(c) {
+        extension.ctxMemberCount = c;
         select('#memberCount').innerHTML = String.fromCodePoint("0x1f465") + " " + c
     }
 
@@ -459,6 +460,7 @@
             if (data['method'] == 'send_txtmsg') {
                 popupError("有新消息 (<a id='changeVoiceBtn' style='color:inherit' href='#''>修改语音包</a>)");
                 extension.gotTextMsg(data['data'].id, data['data'].msg);
+                sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
         },
         getRoom() {
@@ -1049,6 +1051,7 @@
         } // End Function _utf8_decode
     }
 
+    let GotTxtMsgCallback = undefined;
 
     class VideoTogetherFlyPannel {
         constructor() {
@@ -1056,6 +1059,163 @@
             this.isInRoom = false;
 
             this.isMain = (window.self == window.top);
+            setInterval(() => {
+                if (document.fullscreenElement != undefined && extension.ctxRole != extension.RoleEnum.Null) {
+                    const qs = (s) => this.fullscreenWrapper.querySelector(s);
+                    try {
+                        qs("#memberCount").innerText = extension.ctxMemberCount;
+                        qs("#send-button").disabled = !extension.ctxWsIsOpen;
+                    } catch { };
+                    if (document.fullscreenElement.contains(this.fullscreenSWrapper)) {
+                        return;
+                    }
+                    let shadowWrapper = document.createElement("div");
+                    this.fullscreenSWrapper = shadowWrapper;
+                    shadowWrapper.id = "VideoTogetherfullscreenSWrapper";
+                    let wrapper;
+                    try {
+                        wrapper = AttachShadow(shadowWrapper, { mode: "open" });
+                        wrapper.addEventListener('keydown', (e) => e.stopPropagation());
+                        this.fullscreenWrapper = wrapper;
+                    } catch (e) { console.error(e); }
+                    wrapper.innerHTML = `<style>
+    .container {
+        position: absolute;
+        top: 50%;
+        left: 0px;
+        border: 1px solid #000;
+        padding: 0px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: fit-content;
+        justify-content: center;
+        border-radius: 5px;
+        opacity: 80%;
+        background: #000;
+        color: white;
+        z-index: 2147483647;
+    }
+
+    .container input[type='text'] {
+        padding: 0px;
+        flex-grow: 1;
+        border: none;
+        height: 24px;
+        width: 0px;
+        height: 32px;
+        transition: width 0.1s linear;
+        background-color: transparent;
+        color: white;
+    }
+
+    .container input[type='text'].expand {
+        width: 150px;
+    }
+
+    .container .user-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .container button {
+        height: 32px;
+        font-size: 16px;
+        border: 0px;
+        color: white;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        background-color: #1890ff;
+        transition-duration: 0.4s;
+        border-radius: 4px;
+    }
+
+    .container #expand-button {
+        color: black;
+        font-weight: bolder;
+        height: 32px;
+        width: 32px;
+        background-size: cover;
+        background-image: url(data:image/png;base64,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);
+    }
+
+    .container #close-btn {
+        height: 16px;
+        max-width: 24px;
+        background-color: rgba(255, 0, 0, 0.5);
+        font-size: 8px;
+    }
+
+    .container #close-btn:hover {
+        background-color: rgba(255, 0, 0, 0.3);
+    }
+
+    .container button:hover {
+        background-color: #6ebff4;
+    }
+
+    .container button:disabled,
+    .container button:disabled:hover {
+        background-color: rgb(76, 76, 76);
+    }
+</style>
+<div class="container" id="container">
+    <button id="expand-button">&lt;</button>
+    <div style="padding: 0 5px 0 5px;" class="user-info" id="user-info">
+        <span class="emoji">👥</span>
+        <span id="memberCount">0</span>
+    </div>
+    <button id="close-btn">x</button>
+    <input style="margin: 0 0 0 5px;" type="text" placeholder="Text Message" id="text-input" class="expand" />
+    <button id="send-button">Send</button>
+</div>`;
+                    document.fullscreenElement.appendChild(shadowWrapper);
+                    var container = wrapper.getElementById('container');
+                    let expandBtn = wrapper.getElementById('expand-button');
+                    let msgInput = wrapper.getElementById('text-input');
+                    let sendBtn = wrapper.getElementById('send-button');
+                    let closeBtn = wrapper.getElementById('close-btn');
+                    let expanded = true;
+                    function expand() {
+                        if (expanded) {
+                            expandBtn.innerText = '>'
+                            sendBtn.style.display = 'none';
+                            msgInput.classList.remove('expand');
+
+                        } else {
+                            expandBtn.innerText = '<';
+                            sendBtn.style.display = 'inline-block';
+                            msgInput.classList.add("expand");
+                        }
+                        expanded = !expanded;
+                    }
+                    closeBtn.onclick = () => { shadowWrapper.style.display = "none"; }
+                    wrapper.getElementById('expand-button').addEventListener('click', () => expand());
+                    sendBtn.onclick = () => {
+                        extension.currentSendingMsgId = generateUUID();
+                        sendMessageToTop(MessageType.SendTxtMsg, { currentSendingMsgId: extension.currentSendingMsgId, value: msgInput.value });
+                    }
+                    GotTxtMsgCallback = (id, msg) => {
+                        console.log(id, msg);
+                        if (id == extension.currentSendingMsgId && msg == msgInput.value) {
+                            msgInput.value = "";
+                        }
+                    }
+                    msgInput.addEventListener("keyup", e => {
+                        if (e.key == "Enter") {
+                            sendBtn.click();
+                        }
+                    });
+                } else {
+                    if (this.fullscreenSWrapper != undefined) {
+                        this.fullscreenSWrapper.remove();
+                        this.fullscreenSWrapper = undefined;
+                        this.fullscreenWrapper = undefined;
+                        GotTxtMsgCallback = undefined;
+                    }
+                }
+            }, 500);
             if (this.isMain) {
                 document.addEventListener("click", () => {
                     this.enableSpeechSynthesis();
@@ -2195,6 +2355,8 @@
         FetchRealUrlResp: 27,
         FetchRealUrlFromIframeReq: 28,
         FetchRealUrlFromIframeResp: 29,
+        SendTxtMsg: 30,
+        GotTxtMsg: 31,
 
         UpdateM3u8Files: 1001,
     }
@@ -2256,7 +2418,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1687968082';
+            this.version = '1688267592';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2268,6 +2430,7 @@
             this.m3u8PostWindows = {};
             this.m3u8MediaUrls = {};
             this.currentM3u8Url = undefined;
+            this.ctxMemberCount = 0;
 
             this.currentSendingMsgId = null;
 
@@ -2290,6 +2453,9 @@
                     this.videoTitle = message.data.context.videoTitle;
                     this.voiceStatus = message.data.context.voiceStatus;
                     this.timeOffset = message.data.context.timeOffset;
+                    this.ctxRole = message.data.context.ctxRole;
+                    this.ctxMemberCount = message.data.context.ctxMemberCount;
+                    this.ctxWsIsOpen = message.data.context.ctxWsIsOpen;
                     // sub frame has 2 storage data source, top frame or extension.js in this frame
                     // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
@@ -2591,6 +2757,9 @@
         }
 
         sendMessageToSonWithContext(type, data) {
+            if (this.isMain) {
+                this.ctxRole = this.role;
+            }
             let iframs = document.getElementsByTagName("iframe");
             for (let i = 0; i < iframs.length; i++) {
                 PostMessage(iframs[i].contentWindow, {
@@ -2602,7 +2771,10 @@
                         videoTitle: this.isMain ? document.title : this.videoTitle,
                         voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
                         VideoTogetherStorage: window.VideoTogetherStorage,
-                        timeOffset: this.timeOffset
+                        timeOffset: this.timeOffset,
+                        ctxRole: this.ctxRole,
+                        ctxMemberCount: this.ctxMemberCount,
+                        ctxWsIsOpen: this.ctxWsIsOpen
                     }
                 });
                 // console.info("send ", type, iframs[i].contentWindow, data)
@@ -2719,7 +2891,7 @@
                             let selected = null;
                             for (let id in this.m3u8Files) {
                                 this.m3u8Files[id].forEach(m3u8 => {
-                                    if (isNaN(d) || Math.abs(data.duration - m3u8.duration) < d) {
+                                    if (isNaN(d) || Math.abs(data.duration - m3u8.duration) <= d) {
                                         d = Math.abs(data.duration - m3u8.duration);
                                         selected = m3u8;
                                     }
@@ -2916,6 +3088,17 @@
                 }
                 case MessageType.FetchRealUrlFromIframeResp: {
                     realUrlCache[data.origin] = data.real;
+                    break;
+                }
+                case MessageType.SendTxtMsg: {
+                    WS.sendTextMessage(data.currentSendingMsgId, data.value);
+                    break;
+                }
+                case MessageType.GotTxtMsg: {
+                    try {
+                        GotTxtMsgCallback(data.id, data.msg);
+                    } catch { };
+                    this.sendMessageToSonWithContext(MessageType.GotTxtMsg, data);
                     break;
                 }
                 default:
@@ -3194,7 +3377,8 @@
                     this.isIos = await isAudioVolumeRO();
                 }
                 WS.connect();
-                if (WS.isOpen()) {
+                this.ctxWsIsOpen = WS.isOpen();
+                if (this.ctxWsIsOpen) {
                     windowPannel.setTxtMsgInterface(1);
                 } else {
                     windowPannel.setTxtMsgInterface(2);
