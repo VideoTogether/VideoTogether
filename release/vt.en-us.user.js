@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1688267592
+// @version      1688269767
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1060,7 +1060,7 @@
 
             this.isMain = (window.self == window.top);
             setInterval(() => {
-                if (document.fullscreenElement != undefined && extension.ctxRole != extension.RoleEnum.Null) {
+                if (document.fullscreenElement != undefined && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
                     const qs = (s) => this.fullscreenWrapper.querySelector(s);
                     try {
                         qs("#memberCount").innerText = extension.ctxMemberCount;
@@ -2418,7 +2418,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1688267592';
+            this.version = '1688269767';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

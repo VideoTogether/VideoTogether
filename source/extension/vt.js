@@ -1060,7 +1060,7 @@
 
             this.isMain = (window.self == window.top);
             setInterval(() => {
-                if (document.fullscreenElement != undefined && extension.ctxRole != extension.RoleEnum.Null) {
+                if (document.fullscreenElement != undefined && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
                     const qs = (s) => this.fullscreenWrapper.querySelector(s);
                     try {
                         qs("#memberCount").innerText = extension.ctxMemberCount;
