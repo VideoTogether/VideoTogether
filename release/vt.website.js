@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1688267592
+// @version      1688268077
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1167,8 +1167,8 @@
         <span id="memberCount">0</span>
     </div>
     <button id="close-btn">x</button>
-    <input style="margin: 0 0 0 5px;" type="text" placeholder="Text Message" id="text-input" class="expand" />
-    <button id="send-button">Send</button>
+    <input style="margin: 0 0 0 5px;" type="text" placeholder="文字聊天" id="text-input" class="expand" />
+    <button id="send-button">发送</button>
 </div>`;
                     document.fullscreenElement.appendChild(shadowWrapper);
                     var container = wrapper.getElementById('container');
@@ -1307,7 +1307,7 @@
         </div>
         <div>
           <div id="textMessageChat" style="display: none;">
-            <input id="textMessageInput" autocomplete="off" placeholder="文字聊天(测试中)">
+            <input id="textMessageInput" autocomplete="off" placeholder="文字聊天">
             <button id="textMessageSend" class="vt-btn vt-btn-primary" type="button">
               <span>发送</span>
             </button>
@@ -2418,7 +2418,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1688267592';
+            this.version = '1688268077';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
