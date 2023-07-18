@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1688269767
+// @version      1689679706
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2418,7 +2418,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1688269767';
+            this.version = '1689679706';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2750,6 +2750,14 @@
                                 continue;
                             }
                         } catch { };
+                        try{
+                            if(window.location.hostname.endsWith('bilibili.com')){
+                                if(!!videos[i].closest('div.video-page-card-small')){
+                                    // this is a thumbnail video
+                                    continue
+                                }
+                            }
+                        }catch{}
                         await func(videos[i]);
                     } catch (e) { console.error(e) };
                 }
