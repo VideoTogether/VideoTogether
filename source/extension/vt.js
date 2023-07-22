@@ -1953,6 +1953,14 @@
                                 continue;
                             }
                         } catch { };
+                        try {
+                            if (window.location.hostname.endsWith('bilibili.com')) {
+                                if (!!videos[i].closest('div.video-page-card-small') || !!videos[i].closest('div.feed-card')) {
+                                    // this is a thumbnail video
+                                    continue
+                                }
+                            }
+                        } catch { }
                         await func(videos[i]);
                     } catch (e) { console.error(e) };
                 }
