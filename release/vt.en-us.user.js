@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1688269767
+// @version      1690011591
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -90,6 +90,31 @@
             return window.VideoTogetherEasyShareMemberSite == true;
         } catch {
             return false;
+        }
+    }
+
+    function useMobileStyle(videoDom) {
+        let isMobile = false;
+        if (window.location.href.startsWith('https://m.bilibili.com/')) {
+            isMobile = true;
+        }
+        if (!isMobile) {
+            return;
+        }
+        document.body.childNodes.forEach(e => {
+            try {
+                if (e != videoDom && e.style && e.id != 'VideoTogetherWrapper') {
+                    e.style.display = 'none'
+                }
+            } catch { }
+
+        });
+        videoDom.setAttribute('controls', true);
+        videoDom.style.width = videoDom.style.height = "100%";
+        videoDom.style.maxWidth = videoDom.style.maxHeight = "100%";
+        videoDom.style.display = 'block';
+        if (videoDom.parentElement != document.body) {
+            document.body.appendChild(videoDom);
         }
     }
 
@@ -2418,7 +2443,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1688269767';
+            this.version = '1690011591';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3577,6 +3602,12 @@
         }
 
         async SyncMasterVideo(data, videoDom) {
+            try {
+                if (this.isMain) {
+                    useMobileStyle(videoDom);
+                }
+            } catch { }
+
             if (skipIntroLen() > 0 && videoDom.currentTime < skipIntroLen()) {
                 videoDom.currentTime = skipIntroLen();
             }
@@ -3703,6 +3734,11 @@
         }
 
         async SyncMemberVideo(data, videoDom) {
+            try {
+                if (this.isMain) {
+                    useMobileStyle(videoDom);
+                }
+            } catch { }
             if (this.lastSyncMemberVideo + 1 > Date.now() / 1000) {
                 return;
             }
