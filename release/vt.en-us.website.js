@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1690012008
+// @version      1690697527
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -57,6 +57,9 @@
 
     let isEasyShareBlackListDomainCache = undefined;
     function isEasyShareBlackListDomain() {
+        if (window.location.protocol != 'https:') {
+            return true;
+        }
         const domains = [
             'iqiyi.com', 'qq.com', 'youku.com',
             'bilibili.com', 'baidu.com', 'quark.cn',
@@ -2443,7 +2446,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1690012008';
+            this.version = '1690697527';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

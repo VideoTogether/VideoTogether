@@ -57,6 +57,9 @@
 
     let isEasyShareBlackListDomainCache = undefined;
     function isEasyShareBlackListDomain() {
+        if (window.location.protocol != 'https:') {
+            return true;
+        }
         const domains = [
             'iqiyi.com', 'qq.com', 'youku.com',
             'bilibili.com', 'baidu.com', 'quark.cn',
