@@ -3200,6 +3200,14 @@
         }
     }
 
+    try {
+        if (window.location.hostname == 'yiyan.baidu.com') {
+            GetNativeFunction();
+            window.Element.prototype.attachShadow = Global.NativeAttachShadow;
+            console.log("Use native attachShadow in yiyan")
+        }
+    } catch { }
+
     // TODO merge Pannel and Extension class
     if (window.videoTogetherFlyPannel === undefined) {
         window.videoTogetherFlyPannel = null;

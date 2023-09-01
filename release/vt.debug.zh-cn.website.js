@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1693308704
+// @version      1693578262
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2475,7 +2475,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1693308704';
+            this.version = '1693578262';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4021,6 +4021,14 @@
             window.videoTogetherFlyPannel.videoTogetherHeader.onpointerdown = filter;
         }
     }
+
+    try {
+        if (window.location.hostname == 'yiyan.baidu.com') {
+            GetNativeFunction();
+            window.Element.prototype.attachShadow = Global.NativeAttachShadow;
+            console.log("Use native attachShadow in yiyan")
+        }
+    } catch { }
 
     // TODO merge Pannel and Extension class
     if (window.videoTogetherFlyPannel === undefined) {
