@@ -163,6 +163,8 @@ func (h *slashFix) handleBetaAdmin(res http.ResponseWriter, req *http.Request) {
 	if reqAdminPassword != adminPassword {
 		return
 	}
+
+	h.vtSrv.LoadSponsorData()
 	reqVtVersion := int(floatParam(req, "vtVersion", nil))
 	vtVersion = reqVtVersion
 }

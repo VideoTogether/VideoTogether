@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"log"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -19,25 +19,13 @@ type Sponsor struct {
 }
 
 func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService {
-	sponsorStr, err := ioutil.ReadFile("./sponsor.json")
-	if err != nil {
-		log.Fatal("Error when opening file: ", err)
-	}
-	var sponsorList []Sponsor
-	err = json.Unmarshal(sponsorStr, &sponsorList)
-	if err != nil {
-		log.Fatal("Error during Unmarshal(): ", err)
-	}
-	sponsorMap := make(map[string]Sponsor)
-	for _, sponsor := range sponsorList {
-		sponsorMap[sponsor.Room] = sponsor
-	}
-
-	return &VideoTogetherService{
-		sponsors:       sponsorMap,
+	s := &VideoTogetherService{
+		sponsors:       make(map[string]Sponsor),
 		rooms:          sync.Map{},
 		roomExpireTime: roomExpireTime,
 	}
+	s.LoadSponsorData()
+	return s
 }
 
 type VideoTogetherService struct {
@@ -52,6 +40,25 @@ func Timestamp() float64 {
 
 func (s *VideoTogetherService) Timestamp() float64 {
 	return float64(time.Now().UnixMilli()) / 1000
+}
+
+func (s *VideoTogetherService) LoadSponsorData() {
+	sponsorStr, err := os.ReadFile("./sponsor.json")
+	if err != nil {
+		log.Print("Error when opening file: ", err)
+		return
+	}
+	var sponsorList []Sponsor
+	err = json.Unmarshal(sponsorStr, &sponsorList)
+	if err != nil {
+		log.Print("Error during Unmarshal(): ", err)
+		return
+	}
+	sponsorMap := make(map[string]Sponsor)
+	for _, sponsor := range sponsorList {
+		sponsorMap[sponsor.Room] = sponsor
+	}
+	s.sponsors = sponsorMap
 }
 
 func (s *VideoTogetherService) GetRoomBackgroundUrl(room string) string {
