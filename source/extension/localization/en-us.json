@@ -45,5 +45,6 @@
     "you_have_a_new_msg": "VideoTogether: You got a new message, click the screen to receive",
     "new_message_change_voice": "New Messages (<a id='changeVoiceBtn' style='color:inherit' href='#''>Change Voice</a>)",
     "choose_voice_below": "You can select the voice for reading messages:",
-    "global_notification": ""
+    "global_notification": "",
+    "textMessageDisabled": "Text Message is disabled"
 }

@@ -33,6 +33,28 @@
         return false;
     }
 
+    function getVideoTogetherStorage(key, defaultVal) {
+        try {
+            if (window.VideoTogetherStorage == undefined) {
+                return defaultVal
+            } else {
+                if (window.VideoTogetherStorage[key] == undefined) {
+                    return defaultVal
+                } else {
+                    return window.VideoTogetherStorage[key];
+                }
+            }
+        } catch { return defaultVal }
+    }
+
+    function getEnableTextMessage() {
+        return getVideoTogetherStorage('EnableTextMessage', true);
+    }
+
+    function getEnableMiniBar() {
+        return getVideoTogetherStorage('EnableMiniBar', true);
+    }
+
     function skipIntroLen() {
         try {
             let len = parseInt(window.VideoTogetherStorage.SkipIntroLength);
@@ -485,7 +507,7 @@
             if (data['method'] == 'm3u8_resp') {
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
             }
-            if (data['method'] == 'send_txtmsg') {
+            if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
                 popupError("{$new_message_change_voice$}");
                 extension.gotTextMsg(data['data'].id, data['data'].msg);
                 sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
@@ -1088,7 +1110,8 @@
 
             this.isMain = (window.self == window.top);
             setInterval(() => {
-                if (document.fullscreenElement != undefined && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
+                if (getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
+                    && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
                     const qs = (s) => this.fullscreenWrapper.querySelector(s);
                     try {
                         qs("#memberCount").innerText = extension.ctxMemberCount;
@@ -1361,11 +1384,17 @@
             }
             if (type == 2) {
                 show(this.textMessageConnecting);
+                this.textMessageConnectingStatus.innerText = "{$textMessageConnecting$}"
                 show(this.textMessageConnectingStatus);
             }
             if (type == 3) {
                 show(this.textMessageConnecting);
                 show(this.zhcnTtsMissing);
+            }
+            if (type == 4) {
+                show(this.textMessageConnecting);
+                this.textMessageConnectingStatus.innerText = "{$textMessageDisabled$}"
+                show(this.textMessageConnectingStatus);
             }
         }
 
@@ -2592,7 +2621,9 @@
                 }
                 WS.connect();
                 this.ctxWsIsOpen = WS.isOpen();
-                if (this.ctxWsIsOpen) {
+                if (!getEnableTextMessage()) {
+                    windowPannel.setTxtMsgInterface(4);
+                } else if (this.ctxWsIsOpen) {
                     windowPannel.setTxtMsgInterface(1);
                 } else {
                     windowPannel.setTxtMsgInterface(2);
@@ -3168,6 +3199,14 @@
             window.videoTogetherFlyPannel.videoTogetherHeader.onpointerdown = filter;
         }
     }
+
+    try {
+        if (window.location.hostname == 'yiyan.baidu.com') {
+            GetNativeFunction();
+            window.Element.prototype.attachShadow = Global.NativeAttachShadow;
+            console.log("Use native attachShadow in yiyan")
+        }
+    } catch { }
 
     // TODO merge Pannel and Extension class
     if (window.videoTogetherFlyPannel === undefined) {
