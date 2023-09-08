@@ -45,13 +45,13 @@ func (s *VideoTogetherService) Timestamp() float64 {
 func (s *VideoTogetherService) LoadSponsorData() {
 	sponsorStr, err := os.ReadFile("./sponsor.json")
 	if err != nil {
-		log.Print("Error when opening file: ", err)
+		log.Panic("Error when opening file: ", err)
 		return
 	}
 	var sponsorList []Sponsor
 	err = json.Unmarshal(sponsorStr, &sponsorList)
 	if err != nil {
-		log.Print("Error during Unmarshal(): ", err)
+		log.Panic("Error during Unmarshal(): ", err)
 		return
 	}
 	sponsorMap := make(map[string]Sponsor)
