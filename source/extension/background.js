@@ -1,5 +1,127 @@
 let type = '{{{ {"chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension", "order":0} }}}'
 
+function openDB() {
+    const openRequest = indexedDB.open("VideoTogether", 3);
+
+    openRequest.onupgradeneeded = function (event) {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('videos')) {
+            db.createObjectStore('videos');
+        }
+        if (!db.objectStoreNames.contains('m3u8s')) {
+            db.createObjectStore('m3u8s');
+        }
+        if (!db.objectStoreNames.contains('videos-mini')) {
+            db.createObjectStore('videos-mini');
+        }
+        if (!db.objectStoreNames.contains('m3u8s-mini')) {
+            db.createObjectStore('m3u8s-mini');
+        }
+    };
+    return openRequest;
+}
+
+function saveToIndexedDB(table, key, data) {
+    return new Promise((res, rej) => {
+        const openRequest = openDB()
+        openRequest.onerror = function (e) {
+            rej()
+        }
+        openRequest.onsuccess = function (event) {
+            const db = event.target.result;
+            const transaction = db.transaction(table, "readwrite");
+            const store = transaction.objectStore(table);
+            const addRequest = store.put(data, key);
+            addRequest.onsuccess = function () {
+                res()
+            };
+            addRequest.onerror = function () {
+                rej()
+            }
+        };
+    })
+}
+
+function regexMatchKeysDb(table, regex) {
+    return new Promise((res, rej) => {
+        let matchedKeys = []
+        let re = new RegExp(regex);
+        const openRequest = openDB()
+        openRequest.onsuccess = function (event) {
+            const db = event.target.result;
+            const transaction = db.transaction(table);
+            const objectStore = transaction.objectStore(table);
+            const request = objectStore.openCursor();
+
+            request.onsuccess = function (event) {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const key = cursor.key;
+                    if (re.test(key)) {
+                        matchedKeys.push(key);
+                    }
+                    cursor.continue();
+                } else {
+                    res(matchedKeys)
+                }
+            };
+
+            request.onerror = function (event) {
+                rej(event.target.error);
+            };
+        };
+
+        openRequest.onerror = function (event) {
+            rej(event.target.error);
+        };
+    })
+}
+
+function readFromIndexedDB(table, key) {
+    return new Promise((res, rej) => {
+        const openRequest = openDB()
+        openRequest.onerror = function (event) {
+            rej()
+        }
+        openRequest.onsuccess = function (event) {
+            const db = event.target.result;
+            const transaction = db.transaction(table);
+            const store = transaction.objectStore(table);
+
+            const getRequest = store.get(key);
+            getRequest.onsuccess = function (event) {
+                const data = event.target.result;
+                res(data);
+            };
+            getRequest.onerror = function (event) {
+                rej()
+            }
+        };
+    })
+}
+
+function deleteFromIndexedDB(table, key) {
+    return new Promise((res, rej) => {
+        const openRequest = openDB()
+        openRequest.onerror = function (event) {
+            rej()
+        }
+        openRequest.onsuccess = function (event) {
+            const db = event.target.result;
+            const transaction = db.transaction(table, "readwrite");
+            const store = transaction.objectStore(table);
+
+            const request = store.delete(key);
+            request.onsuccess = function (event) {
+                res();
+            };
+            request.onerror = function (event) {
+                rej()
+            }
+        };
+    })
+}
+
 function getBrowser() {
     switch (type) {
         case 'Safari':
@@ -64,5 +186,31 @@ getBrowser().runtime.onMessage.addListener(function (msgText, sender, sendRespon
                 });
             }
             sendResponse();
+            break;
+        case 2001:
+            saveToIndexedDB(msg.data.table, msg.data.key, msg.data.data).then(() => {
+                sendResponse({ error: 0 })
+            }).catch(r => sendResponse({ error: r }))
+            return true;
+        case 2002:
+            readFromIndexedDB(msg.data.table, msg.data.key).then(data => {
+                sendResponse({ error: 0, data: data })
+            }).catch(r => sendResponse({ error: r }))
+            return true;
+        case 2005:
+            regexMatchKeysDb(msg.data.table, msg.data.regex).then(data => {
+                sendResponse({ error: 0, data: JSON.stringify(data) })
+            }).catch(r => sendResponse({ error: r }))
+            return true;
+        case 2007:
+            deleteFromIndexedDB(msg.data.table, msg.data.key).then(() => {
+                sendResponse({ error: 0 })
+            }).catch(r => sendResponse({ error: r }))
+            return true;
+        case 2009:
+            navigator.storage.estimate().then(data => {
+                sendResponse(JSON.stringify(data))
+            }).catch(r => sendResponse({ error: r }))
+            return true;
     }
 });

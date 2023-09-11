@@ -45,6 +45,7 @@ def isChanged(path, content: str):
         idx = idx+len(s)+len(timestamp_str)
     return False
 
+
 def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
     global rootPath
     global releasePath
@@ -68,7 +69,9 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
             if subName["name"] != "":
                 resultFilename = resultFilename + "."+subName["name"]
         resultPath = releasePath.joinpath(resultFilename+extension)
+        resultPath = str(resultPath).replace(".buildme", "")
         print(resultPath)
+
         content = content.replace('{{timestamp}}', timestamp_str)
         if isChanged(resultPath, content):
             WriteSource(resultPath, content)
@@ -97,7 +100,7 @@ def build():
     for sourceSubDir, dirList, fileList in allSource:
         for sourceFile in fileList:
             sourceContent = ""
-            if not sourceFile.endswith("js"):
+            if (not sourceFile.endswith("js")) and (not ".buildme" in sourceFile):
                 continue
             with open(Path(sourceSubDir).joinpath(sourceFile), encoding="utf-8") as f:
                 sourceContent = f.read()
@@ -114,6 +117,28 @@ def build():
 if __name__ == '__main__':
     build()
     global rootPath
+    os.system(
+        "git clone https://github.com/VideoTogether/localvideo {}/source/local".format(rootPath))
+    os.system("cd {}/source/local && git pull".format(rootPath))
+
+    def cp(src, dst):
+        shutil.copyfile(rootPath.joinpath(src),
+                        rootPath.joinpath(dst))
+
+    def mv(src, dst):
+        shutil.move(rootPath.joinpath(src),
+                    rootPath.joinpath(dst))
+    mv("release/local_video_player.en-us.html",
+       'source/local/local_video_player.en-us.html')
+    mv("release/local_video_player.zh-cn.html",
+       'source/local/local_video_player.zh-cn.html')
+    mv("release/local_videos.en-us.html", 'source/local/local_videos.en-us.html')
+    mv("release/local_videos.zh-cn.html", 'source/local/local_videos.zh-cn.html')
+    mv("release/local_page.en-us.js", 'source/local/local_page.en-us.js')
+    mv("release/local_page.zh-cn.js", 'source/local/local_page.zh-cn.js')
+    os.remove("release/local_video_player.html")
+    os.remove("release/local_videos.html")
+    os.remove("release/local_page.js")
     shutil.copyfile(rootPath.joinpath("release/load.en-us.js"),
                     rootPath.joinpath("source/chrome/load.en-us.js"))
     shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),

@@ -15,12 +15,71 @@
     const realUrlCache = {}
     const m3u8ContentCache = {}
 
+    let inDownload = false;
+    let isDownloading = false;
+
     let roomUuid = null;
 
     const lastRunQueue = []
     // request can only be called up to 10 times in 5 seconds
     const periodSec = 5;
     const timeLimitation = 15;
+
+    function getDurationStr(duration) {
+        try {
+            let d = parseInt(duration);
+            let str = ""
+            let units = [" {$SecondLabel$} ", " {$MinuteLabel$} ", " {$HourLabel$} "]
+            for (let i in units) {
+                if (d > 0) {
+                    str = d % 60 + units[i] + str;
+                }
+                d = Math.floor(d / 60)
+            }
+            return str;
+        } catch {
+            return "N/A"
+        }
+    }
+
+    function downloadEnabled() {
+        try {
+            const type = VideoTogetherStorage.UserscriptType
+            return parseInt(window.VideoTogetherStorage.LoaddingVersion) > 1694442998
+                && (type == "Chrome" || type == "Safari" || type == "Firefox")
+                && !isDownloadBlackListDomain()
+        } catch {
+            return false;
+        }
+    }
+
+    function isM3U8(textContent) {
+        return textContent.trim().startsWith('#EXTM3U');
+    }
+    function isMasterM3u8(textContent) {
+        return textContent.includes('#EXT-X-STREAM-INF:');
+    }
+
+    function getFirstMediaM3U8(m3u8Content) {
+        if (!isMasterM3u8(m3u8Content)) {
+            return null;
+        }
+        const lines = m3u8Content.split('\n');
+
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine && !trimmedLine.startsWith('#')) {
+                return trimmedLine;
+            }
+        }
+        return null;
+    }
+
+
+    function startDownload(_vtArgM3u8Url, _vtArgM3u8Content, _vtArgM3u8Urls, _vtArgTitle, _vtArgPageUrl) {
+        /*{{{ {"":"../local/download.js", "order":100} }}}*/
+    }
+
     function isLimited() {
         while (lastRunQueue.length > 0 && lastRunQueue[0] < Date.now() / 1000 - periodSec) {
             lastRunQueue.shift();
@@ -77,6 +136,23 @@
         return s == undefined ? "" : s;
     }
 
+    let isDownloadBlackListDomainCache = undefined;
+    function isDownloadBlackListDomain() {
+        if (window.location.protocol != 'https:') {
+            return true;
+        }
+        const domains = [
+            'iqiyi.com', 'qq.com', 'youku.com',
+            'bilibili.com', 'baidu.com', 'quark.cn',
+            'aliyundrive.com', "115.com", "acfun.cn", "youtube.com",
+        ];
+        if (isDownloadBlackListDomainCache == undefined) {
+            const hostname = window.location.hostname;
+            isDownloadBlackListDomainCache = domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+        }
+        return isDownloadBlackListDomainCache;
+    }
+
     let isEasyShareBlackListDomainCache = undefined;
     function isEasyShareBlackListDomain() {
         if (window.location.protocol != 'https:') {
@@ -97,6 +173,9 @@
     }
 
     function isEasyShareEnabled() {
+        if (inDownload) {
+            return false;
+        }
         try {
             if (isWeb()) {
                 return false;
@@ -1237,7 +1316,52 @@
                 this.textMessageConnecting = wrapper.querySelector("#textMessageConnecting");
                 this.textMessageConnectingStatus = wrapper.querySelector("#textMessageConnectingStatus");
                 this.zhcnTtsMissing = wrapper.querySelector("#zhcnTtsMissing");
+                this.downloadBtn = wrapper.querySelector("#downloadBtn");
+                hide(this.downloadBtn);
+                this.confirmDownloadBtn = wrapper.querySelector("#confirmDownloadBtn")
+                this.confirmDownloadBtn.onclick = () => {
+                    isDownloading = true;
+                    const m3u8url = extension.downloadM3u8Url
+                    sendMessageTo(extension.m3u8PostWindows[extension.GetM3u8WindowId(m3u8url)], MessageType.StartDownload, {
+                        m3u8Url: m3u8url,
+                        m3u8Content: extension.GetM3u8Content(m3u8url),
+                        urls: extension.GetAllM3u8SegUrls(m3u8url),
+                        title: document.title,
+                        pageUrl: window.location.href
+                    });
 
+                    hide(this.confirmDownloadBtn);
+                    show(select("#downloadProgress"));
+                    setInterval(() => {
+                        if (extension.downloadPercentage == 100) {
+                            hide(select("#downloadingAlert"))
+                            show(select("#downloadCompleted"))
+                        }
+                        select("#downloadStatus").innerText = extension.downloadPercentage + "% "
+                        select("#downloadSpeed").innerText = extension.downloadSpeedMb.toFixed(2) + "MB/s"
+                        select("#downloadProgressBar").value = extension.downloadPercentage
+                    }, 1000);
+                }
+                this.downloadBtn.onclick = () => {
+                    setInterval(() => {
+                        if (isDownloading) {
+                            return;
+                        }
+                        if (extension.downloadM3u8Url != undefined) {
+                            show(this.confirmDownloadBtn);
+                            select('#downloadVideoInfo').innerText = getDurationStr(extension.downloadDuration);
+                        } else {
+                            hide(this.confirmDownloadBtn);
+                            select('#downloadVideoInfo').innerText = "{$DidntDetectVideo$}"
+                        }
+                    }, 1000);
+                    inDownload = true;
+                    this.inputRoomName.value = "download_" + generateUUID();
+                    this.createRoomButton.click()
+                    hide(select('.vt-modal-footer'))
+                    hide(select('#mainPannel'))
+                    show(select('#downloadPannel'))
+                }
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
                         await navigator.clipboard.writeText("{$easy_share_line_template$}"
@@ -1501,6 +1625,7 @@
             hide(this.inputRoomPassword);
             this.inputRoomName.placeholder = "";
             this.isInRoom = true;
+            hide(this.downloadBtn)
         }
 
         InLobby(init = false) {
@@ -1515,6 +1640,7 @@
             hide(this.roomButtonGroup);
             hide(this.easyShareCopyBtn);
             this.setTxtMsgInterface(0);
+            dsply(this.downloadBtn, downloadEnabled())
             this.isInRoom = false;
         }
 
@@ -1592,8 +1718,25 @@
         FetchRealUrlFromIframeResp: 29,
         SendTxtMsg: 30,
         GotTxtMsg: 31,
+        StartDownload: 32,
+        DownloadStatus: 33,
+
 
         UpdateM3u8Files: 1001,
+
+        SaveIndexedDb: 2001,
+        ReadIndexedDb: 2002,
+        SaveIndexedDbResult: 2003,
+        ReadIndexedDbResult: 2004,
+        RegexMatchKeysDb: 2005,
+        RegexMatchKeysDbResult: 2006,
+        DeleteFromIndexedDb: 2007,
+        DeleteFromIndexedDbResult: 2008,
+        StorageEstimate: 2009,
+        StorageEstimateResult: 2010,
+        ReadIndexedDbSw: 2011,
+        ReadIndexedDbSwResult: 2012,
+        //2013 used
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1662,11 +1805,13 @@
             this.voiceVolume = null;
             this.videoVolume = null;
             this.m3u8Files = {};
+            this.m3u8UrlTestResult = {};
             this.m3u8PostWindows = {};
             this.m3u8MediaUrls = {};
             this.currentM3u8Url = undefined;
             this.ctxMemberCount = 0;
-
+            this.downloadSpeedMb = 0;
+            this.downloadPercentage = 0;
             this.currentSendingMsgId = null;
 
             this.isIos = undefined;
@@ -1697,6 +1842,12 @@
                 }
                 this.processReceivedMessage(message.data.type, message.data.data, message);
             });
+            try {
+                navigator.serviceWorker.addEventListener('message', (message) => {
+                    console.log(`Received a message from service worker: ${event.data}`);
+                    this.processReceivedMessage(message.data.type, message.data.data, message);
+                });
+            } catch { };
 
             // if some element's click be invoked frequenctly, a lot of http request will be sent
             // window.addEventListener('click', message => {
@@ -2079,6 +2230,18 @@
             return m3u8Content;
         }
 
+        GetM3u8WindowId(m3u8Url) {
+            let windowId = undefined;
+            for (let id in this.m3u8Files) {
+                this.m3u8Files[id].forEach(m3u8 => {
+                    if (m3u8Url == m3u8.m3u8Url) {
+                        windowId = id;
+                    }
+                })
+            }
+            return windowId;
+        }
+
         UrlRequest(m3u8Url, idx, origin) {
             for (let id in this.m3u8Files) {
                 this.m3u8Files[id].forEach(m3u8 => {
@@ -2090,6 +2253,71 @@
                 })
             }
         }
+
+        async testM3u8Url(testUrl) {
+            if (this.m3u8UrlTestResult[testUrl] != undefined) {
+                return this.m3u8UrlTestResult[testUrl];
+            }
+            function limitStream(stream, limit) {
+                const reader = stream.getReader();
+                let bytesRead = 0;
+
+                return new ReadableStream({
+                    async pull(controller) {
+                        const { value, done } = await reader.read();
+
+                        if (done || bytesRead >= limit) {
+                            controller.close();
+                            return;
+                        }
+
+                        bytesRead += value.byteLength;
+                        controller.enqueue(value);
+                    },
+
+                    cancel(reason) {
+                        reader.cancel(reason);
+                    }
+                });
+            }
+            return new Promise((res, rej) => {
+                const abortController = new AbortController();
+                fetch(testUrl, { signal: abortController.signal }).then(response => {
+                    const limitedStream = limitStream(response.body, 1024); // Limit to 1024 bytes
+                    return new Response(limitedStream, { headers: response.headers });
+                }).then(r => r.text())
+                    .then(async txt => {
+                        abortController.abort();
+                        if (isM3U8(txt)) {
+                            this.m3u8UrlTestResult[testUrl] = true;
+                        } else {
+                            this.m3u8UrlTestResult[testUrl] = false;
+                        }
+                        res(this.m3u8UrlTestResult[testUrl]);
+                    }).catch(e => {
+                        if (testUrl.startsWith('blob')) {
+                            this.m3u8UrlTestResult[testUrl] = false;
+                            res(this.m3u8UrlTestResult[testUrl]);
+                        } else {
+                            rej();
+                        }
+                    })
+            })
+        }
+
+        // download
+        GetAllM3u8SegUrls(m3u8Url) {
+            for (let id in this.m3u8Files) {
+                for (let mid in this.m3u8Files[id]) {
+                    let m3u8 = this.m3u8Files[id][mid]
+                    if (m3u8Url == m3u8.m3u8Url) {
+                        return extractMediaUrls(m3u8.m3u8Content, m3u8.m3u8Url);
+                    }
+                }
+            }
+        }
+
+        // end of download
 
         UpdateStatusText(text, color) {
             if (window.self != window.top) {
@@ -2128,27 +2356,35 @@
                     break;
                 case MessageType.UpdateRoomRequest:
                     let m3u8Url = undefined;
-                    if (isEasyShareEnabled()) {
-                        try {
-                            let d = NaN;
-                            let selected = null;
-                            for (let id in this.m3u8Files) {
-                                this.m3u8Files[id].forEach(m3u8 => {
-                                    if (isNaN(d) || Math.abs(data.duration - m3u8.duration) <= d) {
-                                        d = Math.abs(data.duration - m3u8.duration);
-                                        selected = m3u8;
-                                    }
-                                    return;
-                                })
-                            }
-                            if (d < 3) {
-                                m3u8Url = selected.m3u8Url;
-                            }
-                        } catch { }
-                        if (data.m3u8Url == undefined) {
-                            data.m3u8Url = m3u8Url;
+                    try {
+                        let d = NaN;
+                        let selected = null;
+                        for (let id in this.m3u8Files) {
+                            this.m3u8Files[id].forEach(m3u8 => {
+                                if (isNaN(d) || Math.abs(data.duration - m3u8.duration) <= d) {
+                                    d = Math.abs(data.duration - m3u8.duration);
+                                    selected = m3u8;
+                                }
+                                return;
+                            })
                         }
+                        if (d < 3) {
+                            m3u8Url = selected.m3u8Url;
+                        }
+                    } catch { }
+                    if (data.m3u8Url == undefined) {
+                        data.m3u8Url = m3u8Url;
+                    }// data.m3u8Url may be a video file
+                    if (m3u8Url != undefined) {
+                        this.downloadM3u8Url = m3u8Url;
+                        this.downloadDuration = data.duration;
                     } else {
+                        this.downloadM3u8Url = undefined;
+                        this.downloadDuration = undefined;
+                    }
+
+
+                    if (!isEasyShareEnabled()) {
                         data.m3u8Url = "";
                     }
                     try {
@@ -2252,6 +2488,10 @@
                             }
                         }
                     } catch (e) { }
+                    try {
+                        dsply(select('#downloadBtn'), downloadEnabled() && !windowPannel.isInRoom)
+                    } catch { }
+
                     window.VideoTogetherSettingEnabled = true;
                     break;
                 }
@@ -2343,6 +2583,30 @@
                     } catch { };
                     this.sendMessageToSonWithContext(MessageType.GotTxtMsg, data);
                     break;
+                }
+                case MessageType.ReadIndexedDbSw: {
+                    const result = await readFromIndexedDB(data.table, data.key);
+                    data.data = result
+                    navigator.serviceWorker.controller.postMessage({
+                        source: "VideoTogether",
+                        type: 2012,
+                        data: data
+                    });
+                    break;
+                }
+                case MessageType.StartDownload: {
+                    startDownload(data.m3u8Url, data.m3u8Content, data.urls, data.title, data.pageUrl);
+                    setInterval(() => {
+                        sendMessageToTop(MessageType.DownloadStatus, {
+                            downloadSpeedMb: this.downloadSpeedMb,
+                            downloadPercentage: this.downloadPercentage
+                        })
+                    }, 1000)
+                    break;
+                }
+                case MessageType.DownloadStatus: {
+                    this.downloadSpeedMb = data.downloadSpeedMb;
+                    this.downloadPercentage = data.downloadPercentage;
                 }
                 default:
                     // console.info("unhandled message:", type, data)
@@ -2849,9 +3113,31 @@
             }
             let m3u8Url;
             try {
-                if (videoDom.src.startsWith('http')) {
-                    m3u8Url = videoDom.src;
+                let nativeSrc = videoDom.src;
+                if (nativeSrc == "" || nativeSrc == undefined) {
+                    nativeSrc = videoDom.querySelector('source').src;
                 }
+                if (nativeSrc.startsWith('http')) {
+                    m3u8Url = nativeSrc;
+                }
+
+                this.testM3u8Url(nativeSrc).then(r => {
+                    if (r) {
+                        fetch(nativeSrc).then(r => r.text()).then(m3u8Content => {
+                            if (isMasterM3u8(m3u8Content)) {
+                                const mediaM3u8Url = getFirstMediaM3U8(m3u8Content);
+                                fetch(mediaM3u8Url).then(r => r.text()).then(() => {
+                                    this.m3u8UrlTestResult[nativeSrc] = false;
+                                })
+                            } else {
+                                // don't fetch multiple times
+                                this.m3u8UrlTestResult[nativeSrc] = false;
+                            }
+                        }
+                        )
+                    }
+                })
+
             } catch { };
             sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
@@ -2877,6 +3163,9 @@
         }
 
         GetRoomState(link) {
+            if (inDownload) {
+                return {};
+            }
             if (this.role == this.RoleEnum.Null) {
                 return {};
             }
@@ -2903,6 +3192,9 @@
         }
 
         SaveStateToSessionStorageWhenSameOrigin(link) {
+            if (inDownload) {
+                return false;
+            }
             try {
                 let sameOrigin = false;
                 if (link != "") {

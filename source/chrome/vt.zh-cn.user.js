@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685852046
+// @version      1694449017
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -13,6 +13,10 @@
     const language = 'zh-cn'
     const vtRuntime = `extension`;
     const realUrlCache = {}
+    const m3u8ContentCache = {}
+
+    let inDownload = false;
+    let isDownloading = false;
 
     let roomUuid = null;
 
@@ -20,6 +24,398 @@
     // request can only be called up to 10 times in 5 seconds
     const periodSec = 5;
     const timeLimitation = 15;
+
+    function getDurationStr(duration) {
+        try {
+            let d = parseInt(duration);
+            let str = ""
+            let units = [" 秒 ", " 分 ", " 小时 "]
+            for (let i in units) {
+                if (d > 0) {
+                    str = d % 60 + units[i] + str;
+                }
+                d = Math.floor(d / 60)
+            }
+            return str;
+        } catch {
+            return "N/A"
+        }
+    }
+
+    function downloadEnabled() {
+        try {
+            const type = VideoTogetherStorage.UserscriptType
+            return parseInt(window.VideoTogetherStorage.LoaddingVersion) > 1694442998
+                && (type == "Chrome" || type == "Safari" || type == "Firefox")
+                && !isDownloadBlackListDomain()
+        } catch {
+            return false;
+        }
+    }
+
+    function isM3U8(textContent) {
+        return textContent.trim().startsWith('#EXTM3U');
+    }
+    function isMasterM3u8(textContent) {
+        return textContent.includes('#EXT-X-STREAM-INF:');
+    }
+
+    function getFirstMediaM3U8(m3u8Content) {
+        if (!isMasterM3u8(m3u8Content)) {
+            return null;
+        }
+        const lines = m3u8Content.split('\n');
+
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine && !trimmedLine.startsWith('#')) {
+                return trimmedLine;
+            }
+        }
+        return null;
+    }
+
+
+    function startDownload(_vtArgM3u8Url, _vtArgM3u8Content, _vtArgM3u8Urls, _vtArgTitle, _vtArgPageUrl) {
+        /*//*/
+(async function () {
+
+    async function timeoutAsyncRead(reader, timeout) {
+        const timer = new Promise((_, rej) => {
+            const id = setTimeout(() => {
+                reader.cancel();
+                rej(new Error('Stream read timed out'));
+            }, timeout);
+        });
+
+        return Promise.race([
+            reader.read(),
+            timer
+        ]);
+    }
+
+    function generateUUID() {
+        if (crypto.randomUUID != undefined) {
+            return crypto.randomUUID();
+        }
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+
+    window.updateM3u8Status = async function updateM3u8Status(m3u8Url, status) {
+        // 0 downloading  1 completed 2 deleting
+        let m3u8mini = await readFromIndexedDB('m3u8s-mini', m3u8Url);
+        m3u8mini.status = status
+        let m3u8 = await readFromIndexedDB('m3u8s', m3u8Url);
+        m3u8.status = status
+        await saveToIndexedDB('m3u8s-mini', m3u8Url, m3u8mini);
+        await saveToIndexedDB('m3u8s', m3u8Url, m3u8)
+    }
+
+    async function saveM3u8(m3u8Url, m3u8Content) {
+        await saveToIndexedDB('m3u8s-mini', m3u8Url,
+            {
+                title: vtArgTitle,
+                pageUrl: vtArgPageUrl,
+                m3u8Url: m3u8Url,
+                m3u8Id: m3u8Id,
+                status: 0
+            }
+        )
+        await saveToIndexedDB('m3u8s', m3u8Url,
+            {
+                m3u8Content: m3u8Content,
+                title: vtArgTitle,
+                pageUrl: vtArgPageUrl,
+                m3u8Url: m3u8Url,
+                m3u8Id: m3u8Id,
+                status: 0
+            }
+        )
+
+    }
+
+    function blobToDataUrl(blob, callback) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            callback(event.target.result);
+        };
+        reader.readAsDataURL(blob);
+    }
+
+    async function saveVideoBlob(url, blob) {
+        return new Promise((res, rej) => {
+            try {
+                blobToDataUrl(blob, async dataUrl => {
+                    await saveToIndexedDB('videos-mini', url, {
+                        m3u8Url: downloadM3u8Url,
+                        m3u8Id: m3u8Id,
+                    })
+                    await saveToIndexedDB('videos', url, {
+                        dataUrl: dataUrl,
+                        m3u8Url: downloadM3u8Url,
+                        m3u8Id: m3u8Id,
+                    })
+                    res();
+                })
+            } catch {
+                rej();
+            }
+        })
+
+    }
+
+    window.regexMatchKeys = function regexMatchKeys(table, regex) {
+        const queryId = generateUUID()
+        return new Promise((res, rej) => {
+            window.postMessage({
+                source: "VideoTogether",
+                type: 2005,
+                data: {
+                    table: table,
+                    regex: regex,
+                    id: queryId
+                }
+            }, '*')
+            regexCallback[queryId] = (data) => {
+                try {
+                    res(JSON.parse(data))
+                } catch { rej() }
+            }
+        })
+    }
+
+    window.saveToIndexedDB = async function saveToIndexedDB(table, key, data) {
+        const queryId = generateUUID();
+        return new Promise((res, rej) => {
+            data.saveTime = Date.now()
+            window.postMessage({
+                source: "VideoTogether",
+                type: 2001,
+                data: {
+                    table: table,
+                    key: key,
+                    data: JSON.stringify(data),
+                    id: queryId,
+                }
+            }, '*')
+            saveCallback[queryId] = (error) => {
+                if (error === 0) {
+                    res(0)
+                } else {
+                    rej()
+                }
+            }
+        })
+    }
+
+    let readCallback = {}
+    let regexCallback = {}
+    let deleteCallback = {}
+    let saveCallback = {}
+
+    window.addEventListener('message', async e => {
+        if (e.data.source == "VideoTogether") {
+            switch (e.data.type) {
+                case 2003: {
+                    saveCallback[e.data.data.id](e.data.data.error)
+                    break;
+                }
+                case 2004: {
+                    readCallback[e.data.data.id](e.data.data.data)
+                    break;
+                }
+                case 2006: {
+                    regexCallback[e.data.data.id](e.data.data.data)
+                    break;
+                }
+                case 2008: {
+                    deleteCallback[e.data.data.id](e.data.data.error);
+                    break;
+                }
+                case 2010: {
+                    console.log(e.data.data.data);
+                    break;
+                }
+            }
+        }
+    })
+    window.requestStorageEstimate = function requestStorageEstimate() {
+        window.postMessage({
+            source: "VideoTogether",
+            type: 2009,
+            data: {}
+        }, '*')
+    }
+    window.deleteFromIndexedDB = function deleteFromIndexedDB(table, key) {
+        const queryId = generateUUID()
+        window.postMessage({
+            source: "VideoTogether",
+            type: 2007,
+            data: {
+                id: queryId,
+                table: table,
+                key: key,
+            }
+        }, '*')
+        return new Promise((res, rej) => {
+            deleteCallback[queryId] = (error) => {
+                if (error === 0) {
+                    res(true);
+                } else {
+                    rej();
+                }
+            }
+        })
+    }
+
+    window.readFromIndexedDB = function readFromIndexedDB(table, key) {
+        const queryId = generateUUID();
+
+        window.postMessage({
+            source: "VideoTogether",
+            type: 2002,
+            data: {
+                table: table,
+                key: key,
+                id: queryId,
+            }
+        }, '*')
+        return new Promise((res, rej) => {
+            readCallback[queryId] = (data) => {
+                try {
+                    res(JSON.parse(data));
+                } catch {
+                    rej()
+                }
+            }
+        })
+    }
+
+    if (window.videoTogetherExtension === undefined) {
+        return;
+    }
+    if (window.location.hostname == 'local.2gether.video') {
+        return;
+    }
+    let vtArgM3u8Url = undefined;
+    let vtArgM3u8Content = undefined;
+    let vtArgM3u8Urls = undefined;
+    let vtArgTitle = undefined;
+    let vtArgPageUrl = undefined;
+    try {
+        vtArgM3u8Url = _vtArgM3u8Url;
+        vtArgM3u8Content = _vtArgM3u8Content;
+        vtArgM3u8Urls = _vtArgM3u8Urls;
+        vtArgTitle = _vtArgTitle;
+        vtArgPageUrl = _vtArgPageUrl;
+    } catch {
+        return;
+    }
+
+    const m3u8Id = generateUUID()
+    const downloadM3u8Url = vtArgM3u8Url;
+    const m3u8Key = downloadM3u8Url + `#m3u8Id-${m3u8Id}`
+    if (downloadM3u8Url === undefined) {
+        return;
+    }
+
+    await saveM3u8(downloadM3u8Url + `#m3u8Id-${m3u8Id}`, vtArgM3u8Content)
+    let urls = vtArgM3u8Urls
+    const totalCount = urls.length;
+    let successCount = 0;
+
+    videoTogetherExtension.downloadPercentage = 0;
+
+    let failedUrls = []
+
+    let totalBytes = 0;
+    async function fetchWithSpeedTracking(url) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => {
+            controller.abort();
+        }, 20000);
+
+        const response = await fetch(url, { signal: controller.signal });
+
+        if (!response.body) {
+            throw new Error("ReadableStream not yet supported in this browser.");
+        }
+
+        const contentType = response.headers.get("Content-Type") || "application/octet-stream";
+
+        const reader = response.body.getReader();
+        const chunks = [];
+
+        async function readStream() {
+            const { done, value } = await timeoutAsyncRead(reader, 20000);
+            if (done) {
+                return;
+            }
+
+            if (value) {
+                chunks.push(value);
+                totalBytes += value.length;
+            }
+
+            // Continue reading the stream
+            return await readStream();
+        }
+        await readStream();
+        const blob = new Blob(chunks, { type: contentType });
+        return blob;
+    }
+
+    async function downloadWorker(urls, index, step, total) {
+        if (index >= total) {
+            return;
+        }
+
+        const url = urls[index];
+        try {
+            const blob = await fetchWithSpeedTracking(url);
+            await saveVideoBlob(url + `#m3u8Id-${m3u8Id}`, blob);
+            successCount++;
+            videoTogetherExtension.downloadPercentage = Math.floor((successCount / totalCount) * 100)
+            console.log('download ts:', index, 'of', total);
+        } catch {
+            failedUrls.push(url);
+        }
+
+        // Pick up the next work item
+        await downloadWorker(urls, index + step, step, total);
+    }
+
+    async function downloadInParallel(urls, numThreads) {
+        const total = urls.length;
+
+        // Start numThreads download workers
+        const promises = Array.from({ length: numThreads }, (_, i) => {
+            return downloadWorker(urls, i, numThreads, total);
+        });
+
+        await Promise.all(promises);
+        if (failedUrls.length != 0) {
+            urls = failedUrls;
+            failedUrls = [];
+            await downloadInParallel(urls, numThreads);
+        } else {
+            updateM3u8Status(m3u8Key, 1)
+        }
+    }
+
+    const numThreads = 10;
+    downloadInParallel(urls, numThreads);
+    let lastTotalBytes = 0;
+    setInterval(function () {
+        videoTogetherExtension.downloadSpeedMb = (totalBytes - lastTotalBytes) / 1024 / 1024;
+        lastTotalBytes = totalBytes;
+    }, 1000);
+})()
+//*/
+    }
+
     function isLimited() {
         while (lastRunQueue.length > 0 && lastRunQueue[0] < Date.now() / 1000 - periodSec) {
             lastRunQueue.shift();
@@ -30,6 +426,28 @@
         }
         lastRunQueue.push(Date.now() / 1000);
         return false;
+    }
+
+    function getVideoTogetherStorage(key, defaultVal) {
+        try {
+            if (window.VideoTogetherStorage == undefined) {
+                return defaultVal
+            } else {
+                if (window.VideoTogetherStorage[key] == undefined) {
+                    return defaultVal
+                } else {
+                    return window.VideoTogetherStorage[key];
+                }
+            }
+        } catch { return defaultVal }
+    }
+
+    function getEnableTextMessage() {
+        return getVideoTogetherStorage('EnableTextMessage', true);
+    }
+
+    function getEnableMiniBar() {
+        return getVideoTogetherStorage('EnableMiniBar', true);
     }
 
     function skipIntroLen() {
@@ -53,13 +471,55 @@
     function emptyStrIfUdf(s) {
         return s == undefined ? "" : s;
     }
-    function isEasyShareEnabled() {
-        try {
+
+    let isDownloadBlackListDomainCache = undefined;
+    function isDownloadBlackListDomain() {
+        if (window.location.protocol != 'https:') {
+            return true;
+        }
+        const domains = [
+            'iqiyi.com', 'qq.com', 'youku.com',
+            'bilibili.com', 'baidu.com', 'quark.cn',
+            'aliyundrive.com', "115.com", "acfun.cn", "youtube.com",
+        ];
+        if (isDownloadBlackListDomainCache == undefined) {
             const hostname = window.location.hostname;
-            if (hostname.endsWith("iqiyi.com") || hostname.endsWith("qq.com") || hostname.endsWith("youku.com")) {
+            isDownloadBlackListDomainCache = domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+        }
+        return isDownloadBlackListDomainCache;
+    }
+
+    let isEasyShareBlackListDomainCache = undefined;
+    function isEasyShareBlackListDomain() {
+        if (window.location.protocol != 'https:') {
+            return true;
+        }
+        const domains = [
+            'iqiyi.com', 'qq.com', 'youku.com',
+            'bilibili.com', 'baidu.com', 'quark.cn',
+            'aliyundrive.com', "115.com", "pornhub.com", "acfun.cn", "youtube.com",
+            // --
+            "missav.com", "nivod4.tv"
+        ];
+        if (isEasyShareBlackListDomainCache == undefined) {
+            const hostname = window.location.hostname;
+            isEasyShareBlackListDomainCache = domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+        }
+        return isEasyShareBlackListDomainCache;
+    }
+
+    function isEasyShareEnabled() {
+        if (inDownload) {
+            return false;
+        }
+        try {
+            if (isWeb()) {
                 return false;
             }
-            return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare;
+            if (isEasyShareBlackListDomain()) {
+                return false;
+            }
+            return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare != false;
         } catch {
             return false;
         }
@@ -73,12 +533,40 @@
         }
     }
 
+    function useMobileStyle(videoDom) {
+        let isMobile = false;
+        if (window.location.href.startsWith('https://m.bilibili.com/')) {
+            isMobile = true;
+        }
+        if (!isMobile) {
+            return;
+        }
+        document.body.childNodes.forEach(e => {
+            try {
+                if (e != videoDom && e.style && e.id != 'VideoTogetherWrapper') {
+                    e.style.display = 'none'
+                }
+            } catch { }
+
+        });
+        videoDom.setAttribute('controls', true);
+        videoDom.style.width = videoDom.style.height = "100%";
+        videoDom.style.maxWidth = videoDom.style.maxHeight = "100%";
+        videoDom.style.display = 'block';
+        if (videoDom.parentElement != document.body) {
+            document.body.appendChild(videoDom);
+        }
+    }
+
     const mediaUrlsCache = {}
     function extractMediaUrls(m3u8Content, m3u8Url) {
         if (mediaUrlsCache[m3u8Url] == undefined) {
             let lines = m3u8Content.split("\n");
             let mediaUrls = [];
-            let base = new URL(m3u8Url);
+            let base = undefined;
+            try {
+                base = new URL(m3u8Url);
+            } catch { };
             for (let i = 0; i < lines.length; i++) {
                 let line = lines[i].trim();
                 if (line !== "" && !line.startsWith("#")) {
@@ -102,9 +590,15 @@
         return decodeURIComponent(str.replace(/\+/g, ' '));
     }
 
-    function isWeb(type) {
-        return type == 'website' || type == 'website_debug';
+    function isWeb() {
+        try {
+            let type = window.VideoTogetherStorage.UserscriptType;
+            return type == 'website' || type == 'website_debug';
+        } catch {
+            return false;
+        }
     }
+
     /**
      * @returns {Element}
      */
@@ -152,6 +646,7 @@
     }
 
     function changeMemberCount(c) {
+        extension.ctxMemberCount = c;
         select('#memberCount').innerHTML = String.fromCodePoint("0x1f465") + " " + c
     }
 
@@ -202,6 +697,15 @@
         } else {
             GetNativeFunction();
             Global.NativePostMessageFunction.call(window, data, "*");
+        }
+    }
+
+    async function Fetch(url, init) {
+        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
+            return await fetch(url, init);
+        } else {
+            GetNativeFunction();
+            return await Global.NativeFetch.call(window, url, init);
         }
     }
 
@@ -291,6 +795,12 @@
         x.innerHTML = msg;
         x.className = "show";
         setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
+        let changeVoiceBtn = select('#changeVoiceBtn');
+        if (changeVoiceBtn != undefined) {
+            changeVoiceBtn.onclick = () => {
+                windowPannel.ShowTxtMsgTouchPannel();
+            }
+        }
     }
 
     async function waitForRoomUuid(timeout = 10000) {
@@ -321,6 +831,7 @@
             this.timestamp = null;
             this.url = null;
             this.videoTitle = null;
+            this.waitForLoadding = null;
         }
     }
 
@@ -332,6 +843,12 @@
         _lastUpdateTime: 0,
         _lastErrorMessage: null,
         _lastRoom: new Room(),
+        _connectedToService: false,
+        isOpen() {
+            try {
+                return this._socket.readyState = 1 && this._connectedToService;
+            } catch { return false; }
+        },
         async connect() {
             if (this._socket != null) {
                 try {
@@ -346,9 +863,10 @@
             }
             console.log('ws connect');
             this._lastConnectTime = Date.now() / 1000
+            this._connectedToService = false;
             try {
                 this.disconnect()
-                this._socket = new WebSocket(`wss://vt.panghair.com:5000/ws?language=${language}`);
+                this._socket = new WebSocket(`wss://${extension.video_together_host.replace("https://", "")}/ws?language=${language}`);
                 this._socket.onmessage = async e => {
                     let lines = e.data.split('\n');
                     for (let i = 0; i < lines.length; i++) {
@@ -371,11 +889,21 @@
             if (data['method'] == "/room/join") {
                 this._joinedName = data['data']['name'];
             }
-            if (data['method'] == "/room/join" || data['method'] == "/room/update") {
+            if (data['method'] == "/room/join" || data['method'] == "/room/update" || data['method'] == "/room/update_member") {
+                this._connectedToService = true;
                 this._lastRoom = Object.assign(data['data'], Room);
                 this._lastUpdateTime = Date.now() / 1000;
-                if (!isLimited() && extension.role == extension.RoleEnum.Member) {
-                    extension.ScheduledTask();
+
+                if (extension.role == extension.RoleEnum.Member) {
+                    if (!isLimited()) {
+                        extension.ScheduledTask();
+                    }
+                }
+                if (extension.role == extension.RoleEnum.Master && data['method'] == "/room/update_member") {
+                    if (!isLimited()) {
+                        extension.setWaitForLoadding(this._lastRoom.waitForLoadding);
+                        extension.ScheduledTask();
+                    }
                 }
             }
             if (data['method'] == 'replay_timestamp') {
@@ -386,6 +914,18 @@
             }
             if (data['method'] == 'url_resp') {
                 realUrlCache[data['data'].origin] = data['data'].real;
+            }
+            if (data['method'] == 'm3u8_req') {
+                content = extension.GetM3u8Content(data['data'].m3u8Url);
+                WS.m3u8ContentResp(data['data'].m3u8Url, content);
+            }
+            if (data['method'] == 'm3u8_resp') {
+                m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
+            }
+            if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
+                popupError("有新消息 (<a id='changeVoiceBtn' style='color:inherit' href='#''>修改语音包</a>)");
+                extension.gotTextMsg(data['data'].id, data['data'].msg);
+                sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
         },
         getRoom() {
@@ -421,6 +961,32 @@
                 "data": {
                     "origin": origin,
                     "real": real,
+                }
+            })
+        },
+        async m3u8ContentReq(m3u8Url) {
+            this.send({
+                "method": "m3u8_req",
+                "data": {
+                    "m3u8Url": m3u8Url,
+                }
+            })
+        },
+        async sendTextMessage(id, msg) {
+            this.send({
+                "method": "send_txtmsg",
+                "data": {
+                    "msg": msg,
+                    "id": id
+                }
+            })
+        },
+        async m3u8ContentResp(m3u8Url, content) {
+            this.send({
+                "method": "m3u8_resp",
+                "data": {
+                    "m3u8Url": m3u8Url,
+                    "content": content
                 }
             })
         },
@@ -950,6 +1516,7 @@
         } // End Function _utf8_decode
     }
 
+    let GotTxtMsgCallback = undefined;
 
     class VideoTogetherFlyPannel {
         constructor() {
@@ -957,13 +1524,175 @@
             this.isInRoom = false;
 
             this.isMain = (window.self == window.top);
+            setInterval(() => {
+                if (getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
+                    && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
+                    const qs = (s) => this.fullscreenWrapper.querySelector(s);
+                    try {
+                        qs("#memberCount").innerText = extension.ctxMemberCount;
+                        qs("#send-button").disabled = !extension.ctxWsIsOpen;
+                    } catch { };
+                    if (document.fullscreenElement.contains(this.fullscreenSWrapper)) {
+                        return;
+                    }
+                    let shadowWrapper = document.createElement("div");
+                    this.fullscreenSWrapper = shadowWrapper;
+                    shadowWrapper.id = "VideoTogetherfullscreenSWrapper";
+                    let wrapper;
+                    try {
+                        wrapper = AttachShadow(shadowWrapper, { mode: "open" });
+                        wrapper.addEventListener('keydown', (e) => e.stopPropagation());
+                        this.fullscreenWrapper = wrapper;
+                    } catch (e) { console.error(e); }
+                    wrapper.innerHTML = `<style>
+    .container {
+        position: absolute;
+        top: 50%;
+        left: 0px;
+        border: 1px solid #000;
+        padding: 0px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: fit-content;
+        justify-content: center;
+        border-radius: 5px;
+        opacity: 80%;
+        background: #000;
+        color: white;
+        z-index: 2147483647;
+    }
+
+    .container input[type='text'] {
+        padding: 0px;
+        flex-grow: 1;
+        border: none;
+        height: 24px;
+        width: 0px;
+        height: 32px;
+        transition: width 0.1s linear;
+        background-color: transparent;
+        color: white;
+    }
+
+    .container input[type='text'].expand {
+        width: 150px;
+    }
+
+    .container .user-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .container button {
+        height: 32px;
+        font-size: 16px;
+        border: 0px;
+        color: white;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        background-color: #1890ff;
+        transition-duration: 0.4s;
+        border-radius: 4px;
+    }
+
+    .container #expand-button {
+        color: black;
+        font-weight: bolder;
+        height: 32px;
+        width: 32px;
+        background-size: cover;
+        background-image: url(data:image/png;base64,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);
+    }
+
+    .container #close-btn {
+        height: 16px;
+        max-width: 24px;
+        background-color: rgba(255, 0, 0, 0.5);
+        font-size: 8px;
+    }
+
+    .container #close-btn:hover {
+        background-color: rgba(255, 0, 0, 0.3);
+    }
+
+    .container button:hover {
+        background-color: #6ebff4;
+    }
+
+    .container button:disabled,
+    .container button:disabled:hover {
+        background-color: rgb(76, 76, 76);
+    }
+</style>
+<div class="container" id="container">
+    <button id="expand-button">&lt;</button>
+    <div style="padding: 0 5px 0 5px;" class="user-info" id="user-info">
+        <span class="emoji">👥</span>
+        <span id="memberCount">0</span>
+    </div>
+    <button id="close-btn">x</button>
+    <input style="margin: 0 0 0 5px;" type="text" placeholder="文字聊天" id="text-input" class="expand" />
+    <button id="send-button">发送</button>
+</div>`;
+                    document.fullscreenElement.appendChild(shadowWrapper);
+                    var container = wrapper.getElementById('container');
+                    let expandBtn = wrapper.getElementById('expand-button');
+                    let msgInput = wrapper.getElementById('text-input');
+                    let sendBtn = wrapper.getElementById('send-button');
+                    let closeBtn = wrapper.getElementById('close-btn');
+                    let expanded = true;
+                    function expand() {
+                        if (expanded) {
+                            expandBtn.innerText = '>'
+                            sendBtn.style.display = 'none';
+                            msgInput.classList.remove('expand');
+
+                        } else {
+                            expandBtn.innerText = '<';
+                            sendBtn.style.display = 'inline-block';
+                            msgInput.classList.add("expand");
+                        }
+                        expanded = !expanded;
+                    }
+                    closeBtn.onclick = () => { shadowWrapper.style.display = "none"; }
+                    wrapper.getElementById('expand-button').addEventListener('click', () => expand());
+                    sendBtn.onclick = () => {
+                        extension.currentSendingMsgId = generateUUID();
+                        sendMessageToTop(MessageType.SendTxtMsg, { currentSendingMsgId: extension.currentSendingMsgId, value: msgInput.value });
+                    }
+                    GotTxtMsgCallback = (id, msg) => {
+                        console.log(id, msg);
+                        if (id == extension.currentSendingMsgId && msg == msgInput.value) {
+                            msgInput.value = "";
+                        }
+                    }
+                    msgInput.addEventListener("keyup", e => {
+                        if (e.key == "Enter") {
+                            sendBtn.click();
+                        }
+                    });
+                } else {
+                    if (this.fullscreenSWrapper != undefined) {
+                        this.fullscreenSWrapper.remove();
+                        this.fullscreenSWrapper = undefined;
+                        this.fullscreenWrapper = undefined;
+                        GotTxtMsgCallback = undefined;
+                    }
+                }
+            }, 500);
             if (this.isMain) {
+                document.addEventListener("click", () => {
+                    this.enableSpeechSynthesis();
+                });
                 this.minimized = false;
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
                 let wrapper;
                 try {
                     wrapper = AttachShadow(shadowWrapper, { mode: "open" });
+                    wrapper.addEventListener('keydown', (e) => e.stopPropagation())
                 } catch (e) { console.error(e); }
 
                 this.shadowWrapper = shadowWrapper;
@@ -976,6 +1705,34 @@
         src="data:image/png;base64,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">
       <div class="vt-modal-title">VideoTogether</div>
     </div>
+
+    <button id="downloadBtn" type="button" class="vt-modal-title-button vt-modal-easyshare">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"
+            stroke="currentColor" stroke-width="1.67">
+            <path
+              d="M12.5535 16.5061C12.4114 16.6615 12.2106 16.75 12 16.75C11.7894 16.75 11.5886 16.6615 11.4465 16.5061L7.44648 12.1311C7.16698 11.8254 7.18822 11.351 7.49392 11.0715C7.79963 10.792 8.27402 10.8132 8.55352 11.1189L11.25 14.0682V3C11.25 2.58579 11.5858 2.25 12 2.25C12.4142 2.25 12.75 2.58579 12.75 3V14.0682L15.4465 11.1189C15.726 10.8132 16.2004 10.792 16.5061 11.0715C16.8118 11.351 16.833 11.8254 16.5535 12.1311L12.5535 16.5061Z"
+              fill="currentColor" />
+            <path
+              d="M3.75 15C3.75 14.5858 3.41422 14.25 3 14.25C2.58579 14.25 2.25 14.5858 2.25 15V15.0549C2.24998 16.4225 2.24996 17.5248 2.36652 18.3918C2.48754 19.2919 2.74643 20.0497 3.34835 20.6516C3.95027 21.2536 4.70814 21.5125 5.60825 21.6335C6.47522 21.75 7.57754 21.75 8.94513 21.75H15.0549C16.4225 21.75 17.5248 21.75 18.3918 21.6335C19.2919 21.5125 20.0497 21.2536 20.6517 20.6516C21.2536 20.0497 21.5125 19.2919 21.6335 18.3918C21.75 17.5248 21.75 16.4225 21.75 15.0549V15C21.75 14.5858 21.4142 14.25 21 14.25C20.5858 14.25 20.25 14.5858 20.25 15C20.25 16.4354 20.2484 17.4365 20.1469 18.1919C20.0482 18.9257 19.8678 19.3142 19.591 19.591C19.3142 19.8678 18.9257 20.0482 18.1919 20.1469C17.4365 20.2484 16.4354 20.25 15 20.25H9C7.56459 20.25 6.56347 20.2484 5.80812 20.1469C5.07435 20.0482 4.68577 19.8678 4.40901 19.591C4.13225 19.3142 3.9518 18.9257 3.85315 18.1919C3.75159 17.4365 3.75 16.4354 3.75 15Z"
+              fill="currentColor" />
+          </svg>
+        </span>
+      </span>
+    </button>
+
+    <button style="display: none;" id="easyShareCopyBtn" type="button" class="vt-modal-title-button vt-modal-easyshare">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32">
+            <path fill="currentColor"
+              d="M0 25.472q0 2.368 1.664 4.032t4.032 1.664h18.944q2.336 0 4-1.664t1.664-4.032v-8.192l-3.776 3.168v5.024q0 0.8-0.544 1.344t-1.344 0.576h-18.944q-0.8 0-1.344-0.576t-0.544-1.344v-18.944q0-0.768 0.544-1.344t1.344-0.544h9.472v-3.776h-9.472q-2.368 0-4.032 1.664t-1.664 4v18.944zM5.696 19.808q0 2.752 1.088 5.28 0.512-2.944 2.24-5.344t4.288-3.872 5.632-1.664v5.6l11.36-9.472-11.36-9.472v5.664q-2.688 0-5.152 1.056t-4.224 2.848-2.848 4.224-1.024 5.152zM32 22.080v0 0 0z">
+            </path>
+          </svg>
+        </span>
+      </span>
+    </button>
 
     <a href="https://afdian.net/a/videotogether" target="_blank" id="vtDonate" type="button"
       class="vt-modal-donate vt-modal-title-button">
@@ -1031,12 +1788,38 @@
           <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="输入建房密码">
         </div>
         <div>
-          <button id="easyShareCopyBtn" class="vt-btn vt-btn-secondary" type="button" style="display: none;">
-            <span>复制轻松分享链接</span>
-          </button>
+          <div id="textMessageChat" style="display: none;">
+            <input id="textMessageInput" autocomplete="off" placeholder="文字聊天">
+            <button id="textMessageSend" class="vt-btn vt-btn-primary" type="button">
+              <span>发送</span>
+            </button>
+          </div>
+          <div id="textMessageConnecting" style="display: none;">
+            <span id="textMessageConnectingStatus">连接文字聊天服务器中...</span>
+            <span id="zhcnTtsMissing">缺少中文语音包</span>
+          </div>
         </div>
       </div>
 
+      <div id="downloadPannel" style="display: none;">
+        <div>
+          <span id="downloadVideoInfo">还未检测到视频</span>
+          <button id="confirmDownloadBtn" style="display: none;" class="vt-btn vt-btn-primary" type="button">
+            <span>确认并下载</span>
+          </button>
+          <div id="downloadProgress" style="display: none;">
+            <progress id="downloadProgressBar" style="width: 100%;" value="0" max="100"></progress>
+            <div id="speedAndStatus" style="width: 100%;">
+              <span id="downloadStatus"></span>
+              <span id="downloadSpeed"></span>
+            </div>
+            <span id="downloadingAlert" style="color: red;">下载中,不要关闭页面</span>
+            <span id="downloadCompleted" style="color: green; display: none;">下载完成</span>
+          </div>
+        </div>
+        <a target="_blank" style="padding: 10px 5px;"
+          href="https://local.2gether.video/local_videos.zh-cn.html">查看已下载视频</a>
+      </div>
       <div id="voicePannel" class="content" style="display: none;">
         <div id="videoVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
           <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">视频音量</span>
@@ -1227,6 +2010,12 @@
     position: absolute;
     top: -1px;
     right: 65px;
+  }
+
+  .vt-modal-easyshare {
+    position: absolute;
+    top: -1px;
+    right: 90px;
   }
 
   .vt-modal-donate {
@@ -1431,16 +2220,16 @@
 
   #videoTogetherRoomNameInput,
   #videoTogetherRoomPasswordInput {
-    width: 150px !important;
-    height: auto !important;
-    font-family: inherit !important;
-    font-size: inherit !important;
+    width: 150px;
+    height: auto;
+    font-family: inherit;
+    font-size: inherit;
     display: inline-block;
-    padding: 0 !important;
+    padding: 0;
     color: #00000073;
     background-color: #ffffff;
     border: 1px solid #e9e9e9;
-    margin: 0 !important;
+    margin: 0;
   }
 
   .lds-ellipsis {
@@ -1673,6 +2462,31 @@
       opacity: 0;
     }
   }
+
+  #downloadProgress {
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    align-items: center;
+    margin: auto;
+  }
+
+  #speedAndStatus {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  #downloadPannel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    justify-content: space-between;
+  }
+
+  #downloadVideoInfo {
+    display: block;
+  }
 </style>`;
                 (document.body || document.documentElement).appendChild(shadowWrapper);
 
@@ -1692,7 +2506,15 @@
                         }
                     });
                 });
-
+                wrapper.querySelector("#textMessageInput").addEventListener("keyup", e => {
+                    if (e.key == "Enter") {
+                        wrapper.querySelector("#textMessageSend").click();
+                    }
+                });
+                wrapper.querySelector("#textMessageSend").onclick = async () => {
+                    extension.currentSendingMsgId = generateUUID();
+                    WS.sendTextMessage(extension.currentSendingMsgId, select("#textMessageInput").value);
+                }
                 this.lobbyBtnGroup = wrapper.querySelector("#lobbyBtnGroup");
                 this.createRoomButton = wrapper.querySelector('#videoTogetherCreateButton');
                 this.joinRoomButton = wrapper.querySelector("#videoTogetherJoinButton");
@@ -1707,6 +2529,56 @@
                 this.callVolumeSlider = wrapper.querySelector("#callVolume");
                 this.callErrorBtn = wrapper.querySelector("#callErrorBtn");
                 this.easyShareCopyBtn = wrapper.querySelector("#easyShareCopyBtn");
+                this.textMessageChat = wrapper.querySelector("#textMessageChat");
+                this.textMessageConnecting = wrapper.querySelector("#textMessageConnecting");
+                this.textMessageConnectingStatus = wrapper.querySelector("#textMessageConnectingStatus");
+                this.zhcnTtsMissing = wrapper.querySelector("#zhcnTtsMissing");
+                this.downloadBtn = wrapper.querySelector("#downloadBtn");
+                hide(this.downloadBtn);
+                this.confirmDownloadBtn = wrapper.querySelector("#confirmDownloadBtn")
+                this.confirmDownloadBtn.onclick = () => {
+                    isDownloading = true;
+                    const m3u8url = extension.downloadM3u8Url
+                    sendMessageTo(extension.m3u8PostWindows[extension.GetM3u8WindowId(m3u8url)], MessageType.StartDownload, {
+                        m3u8Url: m3u8url,
+                        m3u8Content: extension.GetM3u8Content(m3u8url),
+                        urls: extension.GetAllM3u8SegUrls(m3u8url),
+                        title: document.title,
+                        pageUrl: window.location.href
+                    });
+
+                    hide(this.confirmDownloadBtn);
+                    show(select("#downloadProgress"));
+                    setInterval(() => {
+                        if (extension.downloadPercentage == 100) {
+                            hide(select("#downloadingAlert"))
+                            show(select("#downloadCompleted"))
+                        }
+                        select("#downloadStatus").innerText = extension.downloadPercentage + "% "
+                        select("#downloadSpeed").innerText = extension.downloadSpeedMb.toFixed(2) + "MB/s"
+                        select("#downloadProgressBar").value = extension.downloadPercentage
+                    }, 1000);
+                }
+                this.downloadBtn.onclick = () => {
+                    setInterval(() => {
+                        if (isDownloading) {
+                            return;
+                        }
+                        if (extension.downloadM3u8Url != undefined) {
+                            show(this.confirmDownloadBtn);
+                            select('#downloadVideoInfo').innerText = getDurationStr(extension.downloadDuration);
+                        } else {
+                            hide(this.confirmDownloadBtn);
+                            select('#downloadVideoInfo').innerText = "还未检测到视频"
+                        }
+                    }, 1000);
+                    inDownload = true;
+                    this.inputRoomName.value = "download_" + generateUUID();
+                    this.createRoomButton.click()
+                    hide(select('.vt-modal-footer'))
+                    hide(select('#mainPannel'))
+                    show(select('#downloadPannel'))
+                }
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
                         await navigator.clipboard.writeText("点击链接，和我一起看吧：<main_share_link> , 如果打不开可以尝试备用链接：<china_share_link>"
@@ -1797,6 +2669,127 @@
             } catch { }
         }
 
+        ShowTxtMsgTouchPannel() {
+            try {
+                function exitFullScreen() {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) { /* Safari */
+                        document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) { /* Firefox */
+                        document.mozCancelFullScreen();
+                    }
+                }
+                exitFullScreen();
+            } catch { }
+            try {
+                this.txtMsgTouchPannel.remove();
+            } catch { }
+            this.txtMsgTouchPannel = document.createElement('div');
+            let touch = this.txtMsgTouchPannel;
+            touch.id = "videoTogetherTxtMsgTouch";
+            touch.style.width = "100%";
+            touch.style.height = "100%";
+            touch.style.position = "fixed";
+            touch.style.top = "0";
+            touch.style.left = "0";
+            touch.style.zIndex = "2147483647";
+            touch.style.background = "#fff";
+            touch.style.display = "flex";
+            touch.style.justifyContent = "center";
+            touch.style.alignItems = "center";
+            touch.style.padding = "0px";
+            touch.style.flexDirection = "column";
+            touch.style.lineHeight = "40px";
+            AttachShadow(this.txtMsgTouchPannel, { mode: "open" })
+            touch.addEventListener('click', function () {
+                windowPannel.enableSpeechSynthesis();
+                document.body.removeChild(touch);
+                windowPannel.txtMsgTouchPannel = undefined;
+            });
+            document.body.appendChild(touch);
+
+            this.setTxtMsgTouchPannelText("VideoTogether: 您有一条新消息，点击屏幕接收");
+        }
+
+        setTxtMsgInterface(type) {
+            hide(this.textMessageChat);
+            hide(this.textMessageConnecting);
+            hide(this.textMessageConnectingStatus);
+            hide(this.zhcnTtsMissing);
+            if (type == 0) {
+
+            }
+            if (type == 1) {
+                show(this.textMessageChat);
+            }
+            if (type == 2) {
+                show(this.textMessageConnecting);
+                this.textMessageConnectingStatus.innerText = "连接文字聊天服务器中..."
+                show(this.textMessageConnectingStatus);
+            }
+            if (type == 3) {
+                show(this.textMessageConnecting);
+                show(this.zhcnTtsMissing);
+            }
+            if (type == 4) {
+                show(this.textMessageConnecting);
+                this.textMessageConnectingStatus.innerText = "文字聊天已关闭"
+                show(this.textMessageConnectingStatus);
+            }
+        }
+
+        enableSpeechSynthesis() {
+            if (!extension.speechSynthesisEnabled) {
+                try {
+                    extension.gotTextMsg("", "", true);
+                    extension.speechSynthesisEnabled = true;
+                } catch { }
+            }
+        }
+
+        setTxtMsgTouchPannelText(s) {
+            let span = document.createElement('span');
+            span.style.fontSize = "40px";
+            span.style.lineHeight = "40px";
+            span.style.color = "black";
+            span.style.overflowWrap = "break-word";
+            span.style.textAlign = "center";
+            span.textContent = s;
+            this.txtMsgTouchPannel.shadowRoot.appendChild(span);
+            let voiceSelect = document.createElement('select');
+            this.voiceSelect = voiceSelect;
+            voiceSelect.onclick = (e) => {
+                e.stopPropagation();
+            }
+            let label = span.cloneNode(true);
+            label.textContent = "你可以在下方选择朗读信息的语音:";
+            this.txtMsgTouchPannel.shadowRoot.appendChild(document.createElement('br'));
+            this.txtMsgTouchPannel.shadowRoot.appendChild(label);
+            let voices = speechSynthesis.getVoices();
+            voices.forEach(function (voice, index) {
+                var option = document.createElement('option');
+                option.value = voice.voiceURI;
+                option.textContent = voice.name + ' (' + voice.lang + ')';
+                voiceSelect.appendChild(option);
+            });
+            voiceSelect.oninput = (e) => {
+                console.log(e);
+                sendMessageToTop(MessageType.SetStorageValue, { key: "PublicMessageVoice", value: voiceSelect.value });
+            }
+            voiceSelect.style.fontSize = "20px";
+            voiceSelect.style.height = "50px";
+            voiceSelect.style.maxWidth = "100%";
+            try {
+                if (window.VideoTogetherStorage.PublicMessageVoice != undefined) {
+                    voiceSelect.value = window.VideoTogetherStorage.PublicMessageVoice;
+                } else {
+                    voiceSelect.value = speechSynthesis.getVoices().find(v => v.default).voiceURI;
+                }
+            } catch { };
+            this.txtMsgTouchPannel.shadowRoot.appendChild(voiceSelect)
+        }
+
         ShowPannel() {
             if (!document.documentElement.contains(this.shadowWrapper)) {
                 (document.body || document.documentElement).appendChild(this.shadowWrapper);
@@ -1837,6 +2830,9 @@
         }
 
         InRoom() {
+            try {
+                speechSynthesis.getVoices();
+            } catch { };
             this.Maximize();
             this.inputRoomName.disabled = true;
             hide(this.lobbyBtnGroup)
@@ -1846,6 +2842,7 @@
             hide(this.inputRoomPassword);
             this.inputRoomName.placeholder = "";
             this.isInRoom = true;
+            hide(this.downloadBtn)
         }
 
         InLobby(init = false) {
@@ -1859,6 +2856,8 @@
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
             hide(this.easyShareCopyBtn);
+            this.setTxtMsgInterface(0);
+            dsply(this.downloadBtn, downloadEnabled())
             this.isInRoom = false;
         }
 
@@ -1929,13 +2928,32 @@
         RoomDataNotification: 22,
         UpdateMemberStatus: 23,
         TimestampV2Resp: 24,
-        EasyShareCheckSucc: 25,
+        // EasyShareCheckSucc: 25,
         FetchRealUrlReq: 26,
         FetchRealUrlResp: 27,
         FetchRealUrlFromIframeReq: 28,
         FetchRealUrlFromIframeResp: 29,
+        SendTxtMsg: 30,
+        GotTxtMsg: 31,
+        StartDownload: 32,
+        DownloadStatus: 33,
+
 
         UpdateM3u8Files: 1001,
+
+        SaveIndexedDb: 2001,
+        ReadIndexedDb: 2002,
+        SaveIndexedDbResult: 2003,
+        ReadIndexedDbResult: 2004,
+        RegexMatchKeysDb: 2005,
+        RegexMatchKeysDbResult: 2006,
+        DeleteFromIndexedDb: 2007,
+        DeleteFromIndexedDbResult: 2008,
+        StorageEstimate: 2009,
+        StorageEstimateResult: 2010,
+        ReadIndexedDbSw: 2011,
+        ReadIndexedDbSwResult: 2012,
+        //2013 used
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1976,6 +2994,7 @@
             this.cspBlockedHost = {};
 
             this.video_together_host = 'https://vt.panghair.com:5000/';
+            this.video_together_main_host = 'https://vt.panghair.com:5000/';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video"]
 
@@ -1994,7 +3013,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1685852046';
+            this.version = '1694449017';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -2003,14 +3022,17 @@
             this.voiceVolume = null;
             this.videoVolume = null;
             this.m3u8Files = {};
+            this.m3u8UrlTestResult = {};
             this.m3u8PostWindows = {};
             this.m3u8MediaUrls = {};
-
-            // blockedFiles won't be set to false, if allowed
-            this.blockedM3u8Files = {};
-            this.allowedM3u8Files = {};
             this.currentM3u8Url = undefined;
+            this.ctxMemberCount = 0;
+            this.downloadSpeedMb = 0;
+            this.downloadPercentage = 0;
+            this.currentSendingMsgId = null;
 
+            this.isIos = undefined;
+            this.speechSynthesisEnabled = false;
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
@@ -2028,12 +3050,21 @@
                     this.videoTitle = message.data.context.videoTitle;
                     this.voiceStatus = message.data.context.voiceStatus;
                     this.timeOffset = message.data.context.timeOffset;
+                    this.ctxRole = message.data.context.ctxRole;
+                    this.ctxMemberCount = message.data.context.ctxMemberCount;
+                    this.ctxWsIsOpen = message.data.context.ctxWsIsOpen;
                     // sub frame has 2 storage data source, top frame or extension.js in this frame
                     // this 2 data source should be same.
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
                 this.processReceivedMessage(message.data.type, message.data.data, message);
             });
+            try {
+                navigator.serviceWorker.addEventListener('message', (message) => {
+                    console.log(`Received a message from service worker: ${event.data}`);
+                    this.processReceivedMessage(message.data.type, message.data.data, message);
+                });
+            } catch { };
 
             // if some element's click be invoked frequenctly, a lot of http request will be sent
             // window.addEventListener('click', message => {
@@ -2058,6 +3089,46 @@
                     }, 2000);
                 } catch (e) { console.error(e) }
             }
+        }
+
+        async gotTextMsg(id, msg, prepare = false, idx = -1) {
+            if (idx > speechSynthesis.getVoices().length) {
+                return;
+            }
+            if (!prepare && !extension.speechSynthesisEnabled) {
+                windowPannel.ShowTxtMsgTouchPannel();
+                for (let i = 0; i <= 1000 && !extension.speechSynthesisEnabled; i++) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+            try {
+                if (id == this.currentSendingMsgId && msg == select("#textMessageInput").value) {
+                    select("#textMessageInput").value = "";
+                }
+            } catch { }
+            let ssu = new SpeechSynthesisUtterance();
+            ssu.text = msg;
+            ssu.volume = 1;
+            ssu.rate = 1;
+            ssu.pitch = 1;
+            if (idx == -1) {
+                try {
+                    ssu.voice = speechSynthesis.getVoices().find(v => v.voiceURI == window.VideoTogetherStorage.PublicMessageVoice);
+                } catch { }
+            } else {
+                ssu.voice = speechSynthesis.getVoices()[idx];
+            }
+            if (!prepare) {
+                let startTs = 0;
+                ssu.onstart = (e => { startTs = e.timeStamp });
+                ssu.onend = (e => {
+                    const duration = e.timeStamp - startTs;
+                    if (duration < 100) {
+                        this.gotTextMsg(id, msg, prepare, idx + 1);
+                    }
+                });
+            }
+            speechSynthesis.speak(ssu);
         }
 
         setRole(role) {
@@ -2277,6 +3348,19 @@
                 let videos = document.getElementsByTagName(tag);
                 for (let i = 0; i < videos.length; i++) {
                     try {
+                        try {
+                            if (videos[i].VideoTogetherDisabled) {
+                                continue;
+                            }
+                        } catch { };
+                        try {
+                            if (window.location.hostname.endsWith('bilibili.com')) {
+                                if (!!videos[i].closest('div.video-page-card-small') || !!videos[i].closest('div.feed-card')) {
+                                    // this is a thumbnail video
+                                    continue
+                                }
+                            }
+                        } catch { }
                         await func(videos[i]);
                     } catch (e) { console.error(e) };
                 }
@@ -2284,6 +3368,9 @@
         }
 
         sendMessageToSonWithContext(type, data) {
+            if (this.isMain) {
+                this.ctxRole = this.role;
+            }
             let iframs = document.getElementsByTagName("iframe");
             for (let i = 0; i < iframs.length; i++) {
                 PostMessage(iframs[i].contentWindow, {
@@ -2295,7 +3382,10 @@
                         videoTitle: this.isMain ? document.title : this.videoTitle,
                         voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
                         VideoTogetherStorage: window.VideoTogetherStorage,
-                        timeOffset: this.timeOffset
+                        timeOffset: this.timeOffset,
+                        ctxRole: this.ctxRole,
+                        ctxMemberCount: this.ctxMemberCount,
+                        ctxWsIsOpen: this.ctxWsIsOpen
                     }
                 });
                 // console.info("send ", type, iframs[i].contentWindow, data)
@@ -2326,6 +3416,49 @@
             });
         }
 
+        async FetchRemoteM3u8Content(m3u8Url) {
+            if (m3u8ContentCache[m3u8Url] != undefined) {
+                return m3u8ContentCache[m3u8Url];
+            }
+            WS.m3u8ContentReq(m3u8Url);
+            return new Promise((res, rej) => {
+                let id = setInterval(() => {
+                    if (m3u8ContentCache[m3u8Url] != undefined) {
+                        res(m3u8ContentCache[m3u8Url]);
+                        clearInterval(id);
+                    }
+                })
+                setTimeout(() => {
+                    clearInterval(id);
+                    rej(null);
+                }, 3000)
+            })
+        }
+
+        GetM3u8Content(m3u8Url) {
+            let m3u8Content = "";
+            for (let id in this.m3u8Files) {
+                this.m3u8Files[id].forEach(m3u8 => {
+                    if (m3u8Url == m3u8.m3u8Url) {
+                        m3u8Content = m3u8.m3u8Content;
+                    }
+                })
+            }
+            return m3u8Content;
+        }
+
+        GetM3u8WindowId(m3u8Url) {
+            let windowId = undefined;
+            for (let id in this.m3u8Files) {
+                this.m3u8Files[id].forEach(m3u8 => {
+                    if (m3u8Url == m3u8.m3u8Url) {
+                        windowId = id;
+                    }
+                })
+            }
+            return windowId;
+        }
+
         UrlRequest(m3u8Url, idx, origin) {
             for (let id in this.m3u8Files) {
                 this.m3u8Files[id].forEach(m3u8 => {
@@ -2337,6 +3470,71 @@
                 })
             }
         }
+
+        async testM3u8Url(testUrl) {
+            if (this.m3u8UrlTestResult[testUrl] != undefined) {
+                return this.m3u8UrlTestResult[testUrl];
+            }
+            function limitStream(stream, limit) {
+                const reader = stream.getReader();
+                let bytesRead = 0;
+
+                return new ReadableStream({
+                    async pull(controller) {
+                        const { value, done } = await reader.read();
+
+                        if (done || bytesRead >= limit) {
+                            controller.close();
+                            return;
+                        }
+
+                        bytesRead += value.byteLength;
+                        controller.enqueue(value);
+                    },
+
+                    cancel(reason) {
+                        reader.cancel(reason);
+                    }
+                });
+            }
+            return new Promise((res, rej) => {
+                const abortController = new AbortController();
+                fetch(testUrl, { signal: abortController.signal }).then(response => {
+                    const limitedStream = limitStream(response.body, 1024); // Limit to 1024 bytes
+                    return new Response(limitedStream, { headers: response.headers });
+                }).then(r => r.text())
+                    .then(async txt => {
+                        abortController.abort();
+                        if (isM3U8(txt)) {
+                            this.m3u8UrlTestResult[testUrl] = true;
+                        } else {
+                            this.m3u8UrlTestResult[testUrl] = false;
+                        }
+                        res(this.m3u8UrlTestResult[testUrl]);
+                    }).catch(e => {
+                        if (testUrl.startsWith('blob')) {
+                            this.m3u8UrlTestResult[testUrl] = false;
+                            res(this.m3u8UrlTestResult[testUrl]);
+                        } else {
+                            rej();
+                        }
+                    })
+            })
+        }
+
+        // download
+        GetAllM3u8SegUrls(m3u8Url) {
+            for (let id in this.m3u8Files) {
+                for (let mid in this.m3u8Files[id]) {
+                    let m3u8 = this.m3u8Files[id][mid]
+                    if (m3u8Url == m3u8.m3u8Url) {
+                        return extractMediaUrls(m3u8.m3u8Content, m3u8.m3u8Url);
+                    }
+                }
+            }
+        }
+
+        // end of download
 
         UpdateStatusText(text, color) {
             if (window.self != window.top) {
@@ -2375,45 +3573,35 @@
                     break;
                 case MessageType.UpdateRoomRequest:
                     let m3u8Url = undefined;
-                    if (isEasyShareEnabled()) {
-                        try {
-                            let d = NaN;
-                            let selected = null;
-                            for (let id in this.m3u8Files) {
-                                this.m3u8Files[id].forEach(m3u8 => {
-                                    if (this.allowedM3u8Files[m3u8.m3u8Url] == true) {
-                                        if (isNaN(d) || Math.abs(data.duration - m3u8.duration) < d) {
-                                            d = Math.abs(data.duration - m3u8.duration);
-                                            selected = m3u8;
-                                        }
-                                        return;
-                                    }
-
-                                    if (this.blockedM3u8Files[m3u8.m3u8Url] != true) {
-                                        try {
-                                            // run once
-                                            this.blockedM3u8Files[m3u8.m3u8Url] = true;
-                                            let checkFrame = document.createElement("iframe");
-                                            checkFrame.src = this.video_together_host + '/static/check_easy_share#' + m3u8.m3u8Url;
-                                            hide(checkFrame);
-                                            document.body.append(checkFrame);
-                                            setTimeout(() => checkFrame.remove(), 100000);
-                                        } catch (e) { console.error(e) }
-                                    }
-                                })
-                            }
-                            if (d < 3) {
-                                m3u8Url = selected.m3u8Url;
-                            }
-                        } catch { }
-                        if (data.m3u8Url == undefined) {
-                            data.m3u8Url = m3u8Url;
+                    try {
+                        let d = NaN;
+                        let selected = null;
+                        for (let id in this.m3u8Files) {
+                            this.m3u8Files[id].forEach(m3u8 => {
+                                if (isNaN(d) || Math.abs(data.duration - m3u8.duration) <= d) {
+                                    d = Math.abs(data.duration - m3u8.duration);
+                                    selected = m3u8;
+                                }
+                                return;
+                            })
                         }
-                        // if (m3u8Url != undefined) {
-                        //     data.m3u8Url
-                        //     data.url = 'https://2gether.video/zh-cn/easyshare.html#' + m3u8Url;
-                        // }
+                        if (d < 3) {
+                            m3u8Url = selected.m3u8Url;
+                        }
+                    } catch { }
+                    if (data.m3u8Url == undefined) {
+                        data.m3u8Url = m3u8Url;
+                    }// data.m3u8Url may be a video file
+                    if (m3u8Url != undefined) {
+                        this.downloadM3u8Url = m3u8Url;
+                        this.downloadDuration = data.duration;
                     } else {
+                        this.downloadM3u8Url = undefined;
+                        this.downloadDuration = undefined;
+                    }
+
+
+                    if (!isEasyShareEnabled()) {
                         data.m3u8Url = "";
                     }
                     try {
@@ -2456,6 +3644,13 @@
                     break;
                 case MessageType.JumpToNewPage:
                     window.location = data.url;
+                    let currentUrl = new URL(window.location);
+                    let newUrl = new URL(data.url);
+                    currentUrl.hash = "";
+                    newUrl.hash = "";
+                    if (currentUrl.href == newUrl.href) {
+                        extension.url = data.url;
+                    }
                     // window.location.reload();// for hash change
                     break;
                 case MessageType.ChangeVideoVolume:
@@ -2481,7 +3676,11 @@
                             this.RecoveryState()
                         }
                     } catch (e) { };
-
+                    try {
+                        if (data.PublicMessageVoice != null) {
+                            windowPannel.voiceSelect.value = data.PublicMessageVoice;
+                        }
+                    } catch { };
                     if (!window.videoTogetherFlyPannel.disableDefaultSize && !window.VideoTogetherSettingEnabled) {
                         if (data.MinimiseDefault) {
                             window.videoTogetherFlyPannel.Minimize(true);
@@ -2494,7 +3693,7 @@
                     }
                     try {
                         if (window.VideoTogetherSettingEnabled == undefined) {
-                            if (!isWeb(window.VideoTogetherStorage.UserscriptType)) {
+                            if (!isWeb()) {
                                 window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
                                 show(select('#videoTogetherSetting'));
                             } else {
@@ -2506,6 +3705,10 @@
                             }
                         }
                     } catch (e) { }
+                    try {
+                        dsply(select('#downloadBtn'), downloadEnabled() && !windowPannel.isInRoom)
+                    } catch { }
+
                     window.VideoTogetherSettingEnabled = true;
                     break;
                 }
@@ -2534,19 +3737,40 @@
                     break;
                 }
                 case MessageType.UpdateM3u8Files: {
+                    data['m3u8Files'].forEach(m3u8 => {
+                        try {
+                            const cyrb53 = (str, seed = 0) => {
+                                let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+                                for (let i = 0, ch; i < str.length; i++) {
+                                    ch = str.charCodeAt(i);
+                                    h1 = Math.imul(h1 ^ ch, 2654435761);
+                                    h2 = Math.imul(h2 ^ ch, 1597334677);
+                                }
+                                h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+                                h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+                                h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+                                h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+
+                                return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+                            };
+                            if (m3u8.m3u8Url.startsWith("data:")) {
+                                m3u8.m3u8Url = `${cyrb53(m3u8.m3u8Url)}`;
+                            }
+                        } catch { }
+                    })
                     this.m3u8Files[data['id']] = data['m3u8Files'];
                     this.m3u8PostWindows[data['id']] = _msg.source;
-                    break;
-                }
-                case MessageType.EasyShareCheckSucc: {
-                    console.log('easyShare', data);
-                    this.allowedM3u8Files[data['m3u8Url']] = true;
                     break;
                 }
                 case MessageType.FetchRealUrlReq: {
                     console.log(data);
                     if (realUrlCache[data.url] == undefined) {
-                        let r = await fetch(data.url, { method: "HEAD" });
+                        const controller = new AbortController();
+                        let r = await Fetch(data.url, {
+                            method: "GET",
+                            signal: controller.signal
+                        });
+                        controller.abort();
                         realUrlCache[data.url] = r.url;
                     }
                     sendMessageToTop(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
@@ -2565,6 +3789,41 @@
                 case MessageType.FetchRealUrlFromIframeResp: {
                     realUrlCache[data.origin] = data.real;
                     break;
+                }
+                case MessageType.SendTxtMsg: {
+                    WS.sendTextMessage(data.currentSendingMsgId, data.value);
+                    break;
+                }
+                case MessageType.GotTxtMsg: {
+                    try {
+                        GotTxtMsgCallback(data.id, data.msg);
+                    } catch { };
+                    this.sendMessageToSonWithContext(MessageType.GotTxtMsg, data);
+                    break;
+                }
+                case MessageType.ReadIndexedDbSw: {
+                    const result = await readFromIndexedDB(data.table, data.key);
+                    data.data = result
+                    navigator.serviceWorker.controller.postMessage({
+                        source: "VideoTogether",
+                        type: 2012,
+                        data: data
+                    });
+                    break;
+                }
+                case MessageType.StartDownload: {
+                    startDownload(data.m3u8Url, data.m3u8Content, data.urls, data.title, data.pageUrl);
+                    setInterval(() => {
+                        sendMessageToTop(MessageType.DownloadStatus, {
+                            downloadSpeedMb: this.downloadSpeedMb,
+                            downloadPercentage: this.downloadPercentage
+                        })
+                    }, 1000)
+                    break;
+                }
+                case MessageType.DownloadStatus: {
+                    this.downloadSpeedMb = data.downloadSpeedMb;
+                    this.downloadPercentage = data.downloadPercentage;
                 }
                 default:
                     // console.info("unhandled message:", type, data)
@@ -2663,10 +3922,8 @@
             let response = await this.Fetch(url + "/timestamp");
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
-            if (!this.httpSucc) {
-                this.httpSucc = true
-                this.video_together_host = url;
-            }
+            this.httpSucc = true
+            this.video_together_host = url;
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             sendMessageToTop(MessageType.SetStorageValue, { key: "PublicVtVersion", value: data["vtVersion"] });
         }
@@ -2840,7 +4097,18 @@
 
 
             if (this.role != this.RoleEnum.Null) {
+                if (this.isIos == null) {
+                    this.isIos = await isAudioVolumeRO();
+                }
                 WS.connect();
+                this.ctxWsIsOpen = WS.isOpen();
+                if (!getEnableTextMessage()) {
+                    windowPannel.setTxtMsgInterface(4);
+                } else if (this.ctxWsIsOpen) {
+                    windowPannel.setTxtMsgInterface(1);
+                } else {
+                    windowPannel.setTxtMsgInterface(2);
+                }
                 try {
                     if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
                         this.allLinksTargetModified = true;
@@ -2849,12 +4117,16 @@
                 } catch { }
                 try {
                     if (this.minTrip == 1e9 || !this.httpSucc) {
-                        this.SyncTimeWithServer(this.video_together_host);
+                        this.SyncTimeWithServer(this.video_together_main_host);
                         setTimeout(() => {
                             if (this.minTrip == 1e9 || !this.httpSucc) {
                                 this.SyncTimeWithServer(this.video_together_backup_host);
                             }
                         }, 3000);
+                    } else {
+                        if (this.video_together_host == this.video_together_backup_host) {
+                            this.SyncTimeWithServer(this.video_together_main_host);
+                        }
                     }
                 } catch { };
             }
@@ -2914,7 +4186,7 @@
                                 setInterval(() => {
                                     if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == newUrl) {
                                         try {
-                                            if (isWeb(window.VideoTogetherStorage.UserscriptType)) {
+                                            if (isWeb()) {
                                                 if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
                                                     this._jumping = true;
                                                     alert("请在跳转后再次加入");
@@ -3031,6 +4303,12 @@
         }
 
         async SyncMasterVideo(data, videoDom) {
+            try {
+                if (this.isMain) {
+                    useMobileStyle(videoDom);
+                }
+            } catch { }
+
             if (skipIntroLen() > 0 && videoDom.currentTime < skipIntroLen()) {
                 videoDom.currentTime = skipIntroLen();
             }
@@ -3052,9 +4330,31 @@
             }
             let m3u8Url;
             try {
-                if (videoDom.src.startsWith('http')) {
-                    m3u8Url = videoDom.src;
+                let nativeSrc = videoDom.src;
+                if (nativeSrc == "" || nativeSrc == undefined) {
+                    nativeSrc = videoDom.querySelector('source').src;
                 }
+                if (nativeSrc.startsWith('http')) {
+                    m3u8Url = nativeSrc;
+                }
+
+                this.testM3u8Url(nativeSrc).then(r => {
+                    if (r) {
+                        fetch(nativeSrc).then(r => r.text()).then(m3u8Content => {
+                            if (isMasterM3u8(m3u8Content)) {
+                                const mediaM3u8Url = getFirstMediaM3U8(m3u8Content);
+                                fetch(mediaM3u8Url).then(r => r.text()).then(() => {
+                                    this.m3u8UrlTestResult[nativeSrc] = false;
+                                })
+                            } else {
+                                // don't fetch multiple times
+                                this.m3u8UrlTestResult[nativeSrc] = false;
+                            }
+                        }
+                        )
+                    }
+                })
+
             } catch { };
             sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
@@ -3080,6 +4380,9 @@
         }
 
         GetRoomState(link) {
+            if (inDownload) {
+                return {};
+            }
             if (this.role == this.RoleEnum.Null) {
                 return {};
             }
@@ -3106,6 +4409,9 @@
         }
 
         SaveStateToSessionStorageWhenSameOrigin(link) {
+            if (inDownload) {
+                return false;
+            }
             try {
                 let sameOrigin = false;
                 if (link != "") {
@@ -3157,6 +4463,16 @@
         }
 
         async SyncMemberVideo(data, videoDom) {
+            try {
+                if (this.isMain) {
+                    useMobileStyle(videoDom);
+                }
+            } catch { }
+            if (this.lastSyncMemberVideo + 1 > Date.now() / 1000) {
+                return;
+            }
+            this.lastSyncMemberVideo = Date.now() / 1000;
+
             let room = data.room;
             sendMessageToTop(MessageType.GetRoomData, room);
 
@@ -3166,12 +4482,15 @@
             if (videoDom == undefined) {
                 throw new Error("没有视频");
             }
-
+            let isLoading = (Math.abs(this.memberLastSeek - videoDom.currentTime) < 0.01);
+            this.memberLastSeek = -1;
             if (room["paused"] == false) {
                 videoDom.videoTogetherPaused = false;
                 if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
                     videoDom.currentTime = this.CalculateRealCurrent(room);
                 }
+                // play fail will return so here is safe
+                this.memberLastSeek = videoDom.currentTime;
             } else {
                 videoDom.videoTogetherPaused = true;
                 if (Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
@@ -3213,16 +4532,16 @@
             sendMessageToTop(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" });
 
             setTimeout(() => {
-                let isLoadding = false;
                 try {
-                    if (document.hasFocus() && Math.abs(room["duration"] - videoDom.duration) < 0.5) {
-                        isLoadding = !isVideoLoadded(videoDom)
+                    if (Math.abs(room["duration"] - videoDom.duration) < 0.5) {
+                        isLoading = isLoading && !isVideoLoadded(videoDom)
+                    } else {
+                        isLoading = false;
                     }
-                } catch {
-                };
+                } catch { isLoading = false };
                 // make the member count update slow
-                sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoadding });
-            }, 3000);
+                sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoading });
+            }, 1);
         }
 
         async CheckResponse(response) {
@@ -3389,6 +4708,14 @@
             window.videoTogetherFlyPannel.videoTogetherHeader.onpointerdown = filter;
         }
     }
+
+    try {
+        if (window.location.hostname == 'yiyan.baidu.com') {
+            GetNativeFunction();
+            window.Element.prototype.attachShadow = Global.NativeAttachShadow;
+            console.log("Use native attachShadow in yiyan")
+        }
+    } catch { }
 
     // TODO merge Pannel and Extension class
     if (window.videoTogetherFlyPannel === undefined) {

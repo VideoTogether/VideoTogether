@@ -1,7 +1,7 @@
 {
     "name": "VideoTogether",
     "description": "Watch video together",
-    "version": "1.4.33",
+    "version": "1.4.70",
     "manifest_version": 3,
     "content_scripts": [
         {
@@ -57,7 +57,8 @@
         "192": "./icon/android-icon-192x192.png"
     },
     "permissions": [
-        "storage"
+        "storage",
+        "unlimitedStorage"
     ],
     "action": {
         "default_popup": "popup.html"

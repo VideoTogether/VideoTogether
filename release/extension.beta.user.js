@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1687170531
+// @version      1694449248
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,7 +22,9 @@
 // ==/UserScript==
 
 (async function () {
-    let version = '1687170531'
+    let isDevelopment = false;
+
+    let version = '1694449248'
     let type = 'userscript_beta'
     function getBrowser() {
         switch (type) {
@@ -309,6 +311,33 @@
     }
     window.VideoTogetherLoading = true;
     let ExtensionInitSuccess = false;
+
+    let isTrustPageCache = undefined;
+    function isTrustPage() {
+        if (isDevelopment) {
+            return true;
+        }
+        if (window.location.protocol != 'https:') {
+            return false
+        }
+
+        if (isTrustPageCache == undefined) {
+            const domains = [
+                '2gether.video', 'videotogether.github.io', 'videotogether.gitee.io'
+            ];
+
+            const hostname = window.location.hostname;
+            isTrustPageCache = domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+        }
+        return isTrustPageCache;
+    }
+    const indexedDbWriteHistory = {}
+    function needTrustPage() {
+        if (!isTrustPage()) {
+            throw "not trust page"
+        }
+    }
+
     window.addEventListener("message", async e => {
         if (e.data.source == "VideoTogether") {
             switch (e.data.type) {
@@ -374,6 +403,93 @@
                 }
                 case 18: {
                     await SetTabStorage(e.data.data);
+                    break;
+                }
+                case 2001: {
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        if (indexedDbWriteHistory[e.data.data.table] == undefined) {
+                            indexedDbWriteHistory[e.data.data.table] = {};
+                        }
+                        indexedDbWriteHistory[e.data.data.table][e.data.data.key] = true;
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2003,
+                            data: {
+                                id: e.data.data.id,
+                                table: e.data.data.table,
+                                key: e.data.data.key,
+                                error: response.error
+                            }
+                        })
+                    })
+                    break;
+                }
+                case 2002: {
+                    try {
+                        if (!indexedDbWriteHistory[e.data.data.table][e.data.data.key]) {
+                            needTrustPage();
+                        }
+                    } catch {
+                        needTrustPage();
+                    }
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2004,
+                            data: {
+                                id: e.data.data.id,
+                                table: e.data.data.table,
+                                key: e.data.data.key,
+                                data: response.data,
+                                error: response.error
+                            }
+                        })
+                    })
+                    break;
+                }
+                case 2005: {
+                    needTrustPage();
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2006,
+                            data: {
+                                id: e.data.data.id,
+                                table: e.data.data.table,
+                                regex: e.data.data.regex,
+                                data: response.data,
+                                error: response.error
+                            }
+                        })
+                    })
+                    break;
+                }
+                case 2007: {
+                    needTrustPage();
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2008,
+                            data: {
+                                id: e.data.data.id,
+                                table: e.data.data.table,
+                                key: e.data.data.key,
+                                error: response.error
+                            }
+                        })
+                    })
+                    break;
+                }
+                case 2009: {
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2010,
+                            data: {
+                                data: JSON.parse(response)
+                            }
+                        })
+                    })
                     break;
                 }
             }
@@ -495,8 +611,11 @@
                     hotUpdated = true;
                 }
             });
-            // script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
-            script.src = getBrowser().runtime.getURL(`load.${language}.js`);
+            if (isDevelopment) {
+                script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
+            } else {
+                script.src = getBrowser().runtime.getURL(`load.${language}.js`);
+            }
             script.setAttribute("cachedVt", cachedVt);
             break;
         case "userscript_debug":

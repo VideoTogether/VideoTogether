@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1685806209
+// @version      1694449248
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,7 +22,9 @@
 // ==/UserScript==
 
 (async function () {
-    let version = '1685806209'
+    let isDevelopment = false;
+
+    let version = '1694449248'
     let type = 'Chrome'
     function getBrowser() {
         switch (type) {
@@ -35,7 +37,7 @@
     }
     let isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
     let isWebsite = (type == "website" || type == "website_debug");
-
+    let isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
 
@@ -202,7 +204,7 @@
         }
     }
 
-    let vtRefreshVersion = version+language;
+    let vtRefreshVersion = version + language;
     try {
         let publicVtVersion = await getGM().getValue("PublicVtVersion")
         if (publicVtVersion != null) {
@@ -213,6 +215,7 @@
 
     let cachedVt = null;
     try {
+        let vtType = isWebsite ? "website" : "user";
         let privateCachedVt = await getGM().getValue("PrivateCachedVt");
         let cachedVersion = null;
         try {
@@ -222,14 +225,14 @@
             cachedVt = privateCachedVt['data'];
         } else {
             console.log("Refresh VT");
-            fetch(`https://2gether.video/release/vt.${language}.user.js?vtRefreshVersion=` + vtRefreshVersion)
+            fetch(`https://2gether.video/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                 .then(r => r.text())
                 .then(data => getGM().setValue('PrivateCachedVt', {
                     'version': vtRefreshVersion,
                     'data': data
                 }))
                 .catch(() => {
-                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js?vtRefreshVersion=` + vtRefreshVersion)
+                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                         .then(r => r.text())
                         .then(data => getGM().setValue('PrivateCachedVt', {
                             'version': vtRefreshVersion,
@@ -257,21 +260,34 @@
         }
     }
 
+    function InsertInlineScript(content) {
+        try {
+            let inlineScript = document.createElement("script");
+            inlineScript.textContent = content;
+            document.head.appendChild(inlineScript);
+        } catch { }
+        try {
+            if (isUserscript) {
+                GM_addElement('script', {
+                    textContent: content,
+                    type: 'text/javascript'
+                });
+            }
+        } catch { }
+        try {
+            if (isWebsite) {
+                eval(content);
+            }
+        } catch { }
+    }
+
     function InsertInlineJs(url) {
         try {
             getGM().xmlHttpRequest({
                 method: "GET",
                 url: url,
                 onload: function (response) {
-                    let inlineScript = document.createElement("script");
-                    inlineScript.textContent = response.responseText;
-                    try {
-                        document.head.appendChild(inlineScript);
-                    } finally {
-                        if (isWebsite) {
-                            eval(response.responseText);
-                        }
-                    }
+                    InsertInlineScript(response.responseText);
                 }
             })
         } catch (e) { };
@@ -295,6 +311,33 @@
     }
     window.VideoTogetherLoading = true;
     let ExtensionInitSuccess = false;
+
+    let isTrustPageCache = undefined;
+    function isTrustPage() {
+        if (isDevelopment) {
+            return true;
+        }
+        if (window.location.protocol != 'https:') {
+            return false
+        }
+
+        if (isTrustPageCache == undefined) {
+            const domains = [
+                '2gether.video', 'videotogether.github.io', 'videotogether.gitee.io'
+            ];
+
+            const hostname = window.location.hostname;
+            isTrustPageCache = domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+        }
+        return isTrustPageCache;
+    }
+    const indexedDbWriteHistory = {}
+    function needTrustPage() {
+        if (!isTrustPage()) {
+            throw "not trust page"
+        }
+    }
+
     window.addEventListener("message", async e => {
         if (e.data.source == "VideoTogether") {
             switch (e.data.type) {
@@ -360,6 +403,93 @@
                 }
                 case 18: {
                     await SetTabStorage(e.data.data);
+                    break;
+                }
+                case 2001: {
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        if (indexedDbWriteHistory[e.data.data.table] == undefined) {
+                            indexedDbWriteHistory[e.data.data.table] = {};
+                        }
+                        indexedDbWriteHistory[e.data.data.table][e.data.data.key] = true;
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2003,
+                            data: {
+                                id: e.data.data.id,
+                                table: e.data.data.table,
+                                key: e.data.data.key,
+                                error: response.error
+                            }
+                        })
+                    })
+                    break;
+                }
+                case 2002: {
+                    try {
+                        if (!indexedDbWriteHistory[e.data.data.table][e.data.data.key]) {
+                            needTrustPage();
+                        }
+                    } catch {
+                        needTrustPage();
+                    }
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2004,
+                            data: {
+                                id: e.data.data.id,
+                                table: e.data.data.table,
+                                key: e.data.data.key,
+                                data: response.data,
+                                error: response.error
+                            }
+                        })
+                    })
+                    break;
+                }
+                case 2005: {
+                    needTrustPage();
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2006,
+                            data: {
+                                id: e.data.data.id,
+                                table: e.data.data.table,
+                                regex: e.data.data.regex,
+                                data: response.data,
+                                error: response.error
+                            }
+                        })
+                    })
+                    break;
+                }
+                case 2007: {
+                    needTrustPage();
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2008,
+                            data: {
+                                id: e.data.data.id,
+                                table: e.data.data.table,
+                                key: e.data.data.key,
+                                error: response.error
+                            }
+                        })
+                    })
+                    break;
+                }
+                case 2009: {
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 2010,
+                            data: {
+                                data: JSON.parse(response)
+                            }
+                        })
+                    })
                     break;
                 }
             }
@@ -481,8 +611,11 @@
                     hotUpdated = true;
                 }
             });
-            // script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
-            script.src = getBrowser().runtime.getURL(`load.${language}.js`);
+            if (isDevelopment) {
+                script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
+            } else {
+                script.src = getBrowser().runtime.getURL(`load.${language}.js`);
+            }
             script.setAttribute("cachedVt", cachedVt);
             break;
         case "userscript_debug":
@@ -499,19 +632,27 @@
             break;
     }
 
-    (document.body || document.documentElement).appendChild(script);
-    if (type != "Chrome" && type != "Safari" && type != "Firefox") {
-        try {
-            // keep this inline inject because shark browser needs this
-            if (isWebsite) {
-                InsertInlineJs(script.src);
+    if (isWebsite || isUserscript) {
+        if (cachedVt != null) {
+            InsertInlineScript(cachedVt);
+        }
+        setTimeout(() => {
+            if (!ExtensionInitSuccess) {
+                (document.body || document.documentElement).appendChild(script);
+                if (isWebsite) {
+                    // keep this inline inject because shark browser needs this
+                    InsertInlineJs(script.src);
+                }
+                try {
+                    GM_addElement('script', {
+                        src: script.src,
+                        type: 'text/javascript'
+                    })
+                } catch { }
             }
-
-            GM_addElement('script', {
-                src: script.src,
-                type: 'text/javascript'
-            })
-        } catch (e) { };
+        }, 10);
+    } else {
+        (document.body || document.documentElement).appendChild(script);
     }
 
     // fallback to china service

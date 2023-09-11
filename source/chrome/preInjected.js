@@ -1,4 +1,9 @@
 (() => {
+    const blackList = ['yiyan.baidu.com']
+    const hostname = window.location.hostname;
+    if (blackList.some(domain => hostname === domain || hostname.endsWith(`.${domain}`))) {
+        return;
+    }
     if (window.VideoTogetherPreinjected) {
         return;
     }
