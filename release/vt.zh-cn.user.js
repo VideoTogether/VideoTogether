@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1694449017
+// @version      1694481368
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -60,7 +60,7 @@
         return textContent.includes('#EXT-X-STREAM-INF:');
     }
 
-    function getFirstMediaM3U8(m3u8Content) {
+    function getFirstMediaM3U8(m3u8Content, m3u8Url) {
         if (!isMasterM3u8(m3u8Content)) {
             return null;
         }
@@ -68,13 +68,12 @@
 
         for (const line of lines) {
             const trimmedLine = line.trim();
-            if (trimmedLine && !trimmedLine.startsWith('#')) {
-                return trimmedLine;
+            if (trimmedLine && !trimmedLine.startsWith('#') && trimmedLine != "") {
+                return new URL(trimmedLine, m3u8Url);
             }
         }
         return null;
     }
-
 
     function startDownload(_vtArgM3u8Url, _vtArgM3u8Content, _vtArgM3u8Urls, _vtArgTitle, _vtArgPageUrl) {
         /*//*/
@@ -3013,7 +3012,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1694449017';
+            this.version = '1694481368';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3578,6 +3577,9 @@
                         let selected = null;
                         for (let id in this.m3u8Files) {
                             this.m3u8Files[id].forEach(m3u8 => {
+                                // here m3u8Url may be empty, may caused by the new response
+                                // from limitedstream, but we have a new fetch after that,
+                                // so we can always get the correct url.
                                 if (isNaN(d) || Math.abs(data.duration - m3u8.duration) <= d) {
                                     d = Math.abs(data.duration - m3u8.duration);
                                     selected = m3u8;
@@ -4334,6 +4336,8 @@
                 if (nativeSrc == "" || nativeSrc == undefined) {
                     nativeSrc = videoDom.querySelector('source').src;
                 }
+
+                nativeSrc = new URL(nativeSrc, window.location).href
                 if (nativeSrc.startsWith('http')) {
                     m3u8Url = nativeSrc;
                 }
@@ -4342,7 +4346,7 @@
                     if (r) {
                         fetch(nativeSrc).then(r => r.text()).then(m3u8Content => {
                             if (isMasterM3u8(m3u8Content)) {
-                                const mediaM3u8Url = getFirstMediaM3U8(m3u8Content);
+                                const mediaM3u8Url = getFirstMediaM3U8(m3u8Content, nativeSrc);
                                 fetch(mediaM3u8Url).then(r => r.text()).then(() => {
                                     this.m3u8UrlTestResult[nativeSrc] = false;
                                 })
