@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1694449248
+// @version      1694782534
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -24,7 +24,7 @@
 (async function () {
     let isDevelopment = false;
 
-    let version = '1694449248'
+    let version = '1694782534'
     let type = 'website_debug'
     function getBrowser() {
         switch (type) {
@@ -490,6 +490,10 @@
                             }
                         })
                     })
+                    break;
+                }
+                case 3009: {
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data))
                     break;
                 }
             }

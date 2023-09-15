@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1694481368
+// @version      1694778024
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -45,7 +45,7 @@
     function downloadEnabled() {
         try {
             const type = VideoTogetherStorage.UserscriptType
-            return parseInt(window.VideoTogetherStorage.LoaddingVersion) > 1694442998
+            return parseInt(window.VideoTogetherStorage.LoaddingVersion) >= 1694758378
                 && (type == "Chrome" || type == "Safari" || type == "Firefox")
                 && !isDownloadBlackListDomain()
         } catch {
@@ -79,6 +79,37 @@
         /*//*/
 (async function () {
 
+    function extractExtXKeyUrls(m3u8Content, baseUrl) {
+        const uris = [];
+        const lines = m3u8Content.split('\n');
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+
+            if (line.startsWith('#EXT-X-KEY')) {
+                const match = line.match(/URI="(.*?)"/);
+
+                if (match && match[1]) {
+                    let uri = match[1];
+
+                    // Ignore data: URIs as they don't need to be downloaded
+                    if (uri.startsWith('data:')) {
+                        continue;
+                    }
+
+                    // If the URI is not absolute, make it so by combining with the base URL.
+                    if (!uri.startsWith('http://') && !uri.startsWith('https://')) {
+                        uri = new URL(uri, baseUrl).href;
+                    }
+
+                    uris.push(uri);
+                }
+            }
+        }
+
+        return uris;
+    }
+
     async function timeoutAsyncRead(reader, timeout) {
         const timer = new Promise((_, rej) => {
             const id = setTimeout(() => {
@@ -106,25 +137,13 @@
         // 0 downloading  1 completed 2 deleting
         let m3u8mini = await readFromIndexedDB('m3u8s-mini', m3u8Url);
         m3u8mini.status = status
-        let m3u8 = await readFromIndexedDB('m3u8s', m3u8Url);
-        m3u8.status = status
         await saveToIndexedDB('m3u8s-mini', m3u8Url, m3u8mini);
-        await saveToIndexedDB('m3u8s', m3u8Url, m3u8)
     }
 
     async function saveM3u8(m3u8Url, m3u8Content) {
-        await saveToIndexedDB('m3u8s-mini', m3u8Url,
-            {
-                title: vtArgTitle,
-                pageUrl: vtArgPageUrl,
-                m3u8Url: m3u8Url,
-                m3u8Id: m3u8Id,
-                status: 0
-            }
-        )
         await saveToIndexedDB('m3u8s', m3u8Url,
             {
-                m3u8Content: m3u8Content,
+                data: m3u8Content,
                 title: vtArgTitle,
                 pageUrl: vtArgPageUrl,
                 m3u8Url: m3u8Url,
@@ -135,34 +154,33 @@
 
     }
 
-    function blobToDataUrl(blob, callback) {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-            callback(event.target.result);
-        };
-        reader.readAsDataURL(blob);
+    async function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                resolve(event.target.result);
+            };
+            reader.onerror = function (event) {
+                reject(new Error("Failed to read blob"));
+            };
+            reader.readAsDataURL(blob);
+        });
     }
 
-    async function saveVideoBlob(url, blob) {
-        return new Promise((res, rej) => {
+    async function saveBlob(table, url, blob) {
+        return new Promise(async (res, rej) => {
             try {
-                blobToDataUrl(blob, async dataUrl => {
-                    await saveToIndexedDB('videos-mini', url, {
-                        m3u8Url: downloadM3u8Url,
-                        m3u8Id: m3u8Id,
-                    })
-                    await saveToIndexedDB('videos', url, {
-                        dataUrl: dataUrl,
-                        m3u8Url: downloadM3u8Url,
-                        m3u8Id: m3u8Id,
-                    })
-                    res();
+                const dataUrl = await blobToDataUrl(blob);
+                await saveToIndexedDB(table, url, {
+                    data: dataUrl,
+                    m3u8Url: downloadM3u8Url,
+                    m3u8Id: m3u8Id,
                 })
+                res();
             } catch {
                 rej();
             }
         })
-
     }
 
     window.regexMatchKeys = function regexMatchKeys(table, regex) {
@@ -179,7 +197,7 @@
             }, '*')
             regexCallback[queryId] = (data) => {
                 try {
-                    res(JSON.parse(data))
+                    res(data)
                 } catch { rej() }
             }
         })
@@ -195,7 +213,7 @@
                 data: {
                     table: table,
                     key: key,
-                    data: JSON.stringify(data),
+                    data: data,
                     id: queryId,
                 }
             }, '*')
@@ -284,7 +302,7 @@
         return new Promise((res, rej) => {
             readCallback[queryId] = (data) => {
                 try {
-                    res(JSON.parse(data));
+                    res(data);
                 } catch {
                     rej()
                 }
@@ -315,21 +333,35 @@
 
     const m3u8Id = generateUUID()
     const downloadM3u8Url = vtArgM3u8Url;
+    const numThreads = 10;
+    let lastTotalBytes = 0;
+    let totalBytes = 0;
+    let failedUrls = []
+    let urls = vtArgM3u8Urls
+    let successCount = 0;
+    videoTogetherExtension.downloadPercentage = 0;
+
     const m3u8Key = downloadM3u8Url + `#m3u8Id-${m3u8Id}`
     if (downloadM3u8Url === undefined) {
         return;
     }
 
     await saveM3u8(downloadM3u8Url + `#m3u8Id-${m3u8Id}`, vtArgM3u8Content)
-    let urls = vtArgM3u8Urls
-    const totalCount = urls.length;
-    let successCount = 0;
 
-    videoTogetherExtension.downloadPercentage = 0;
+    const otherUrl = extractExtXKeyUrls(vtArgM3u8Content, downloadM3u8Url);
+    const totalCount = urls.length + otherUrl.length;
 
-    let failedUrls = []
+    console.log(otherUrl);
 
-    let totalBytes = 0;
+    await downloadInParallel('future', otherUrl, numThreads);
+
+    setInterval(function () {
+        videoTogetherExtension.downloadSpeedMb = (totalBytes - lastTotalBytes) / 1024 / 1024;
+        lastTotalBytes = totalBytes;
+    }, 1000);
+
+    await downloadInParallel('videos', urls, numThreads);
+    await updateM3u8Status(m3u8Key, 1)
     async function fetchWithSpeedTracking(url) {
         const controller = new AbortController();
         const timer = setTimeout(() => {
@@ -337,7 +369,7 @@
         }, 20000);
 
         const response = await fetch(url, { signal: controller.signal });
-
+        clearTimeout(timer)
         if (!response.body) {
             throw new Error("ReadableStream not yet supported in this browser.");
         }
@@ -348,7 +380,7 @@
         const chunks = [];
 
         async function readStream() {
-            const { done, value } = await timeoutAsyncRead(reader, 20000);
+            const { done, value } = await timeoutAsyncRead(reader, 60000);
             if (done) {
                 return;
             }
@@ -366,7 +398,7 @@
         return blob;
     }
 
-    async function downloadWorker(urls, index, step, total) {
+    async function downloadWorker(table, urls, index, step, total) {
         if (index >= total) {
             return;
         }
@@ -374,43 +406,35 @@
         const url = urls[index];
         try {
             const blob = await fetchWithSpeedTracking(url);
-            await saveVideoBlob(url + `#m3u8Id-${m3u8Id}`, blob);
+            await saveBlob(table, url + `#m3u8Id-${m3u8Id}`, blob);
             successCount++;
             videoTogetherExtension.downloadPercentage = Math.floor((successCount / totalCount) * 100)
-            console.log('download ts:', index, 'of', total);
-        } catch {
+            console.log('download ts:', table, index, 'of', total);
+        } catch (e) {
+            await new Promise(r => setTimeout(r, 2000));
             failedUrls.push(url);
+            console.error(e);
         }
 
         // Pick up the next work item
-        await downloadWorker(urls, index + step, step, total);
+        await downloadWorker(table, urls, index + step, step, total);
     }
 
-    async function downloadInParallel(urls, numThreads) {
+    async function downloadInParallel(table, urls, numThreads) {
         const total = urls.length;
 
         // Start numThreads download workers
         const promises = Array.from({ length: numThreads }, (_, i) => {
-            return downloadWorker(urls, i, numThreads, total);
+            return downloadWorker(table, urls, i, numThreads, total);
         });
 
         await Promise.all(promises);
         if (failedUrls.length != 0) {
             urls = failedUrls;
             failedUrls = [];
-            await downloadInParallel(urls, numThreads);
-        } else {
-            updateM3u8Status(m3u8Key, 1)
+            await downloadInParallel(table, urls, numThreads);
         }
     }
-
-    const numThreads = 10;
-    downloadInParallel(urls, numThreads);
-    let lastTotalBytes = 0;
-    setInterval(function () {
-        videoTogetherExtension.downloadSpeedMb = (totalBytes - lastTotalBytes) / 1024 / 1024;
-        lastTotalBytes = totalBytes;
-    }, 1000);
 })()
 //*/
     }
@@ -1802,7 +1826,7 @@
 
       <div id="downloadPannel" style="display: none;">
         <div>
-          <span id="downloadVideoInfo">还未检测到视频</span>
+          <span id="downloadVideoInfo">检测视频视频中...</span>
           <button id="confirmDownloadBtn" style="display: none;" class="vt-btn vt-btn-primary" type="button">
             <span>确认并下载</span>
           </button>
@@ -2536,6 +2560,14 @@
                 hide(this.downloadBtn);
                 this.confirmDownloadBtn = wrapper.querySelector("#confirmDownloadBtn")
                 this.confirmDownloadBtn.onclick = () => {
+                    if (extension.downloadM3u8UrlType == "video") {
+                        console.log(extension.downloadM3u8Url, extension.downloadM3u8UrlType)
+                        const a = document.createElement("a");
+                        a.href = extension.downloadM3u8Url;
+                        a.target = "_blank";
+                        a.click();
+                        return;
+                    }
                     isDownloading = true;
                     const m3u8url = extension.downloadM3u8Url
                     sendMessageTo(extension.m3u8PostWindows[extension.GetM3u8WindowId(m3u8url)], MessageType.StartDownload, {
@@ -2568,7 +2600,7 @@
                             select('#downloadVideoInfo').innerText = getDurationStr(extension.downloadDuration);
                         } else {
                             hide(this.confirmDownloadBtn);
-                            select('#downloadVideoInfo').innerText = "还未检测到视频"
+                            select('#downloadVideoInfo').innerText = "检测视频视频中..."
                         }
                     }, 1000);
                     inDownload = true;
@@ -2953,6 +2985,16 @@
         ReadIndexedDbSw: 2011,
         ReadIndexedDbSwResult: 2012,
         //2013 used
+
+        IosStorageSet: 3001,
+        IosStorageSetResult: 3002,
+        IosStorageGet: 3003,
+        IosStorageGetResult: 3004,
+        IosStorageDelete: 3005,
+        IosStorageDeleteResult: 3006,
+        IosStorageUsage: 3007,
+        IosStorageUsageResult: 3008,
+        IosStorageClean: 3009
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -3012,7 +3054,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1694481368';
+            this.version = '1694778024';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3022,6 +3064,7 @@
             this.videoVolume = null;
             this.m3u8Files = {};
             this.m3u8UrlTestResult = {};
+            this.hasCheckedM3u8Url = {};
             this.m3u8PostWindows = {};
             this.m3u8MediaUrls = {};
             this.currentM3u8Url = undefined;
@@ -3470,7 +3513,14 @@
             }
         }
 
-        async testM3u8Url(testUrl) {
+        async testM3u8OrVideoUrl(testUrl) {
+            onsecuritypolicyviolation = (e) => {
+                if (e.blockedURI == testUrl) {
+                    // m3u8 can always be fetched, because hls.js
+                    this.m3u8UrlTestResult[testUrl] = 'video'
+                }
+            }
+            document.addEventListener("securitypolicyviolation", onsecuritypolicyviolation)
             if (this.m3u8UrlTestResult[testUrl] != undefined) {
                 return this.m3u8UrlTestResult[testUrl];
             }
@@ -3496,27 +3546,39 @@
                     }
                 });
             }
+
             return new Promise((res, rej) => {
+                const rtnType = (tp) => {
+                    if (this.m3u8UrlTestResult[testUrl] == undefined) {
+                        this.m3u8UrlTestResult[testUrl] = tp
+                    }
+                    res(this.m3u8UrlTestResult[testUrl])
+                }
                 const abortController = new AbortController();
                 fetch(testUrl, { signal: abortController.signal }).then(response => {
+                    const contentType = response.headers.get('Content-Type')
+                    if (contentType.startsWith('video/')) {
+                        rtnType('video');
+                    }
                     const limitedStream = limitStream(response.body, 1024); // Limit to 1024 bytes
                     return new Response(limitedStream, { headers: response.headers });
                 }).then(r => r.text())
                     .then(async txt => {
                         abortController.abort();
                         if (isM3U8(txt)) {
-                            this.m3u8UrlTestResult[testUrl] = true;
+                            rtnType('m3u8');
                         } else {
-                            this.m3u8UrlTestResult[testUrl] = false;
+                            rtnType('unknown');
                         }
                         res(this.m3u8UrlTestResult[testUrl]);
                     }).catch(e => {
                         if (testUrl.startsWith('blob')) {
-                            this.m3u8UrlTestResult[testUrl] = false;
-                            res(this.m3u8UrlTestResult[testUrl]);
+                            rtnType('unknown');
                         } else {
                             rej();
                         }
+                    }).finally(() => {
+                        document.removeEventListener("securitypolicyviolation", onsecuritypolicyviolation)
                     })
             })
         }
@@ -3593,13 +3655,22 @@
                     } catch { }
                     if (data.m3u8Url == undefined) {
                         data.m3u8Url = m3u8Url;
+                    } else {
                     }// data.m3u8Url may be a video file
-                    if (m3u8Url != undefined) {
-                        this.downloadM3u8Url = m3u8Url;
+
+                    if (data.m3u8UrlType == 'video') {
+                        this.downloadM3u8Url = data.m3u8Url;
+                        this.downloadM3u8UrlType = 'video';
                         this.downloadDuration = data.duration;
                     } else {
-                        this.downloadM3u8Url = undefined;
-                        this.downloadDuration = undefined;
+                        if (m3u8Url != undefined) {
+                            this.downloadM3u8Url = m3u8Url;
+                            this.downloadDuration = data.duration;
+                            this.downloadM3u8UrlType = 'm3u8'; // video or other
+                        } else {
+                            this.downloadM3u8Url = undefined;
+                            this.downloadDuration = undefined;
+                        }
                     }
 
 
@@ -4331,6 +4402,7 @@
                 paused = false;
             }
             let m3u8Url;
+            let m3u8UrlType;
             try {
                 let nativeSrc = videoDom.src;
                 if (nativeSrc == "" || nativeSrc == undefined) {
@@ -4342,22 +4414,22 @@
                     m3u8Url = nativeSrc;
                 }
 
-                this.testM3u8Url(nativeSrc).then(r => {
-                    if (r) {
+                this.testM3u8OrVideoUrl(nativeSrc).then(r => {
+                    if (r == 'm3u8' && this.hasCheckedM3u8Url[nativeSrc] != true) {
                         fetch(nativeSrc).then(r => r.text()).then(m3u8Content => {
                             if (isMasterM3u8(m3u8Content)) {
                                 const mediaM3u8Url = getFirstMediaM3U8(m3u8Content, nativeSrc);
                                 fetch(mediaM3u8Url).then(r => r.text()).then(() => {
-                                    this.m3u8UrlTestResult[nativeSrc] = false;
+                                    this.hasCheckedM3u8Url[nativeSrc] = true;
                                 })
                             } else {
-                                // don't fetch multiple times
-                                this.m3u8UrlTestResult[nativeSrc] = false;
+                                this.hasCheckedM3u8Url[nativeSrc] = true;
                             }
                         }
                         )
                     }
                 })
+                m3u8UrlType = this.m3u8UrlTestResult[nativeSrc]
 
             } catch { };
             sendMessageToTop(MessageType.UpdateRoomRequest, {
@@ -4369,7 +4441,8 @@
                 paused: paused,
                 duration: videoDom.duration,
                 localTimestamp: this.getLocalTimestamp(),
-                m3u8Url: m3u8Url
+                m3u8Url: m3u8Url,
+                m3u8UrlType: m3u8UrlType
             })
         }
 

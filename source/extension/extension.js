@@ -492,6 +492,10 @@
                     })
                     break;
                 }
+                case 3009: {
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data))
+                    break;
+                }
             }
         }
     });

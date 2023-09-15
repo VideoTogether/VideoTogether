@@ -43,10 +43,9 @@
     }
 
     function downloadEnabled() {
-        return false; // due to safari
         try {
             const type = VideoTogetherStorage.UserscriptType
-            return parseInt(window.VideoTogetherStorage.LoaddingVersion) > 1694442998
+            return parseInt(window.VideoTogetherStorage.LoaddingVersion) >= 1694758378
                 && (type == "Chrome" || type == "Safari" || type == "Firefox")
                 && !isDownloadBlackListDomain()
         } catch {
@@ -1745,6 +1744,16 @@
         ReadIndexedDbSw: 2011,
         ReadIndexedDbSwResult: 2012,
         //2013 used
+
+        IosStorageSet: 3001,
+        IosStorageSetResult: 3002,
+        IosStorageGet: 3003,
+        IosStorageGetResult: 3004,
+        IosStorageDelete: 3005,
+        IosStorageDeleteResult: 3006,
+        IosStorageUsage: 3007,
+        IosStorageUsageResult: 3008,
+        IosStorageClean: 3009
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -2264,6 +2273,13 @@
         }
 
         async testM3u8OrVideoUrl(testUrl) {
+            onsecuritypolicyviolation = (e) => {
+                if (e.blockedURI == testUrl) {
+                    // m3u8 can always be fetched, because hls.js
+                    this.m3u8UrlTestResult[testUrl] = 'video'
+                }
+            }
+            document.addEventListener("securitypolicyviolation", onsecuritypolicyviolation)
             if (this.m3u8UrlTestResult[testUrl] != undefined) {
                 return this.m3u8UrlTestResult[testUrl];
             }
@@ -2320,6 +2336,8 @@
                         } else {
                             rej();
                         }
+                    }).finally(() => {
+                        document.removeEventListener("securitypolicyviolation", onsecuritypolicyviolation)
                     })
             })
         }

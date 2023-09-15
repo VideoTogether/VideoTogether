@@ -54,7 +54,7 @@
     "OriginalPageUrl": "Original website",
     "DeleteLabel": "Delete",
     "DownloadAt": "Downloaded at",
-    "DidntDetectVideo": "Video not detected yet",
+    "DidntDetectVideo": "Detecting video...",
     "DownloadingDontClosePage": "Downloading, do not close page",
     "OpenVideoList": "View downloaded videos",
     "DownloadCompleted": "Download complete",
@@ -65,5 +65,7 @@
     "DownloadStatusLabelError": "Error",
     "HourLabel": "Hr",
     "MinuteLabel": "Min",
-    "SecondLabel": "Sec"
+    "SecondLabel": "Sec",
+    "LocalVideoListTitle":"Local Videos",
+    "LocalVideoPlayerTitle":"Local Video Player"
 }

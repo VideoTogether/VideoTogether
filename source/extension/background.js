@@ -1,42 +1,178 @@
 let type = '{{{ {"chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension", "order":0} }}}'
+const isSafari = (type == 'Safari')
+
+function generateUUID() {
+    if (crypto.randomUUID != undefined) {
+        return crypto.randomUUID();
+    }
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+}
+
+async function cleanStorage() {
+    if (isSafari) {
+        await browser.runtime.sendNativeMessage("VideoTogether.VideoTogether",
+            {
+                source: "VideoTogether",
+                type: 3009,
+                id: generateUUID(),
+            })
+    }
+}
+
+async function estimateStorageUsage() {
+    if (isSafari) {
+        const resp = await browser.runtime.sendNativeMessage("VideoTogether.VideoTogether",
+            {
+                source: "VideoTogether",
+                type: 3007,
+                id: generateUUID(),
+            })
+        return resp['usage'];
+    } else {
+        return await chrome.storage.local.getBytesInUse()
+    }
+}
+
+async function storageSet(key, value) {
+    if (isSafari) {
+        const resp = await browser.runtime.sendNativeMessage("VideoTogether.VideoTogether",
+            {
+                source: "VideoTogether",
+                type: 3001,
+                id: generateUUID(),
+                data: { key: key, value: value }
+            })
+        return { [key]: value }
+    } else {
+        return await chrome.storage.local.set({ [key]: value })
+    }
+}
+
+async function storageGet(key) {
+    if (isSafari) {
+        const resp = await browser.runtime.sendNativeMessage("VideoTogether.VideoTogether",
+            {
+                source: "VideoTogether",
+                type: 3003,
+                id: generateUUID(),
+                data: { key: key }
+            })
+        value = resp['value'] == '' ? undefined : resp['value']
+        return value
+    } else {
+        const result = await chrome.storage.local.get([key])
+        return result[key]
+    }
+}
+
+async function storageRemove(key) {
+    if (isSafari) {
+        const resp = await browser.runtime.sendNativeMessage("VideoTogether.VideoTogether",
+            {
+                source: "VideoTogether",
+                type: 3005,
+                id: generateUUID(),
+                data: { key: key }
+            })
+        return {}
+    } else {
+        await chrome.storage.local.remove([key])
+        return {}
+    }
+}
 
 function openDB() {
-    const openRequest = indexedDB.open("VideoTogether", 3);
+    const openRequest = indexedDB.open("VideoTogether", 9);
 
     openRequest.onupgradeneeded = function (event) {
+        const oldVersion = event.oldVersion;
+        console.log("upgrade from", oldVersion);
         const db = event.target.result;
+        const upgradeTransaction = event.target.transaction;
+
+        if (oldVersion < 8) {
+            const existingStores = Array.from(db.objectStoreNames);
+            for (const storeName of existingStores) {
+                db.deleteObjectStore(storeName);
+            }
+        }
+
+        let videosStore;
         if (!db.objectStoreNames.contains('videos')) {
-            db.createObjectStore('videos');
+            videosStore = db.createObjectStore('videos');
+        } else {
+            videosStore = upgradeTransaction.objectStore('videos');
         }
+        if (!videosStore.indexNames.contains("m3u8Id")) {
+            videosStore.createIndex("m3u8Id", "m3u8Id", { unique: false });
+        }
+
+        let m3u8sStore;
         if (!db.objectStoreNames.contains('m3u8s')) {
-            db.createObjectStore('m3u8s');
+            m3u8sStore = db.createObjectStore('m3u8s');
+        } else {
+            m3u8sStore = upgradeTransaction.objectStore('m3u8s');
         }
-        if (!db.objectStoreNames.contains('videos-mini')) {
-            db.createObjectStore('videos-mini');
+        if (!m3u8sStore.indexNames.contains("m3u8Id")) {
+            m3u8sStore.createIndex("m3u8Id", "m3u8Id", { unique: false });
         }
-        if (!db.objectStoreNames.contains('m3u8s-mini')) {
-            db.createObjectStore('m3u8s-mini');
+
+
+        let futureStore;
+        if (!db.objectStoreNames.contains('future')) {
+            futureStore = db.createObjectStore('future');
+        } else {
+            futureStore = upgradeTransaction.objectStore('future');
         }
+        if (!futureStore.indexNames.contains("m3u8Id")) {
+            futureStore.createIndex("m3u8Id", "m3u8Id", { unique: false });
+        }
+
     };
     return openRequest;
 }
 
-function saveToIndexedDB(table, key, data) {
+function saveToIndexedDB(table, key, record) {
+
+    let localData = undefined
+    if (table.endsWith('-mini')) {
+        localData = undefined
+        record.data = undefined
+        table = table.replace('-mini', '')
+    } else if (record.data != undefined) {
+        localData = record.data
+        record.data = undefined
+        record.hasData = true
+    }
     return new Promise((res, rej) => {
         const openRequest = openDB()
         openRequest.onerror = function (e) {
-            rej()
+            rej("indexedDB error")
         }
+
         openRequest.onsuccess = function (event) {
             const db = event.target.result;
             const transaction = db.transaction(table, "readwrite");
             const store = transaction.objectStore(table);
-            const addRequest = store.put(data, key);
-            addRequest.onsuccess = function () {
-                res()
+            const addRequest = store.put(record, key);
+            addRequest.onsuccess = async function () {
+                if (localData != undefined) {
+                    try {
+                        await storageSet(table + key, localData)
+                        res()
+                    } catch {
+                        // the inserted record will not be deleted,
+                        // caller should deal with the failure
+                        rej("storage.local error")
+                    }
+                } else {
+                    res();
+                }
             };
-            addRequest.onerror = function () {
-                rej()
+            addRequest.onerror = function (event) {
+                rej(event.target.error);
             }
         };
     })
@@ -51,12 +187,21 @@ function regexMatchKeysDb(table, regex) {
             const db = event.target.result;
             const transaction = db.transaction(table);
             const objectStore = transaction.objectStore(table);
-            const request = objectStore.openCursor();
+            // optimize by index
+            let request = undefined
+            if (regex.startsWith('#m3u8Id-') && regex.endsWith('$')) {
+                console.log('optimize query for ', regex);
+                var index = objectStore.index("m3u8Id");
+                const m3u8Id = regex.slice(8, -1);
+                request = index.openCursor(IDBKeyRange.only(m3u8Id));
+            } else {
+                request = objectStore.openCursor();
+            }
 
             request.onsuccess = function (event) {
                 const cursor = event.target.result;
                 if (cursor) {
-                    const key = cursor.key;
+                    const key = cursor.primaryKey;
                     if (re.test(key)) {
                         matchedKeys.push(key);
                     }
@@ -78,10 +223,16 @@ function regexMatchKeysDb(table, regex) {
 }
 
 function readFromIndexedDB(table, key) {
+    let readLocalData = true
+    if (table.endsWith('-mini')) {
+        table = table.replace('-mini', '')
+        readLocalData = false
+    }
+
     return new Promise((res, rej) => {
         const openRequest = openDB()
         openRequest.onerror = function (event) {
-            rej()
+            rej(event.target.error)
         }
         openRequest.onsuccess = function (event) {
             const db = event.target.result;
@@ -89,12 +240,23 @@ function readFromIndexedDB(table, key) {
             const store = transaction.objectStore(table);
 
             const getRequest = store.get(key);
-            getRequest.onsuccess = function (event) {
-                const data = event.target.result;
-                res(data);
+            getRequest.onsuccess = async function (event) {
+                const record = event.target.result;
+                const localKeys = table + key;
+                if (readLocalData) {
+                    try {
+                        const value = await storageGet(localKeys)
+                        record.data = value
+                        res(record);
+                    } catch {
+                        rej("storage.local error")
+                    }
+                } else {
+                    res(record);
+                }
             };
             getRequest.onerror = function (event) {
-                rej()
+                rej(event.target.error)
             }
         };
     })
@@ -104,7 +266,7 @@ function deleteFromIndexedDB(table, key) {
     return new Promise((res, rej) => {
         const openRequest = openDB()
         openRequest.onerror = function (event) {
-            rej()
+            rej(event.target.error)
         }
         openRequest.onsuccess = function (event) {
             const db = event.target.result;
@@ -112,11 +274,18 @@ function deleteFromIndexedDB(table, key) {
             const store = transaction.objectStore(table);
 
             const request = store.delete(key);
-            request.onsuccess = function (event) {
-                res();
+            request.onsuccess = async function (event) {
+                // the hasData field may not correct,
+                // so delete the data every time
+                try {
+                    await storageRemove(table + key)
+                    res();
+                } catch {
+                    rej('storage.local remove error');
+                }
             };
             request.onerror = function (event) {
-                rej()
+                rej(event.target.error)
             }
         };
     })
@@ -199,7 +368,7 @@ getBrowser().runtime.onMessage.addListener(function (msgText, sender, sendRespon
             return true;
         case 2005:
             regexMatchKeysDb(msg.data.table, msg.data.regex).then(data => {
-                sendResponse({ error: 0, data: JSON.stringify(data) })
+                sendResponse({ error: 0, data: data })
             }).catch(r => sendResponse({ error: r }))
             return true;
         case 2007:
@@ -208,9 +377,14 @@ getBrowser().runtime.onMessage.addListener(function (msgText, sender, sendRespon
             }).catch(r => sendResponse({ error: r }))
             return true;
         case 2009:
-            navigator.storage.estimate().then(data => {
+            estimateStorageUsage().then(data => {
                 sendResponse(JSON.stringify(data))
             }).catch(r => sendResponse({ error: r }))
+            return true;
+        case 3009:
+            cleanStorage().then(data => {
+                sendResponse(JSON.stringify(data))
+            }).catch(r => sendResponse({ error: r }));
             return true;
     }
 });
