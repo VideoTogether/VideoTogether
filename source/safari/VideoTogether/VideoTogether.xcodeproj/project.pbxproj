@@ -49,8 +49,6 @@
 		468287F728F25B10008CFC46 /* vt.en-us.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287F428F25B10008CFC46 /* vt.en-us.user.js */; };
 		468287F828F25B10008CFC46 /* vt.zh-cn.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287F528F25B10008CFC46 /* vt.zh-cn.user.js */; };
 		468287F928F25B10008CFC46 /* vt.zh-cn.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 468287F528F25B10008CFC46 /* vt.zh-cn.user.js */; };
-		468A62A12AB327E700A01E3B /* SwiftStore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 468A629B2AB3257D00A01E3B /* SwiftStore.framework */; };
-		468A62A22AB327E700A01E3B /* SwiftStore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 468A629B2AB3257D00A01E3B /* SwiftStore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		46ACA8EB28F25E8F00F37C93 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 46ACA8EA28F25E8F00F37C93 /* Icon.png */; };
 		46ACA8EC28F25E8F00F37C93 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 46ACA8EA28F25E8F00F37C93 /* Icon.png */; };
 		46D922F82A2C3E61006F8194 /* pre.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F62A2C3E61006F8194 /* pre.js */; };
@@ -73,20 +71,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 468287B528F1CF25008CFC46;
 			remoteInfo = "VideoTogether Extension (macOS)";
-		};
-		468A629A2AB3257D00A01E3B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 468A62942AB3257D00A01E3B /* SwiftStore.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 2EAADF261AF6F94600783BAD;
-			remoteInfo = SwiftStore;
-		};
-		468A629C2AB3257D00A01E3B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 468A62942AB3257D00A01E3B /* SwiftStore.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 2EAADF311AF6F94600783BAD;
-			remoteInfo = SwiftStoreTests;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -119,7 +103,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				468A62A22AB327E700A01E3B /* SwiftStore.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -159,7 +142,6 @@
 		468287EF28F1DEE2008CFC46 /* load.zh-cn.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "load.zh-cn.js"; sourceTree = "<group>"; };
 		468287F428F25B10008CFC46 /* vt.en-us.user.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "vt.en-us.user.js"; sourceTree = "<group>"; };
 		468287F528F25B10008CFC46 /* vt.zh-cn.user.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "vt.zh-cn.user.js"; sourceTree = "<group>"; };
-		468A62942AB3257D00A01E3B /* SwiftStore.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftStore.xcodeproj; path = SwiftStore/SwiftStore.xcodeproj; sourceTree = SOURCE_ROOT; };
 		46ACA8EA28F25E8F00F37C93 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = "Shared (Extension)/Resources/images/Icon.png"; sourceTree = SOURCE_ROOT; };
 		46D922F62A2C3E61006F8194 /* pre.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = pre.js; sourceTree = "<group>"; };
 		46D922F72A2C3E61006F8194 /* preInjected.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = preInjected.js; sourceTree = "<group>"; };
@@ -170,7 +152,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				468A62A12AB327E700A01E3B /* SwiftStore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -201,7 +182,6 @@
 		4682877128F1CF24008CFC46 = {
 			isa = PBXGroup;
 			children = (
-				468A62932AB3254000A01E3B /* Frameworks */,
 				4682877628F1CF24008CFC46 /* Shared (App) */,
 				4682877F28F1CF25008CFC46 /* Shared (Extension) */,
 				4682879028F1CF25008CFC46 /* iOS (App) */,
@@ -320,23 +300,6 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		468A62932AB3254000A01E3B /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				468A62942AB3257D00A01E3B /* SwiftStore.xcodeproj */,
-			);
-			path = Frameworks;
-			sourceTree = "<group>";
-		};
-		468A62952AB3257D00A01E3B /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				468A629B2AB3257D00A01E3B /* SwiftStore.framework */,
-				468A629D2AB3257D00A01E3B /* SwiftStoreTests.xctest */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -448,12 +411,6 @@
 			mainGroup = 4682877128F1CF24008CFC46;
 			productRefGroup = 4682878F28F1CF25008CFC46 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 468A62952AB3257D00A01E3B /* Products */;
-					ProjectRef = 468A62942AB3257D00A01E3B /* SwiftStore.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				4682878D28F1CF25008CFC46 /* VideoTogether (iOS) */,
@@ -463,23 +420,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXReferenceProxy section */
-		468A629B2AB3257D00A01E3B /* SwiftStore.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = SwiftStore.framework;
-			remoteRef = 468A629A2AB3257D00A01E3B /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		468A629D2AB3257D00A01E3B /* SwiftStoreTests.xctest */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.cfbundle;
-			path = SwiftStoreTests.xctest;
-			remoteRef = 468A629C2AB3257D00A01E3B /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4682878C28F1CF25008CFC46 /* Resources */ = {
