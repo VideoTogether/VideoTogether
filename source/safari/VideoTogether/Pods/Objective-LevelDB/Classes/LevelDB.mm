@@ -646,6 +646,12 @@ LevelDBOptions MakeLevelDBOptions() {
 
 #pragma mark - Bookkeeping
 
+- (void) compact {
+    leveldb::Slice begin("");
+    leveldb::Slice end("~");
+    db->CompactRange(&begin, &end);
+}
+
 - (void) deleteDatabaseFromDisk {
     [self close];
     NSFileManager *fileManager = [NSFileManager defaultManager];

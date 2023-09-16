@@ -44,6 +44,9 @@ public class DB  {
         let value =  self.ldb.object(forKey: key)
         return value as! String
     }
+    func compact(){
+        self.ldb.compact()
+    }
 }
 
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
@@ -109,7 +112,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                 respData["usage"] = size
                 break;
             case 3009:
-                // DB.store.clean()
+                DB.store.compact()
                 break;
             default:
                 break;
