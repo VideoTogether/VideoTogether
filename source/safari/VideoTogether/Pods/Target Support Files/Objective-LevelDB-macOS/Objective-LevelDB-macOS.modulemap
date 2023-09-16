@@ -1,0 +1,6 @@
+framework module Objective_LevelDB {
+  umbrella header "Objective-LevelDB-macOS-umbrella.h"
+
+  export *
+  module * { export * }
+}

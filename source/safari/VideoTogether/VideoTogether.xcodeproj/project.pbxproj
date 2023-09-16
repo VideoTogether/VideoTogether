@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		05B1B5E1A555503BB2C60AFC /* Pods_VideoTogether_Extension__iOS_.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A43E68519248B548232D616 /* Pods_VideoTogether_Extension__iOS_.framework */; };
+		2CD96C63530864B58897E391 /* Pods_VideoTogether__iOS_.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7A2E9484F6C7AB87AD991F3F /* Pods_VideoTogether__iOS_.framework */; };
+		3E9112ED5DBFAD6C7115939C /* Pods_VideoTogether_Extension__macOS_.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59FA1E44AC392B7F59CBE004 /* Pods_VideoTogether_Extension__macOS_.framework */; };
 		463C5AF828F2BBB8007A2310 /* background.safari.js in Resources */ = {isa = PBXBuildFile; fileRef = 463C5AF728F2BBB8007A2310 /* background.safari.js */; };
 		463C5AF928F2BBB8007A2310 /* background.safari.js in Resources */ = {isa = PBXBuildFile; fileRef = 463C5AF728F2BBB8007A2310 /* background.safari.js */; };
 		467BCE4528FEC16500B4471B /* en-us.gif in Resources */ = {isa = PBXBuildFile; fileRef = 467BCE4428FEC16500B4471B /* en-us.gif */; };
@@ -55,6 +58,7 @@
 		46D922F92A2C3E61006F8194 /* pre.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F62A2C3E61006F8194 /* pre.js */; };
 		46D922FA2A2C3E61006F8194 /* preInjected.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F72A2C3E61006F8194 /* preInjected.js */; };
 		46D922FB2A2C3E61006F8194 /* preInjected.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F72A2C3E61006F8194 /* preInjected.js */; };
+		8CABB0D82774B88B42CE706F /* Pods_VideoTogether__macOS_.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EFDE359130A90A8AB9DE900 /* Pods_VideoTogether__macOS_.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +114,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1A43E68519248B548232D616 /* Pods_VideoTogether_Extension__iOS_.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VideoTogether_Extension__iOS_.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		3EFDE359130A90A8AB9DE900 /* Pods_VideoTogether__macOS_.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VideoTogether__macOS_.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		425DB47368B935C6CA9DB5D5 /* Pods-VideoTogether (macOS).debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether (macOS).debug.xcconfig"; path = "Target Support Files/Pods-VideoTogether (macOS)/Pods-VideoTogether (macOS).debug.xcconfig"; sourceTree = "<group>"; };
+		4622240F2AB53F7D00A1CE86 /* Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Header.h; sourceTree = "<group>"; };
 		463C5AF728F2BBB8007A2310 /* background.safari.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = background.safari.js; sourceTree = "<group>"; };
 		467BCE4428FEC16500B4471B /* en-us.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = "en-us.gif"; sourceTree = "<group>"; };
 		467BCE4728FEC2E200B4471B /* zh-cn.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = "zh-cn.gif"; sourceTree = "<group>"; };
@@ -145,6 +153,15 @@
 		46ACA8EA28F25E8F00F37C93 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = "Shared (Extension)/Resources/images/Icon.png"; sourceTree = SOURCE_ROOT; };
 		46D922F62A2C3E61006F8194 /* pre.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = pre.js; sourceTree = "<group>"; };
 		46D922F72A2C3E61006F8194 /* preInjected.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = preInjected.js; sourceTree = "<group>"; };
+		59FA1E44AC392B7F59CBE004 /* Pods_VideoTogether_Extension__macOS_.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VideoTogether_Extension__macOS_.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		7A2E9484F6C7AB87AD991F3F /* Pods_VideoTogether__iOS_.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VideoTogether__iOS_.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D0FFC6FDC0F3E0F110406D9 /* Pods-VideoTogether Extension (macOS).debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether Extension (macOS).debug.xcconfig"; path = "Target Support Files/Pods-VideoTogether Extension (macOS)/Pods-VideoTogether Extension (macOS).debug.xcconfig"; sourceTree = "<group>"; };
+		A12BE33402052EADFEC15A15 /* Pods-VideoTogether (iOS).release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether (iOS).release.xcconfig"; path = "Target Support Files/Pods-VideoTogether (iOS)/Pods-VideoTogether (iOS).release.xcconfig"; sourceTree = "<group>"; };
+		A52AE972C2D1DA67D7202705 /* Pods-VideoTogether Extension (iOS).release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether Extension (iOS).release.xcconfig"; path = "Target Support Files/Pods-VideoTogether Extension (iOS)/Pods-VideoTogether Extension (iOS).release.xcconfig"; sourceTree = "<group>"; };
+		AE7264526574B0F1A13FC9F8 /* Pods-VideoTogether Extension (iOS).debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether Extension (iOS).debug.xcconfig"; path = "Target Support Files/Pods-VideoTogether Extension (iOS)/Pods-VideoTogether Extension (iOS).debug.xcconfig"; sourceTree = "<group>"; };
+		BE4A97AD0132807996CDCFC1 /* Pods-VideoTogether Extension (macOS).release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether Extension (macOS).release.xcconfig"; path = "Target Support Files/Pods-VideoTogether Extension (macOS)/Pods-VideoTogether Extension (macOS).release.xcconfig"; sourceTree = "<group>"; };
+		F251CF7AF68A6D4455AAD13D /* Pods-VideoTogether (iOS).debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether (iOS).debug.xcconfig"; path = "Target Support Files/Pods-VideoTogether (iOS)/Pods-VideoTogether (iOS).debug.xcconfig"; sourceTree = "<group>"; };
+		F8FC6661705A0C9F81F66F91 /* Pods-VideoTogether (macOS).release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether (macOS).release.xcconfig"; path = "Target Support Files/Pods-VideoTogether (macOS)/Pods-VideoTogether (macOS).release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +169,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2CD96C63530864B58897E391 /* Pods_VideoTogether__iOS_.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -159,6 +177,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8CABB0D82774B88B42CE706F /* Pods_VideoTogether__macOS_.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -166,6 +185,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				05B1B5E1A555503BB2C60AFC /* Pods_VideoTogether_Extension__iOS_.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -173,12 +193,24 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3E9112ED5DBFAD6C7115939C /* Pods_VideoTogether_Extension__macOS_.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0342A63107BEE62033401981 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7A2E9484F6C7AB87AD991F3F /* Pods_VideoTogether__iOS_.framework */,
+				3EFDE359130A90A8AB9DE900 /* Pods_VideoTogether__macOS_.framework */,
+				1A43E68519248B548232D616 /* Pods_VideoTogether_Extension__iOS_.framework */,
+				59FA1E44AC392B7F59CBE004 /* Pods_VideoTogether_Extension__macOS_.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		4682877128F1CF24008CFC46 = {
 			isa = PBXGroup;
 			children = (
@@ -189,7 +221,8 @@
 				468287B028F1CF25008CFC46 /* iOS (Extension) */,
 				468287BA28F1CF25008CFC46 /* macOS (Extension) */,
 				4682878F28F1CF25008CFC46 /* Products */,
-				468A628A2AB3227100A01E3B /* Frameworks */,
+				92893346383346BD25F550B0 /* Pods */,
+				0342A63107BEE62033401981 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -221,6 +254,7 @@
 			children = (
 				4682878028F1CF25008CFC46 /* SafariWebExtensionHandler.swift */,
 				4682878128F1CF25008CFC46 /* Resources */,
+				4622240F2AB53F7D00A1CE86 /* Header.h */,
 			);
 			path = "Shared (Extension)";
 			sourceTree = "<group>";
@@ -293,11 +327,19 @@
 			path = "macOS (Extension)";
 			sourceTree = "<group>";
 		};
-		468A628A2AB3227100A01E3B /* Frameworks */ = {
+		92893346383346BD25F550B0 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
+				F251CF7AF68A6D4455AAD13D /* Pods-VideoTogether (iOS).debug.xcconfig */,
+				A12BE33402052EADFEC15A15 /* Pods-VideoTogether (iOS).release.xcconfig */,
+				425DB47368B935C6CA9DB5D5 /* Pods-VideoTogether (macOS).debug.xcconfig */,
+				F8FC6661705A0C9F81F66F91 /* Pods-VideoTogether (macOS).release.xcconfig */,
+				AE7264526574B0F1A13FC9F8 /* Pods-VideoTogether Extension (iOS).debug.xcconfig */,
+				A52AE972C2D1DA67D7202705 /* Pods-VideoTogether Extension (iOS).release.xcconfig */,
+				8D0FFC6FDC0F3E0F110406D9 /* Pods-VideoTogether Extension (macOS).debug.xcconfig */,
+				BE4A97AD0132807996CDCFC1 /* Pods-VideoTogether Extension (macOS).release.xcconfig */,
 			);
-			name = Frameworks;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -307,11 +349,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 468287E128F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether (iOS)" */;
 			buildPhases = (
+				F5867EE126C8F74A11CEDABF /* [CP] Check Pods Manifest.lock */,
 				4682878A28F1CF25008CFC46 /* Sources */,
 				4682878B28F1CF25008CFC46 /* Frameworks */,
 				4682878C28F1CF25008CFC46 /* Resources */,
 				468287E028F1CF25008CFC46 /* Embed Foundation Extensions */,
 				468A62922AB324AA00A01E3B /* Embed Frameworks */,
+				092938306374A86314C1EA06 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -327,10 +371,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 468287E828F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether (macOS)" */;
 			buildPhases = (
+				5866C4098B9DFD0080F70D50 /* [CP] Check Pods Manifest.lock */,
 				4682879C28F1CF25008CFC46 /* Sources */,
 				4682879D28F1CF25008CFC46 /* Frameworks */,
 				4682879E28F1CF25008CFC46 /* Resources */,
 				468287E728F1CF25008CFC46 /* Embed Foundation Extensions */,
+				8D810F43253096C6F020D650 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -346,6 +392,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 468287DD28F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether Extension (iOS)" */;
 			buildPhases = (
+				A8C976328CF22FF294948343 /* [CP] Check Pods Manifest.lock */,
 				468287A828F1CF25008CFC46 /* Sources */,
 				468287A928F1CF25008CFC46 /* Frameworks */,
 				468287AA28F1CF25008CFC46 /* Resources */,
@@ -363,6 +410,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 468287E428F1CF25008CFC46 /* Build configuration list for PBXNativeTarget "VideoTogether Extension (macOS)" */;
 			buildPhases = (
+				BC2041E973A3A684326F9F4F /* [CP] Check Pods Manifest.lock */,
 				468287B228F1CF25008CFC46 /* Sources */,
 				468287B328F1CF25008CFC46 /* Frameworks */,
 				468287B428F1CF25008CFC46 /* Resources */,
@@ -490,6 +538,131 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		092938306374A86314C1EA06 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (iOS)/Pods-VideoTogether (iOS)-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (iOS)/Pods-VideoTogether (iOS)-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (iOS)/Pods-VideoTogether (iOS)-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		5866C4098B9DFD0080F70D50 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-VideoTogether (macOS)-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8D810F43253096C6F020D650 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (macOS)/Pods-VideoTogether (macOS)-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (macOS)/Pods-VideoTogether (macOS)-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (macOS)/Pods-VideoTogether (macOS)-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A8C976328CF22FF294948343 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-VideoTogether Extension (iOS)-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		BC2041E973A3A684326F9F4F /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-VideoTogether Extension (macOS)-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		F5867EE126C8F74A11CEDABF /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-VideoTogether (iOS)-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4682878A28F1CF25008CFC46 /* Sources */ = {
@@ -689,6 +862,7 @@
 		};
 		468287DE28F1CF25008CFC46 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AE7264526574B0F1A13FC9F8 /* Pods-VideoTogether Extension (iOS).debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -713,6 +887,7 @@
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				"SWIFT_OBJC_BRIDGING_HEADER[arch=*]" = "Shared (Extension)/Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -720,6 +895,7 @@
 		};
 		468287DF28F1CF25008CFC46 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A52AE972C2D1DA67D7202705 /* Pods-VideoTogether Extension (iOS).release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -752,6 +928,7 @@
 		};
 		468287E228F1CF25008CFC46 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F251CF7AF68A6D4455AAD13D /* Pods-VideoTogether (iOS).debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -791,6 +968,7 @@
 		};
 		468287E328F1CF25008CFC46 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A12BE33402052EADFEC15A15 /* Pods-VideoTogether (iOS).release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -830,6 +1008,7 @@
 		};
 		468287E528F1CF25008CFC46 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8D0FFC6FDC0F3E0F110406D9 /* Pods-VideoTogether Extension (macOS).debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "macOS (Extension)/VideoTogether.entitlements";
 				CODE_SIGN_STYLE = Automatic;
@@ -862,6 +1041,7 @@
 		};
 		468287E628F1CF25008CFC46 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BE4A97AD0132807996CDCFC1 /* Pods-VideoTogether Extension (macOS).release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "macOS (Extension)/VideoTogether.entitlements";
 				CODE_SIGN_STYLE = Automatic;
@@ -894,6 +1074,7 @@
 		};
 		468287E928F1CF25008CFC46 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 425DB47368B935C6CA9DB5D5 /* Pods-VideoTogether (macOS).debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -929,6 +1110,7 @@
 		};
 		468287EA28F1CF25008CFC46 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F8FC6661705A0C9F81F66F91 /* Pods-VideoTogether (macOS).release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;

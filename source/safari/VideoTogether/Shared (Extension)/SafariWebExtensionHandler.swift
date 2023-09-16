@@ -7,8 +7,7 @@
 
 import SafariServices
 import os.log
-import SwiftStore
-
+import Objective_LevelDB
 let SFExtensionMessageKey = "message"
 
 struct MessageData:Decodable{
@@ -24,12 +23,26 @@ struct ExtensionMessage:Decodable{
     let data: MessageData?
 }
 
-public class DB : SwiftStore {
+public class DB  {
     /* Shared Instance */
     static let store = DB()
-
+    
+    let ldb:LevelDB
     init() {
-        super.init(storeName: "db")
+        self.ldb = LevelDB.databaseInLibrary(withName: "db") as! LevelDB
+    }
+    
+    func delete(key: String){
+        self.ldb.removeObject(forKey: key)
+    }
+    
+    func put(key:String, value: String){
+        self.ldb.setObject(value, forKey: key)
+    }
+    
+    func get(key:String)->String{
+        let value =  self.ldb.object(forKey: key)
+        return value as! String
     }
 }
 
@@ -53,11 +66,11 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             respData["id"] = msg.id
             switch(msg.type){
             case 3001:
-                DB.store[msg.data!.key!] = msg.data!.value
+                DB.store.put(key: msg.data!.key!, value: msg.data!.value!)
                 respType = 3002
                 break;
             case 3003:
-                let value = DB.store[msg.data!.key!]
+                let value = DB.store.get(key: msg.data!.key!)
                 respData["value"] = value
                 respType = 3004
                 break;
@@ -68,7 +81,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             case 3007:
                 func calculateDiskUsage() -> UInt64 {
                     let fileManager = FileManager.default
-                    guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else { return 0 }
+                    guard let documentsURL = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first?.appendingPathComponent("db") else { return 0 }
                     
                     do {
                         let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil, options: [])
@@ -96,7 +109,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                 respData["usage"] = size
                 break;
             case 3009:
-                DB.store.clean()
+                // DB.store.clean()
                 break;
             default:
                 break;

@@ -1,0 +1,6 @@
+framework module Pods_VideoTogether__iOS_ {
+  umbrella header "Pods-VideoTogether (iOS)-umbrella.h"
+
+  export *
+  module * { export * }
+}

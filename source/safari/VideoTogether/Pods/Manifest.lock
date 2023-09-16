@@ -1,0 +1,20 @@
+PODS:
+  - leveldb-library (1.18.3)
+  - Objective-LevelDB (2.1.5):
+    - leveldb-library (~> 1.18.2)
+
+DEPENDENCIES:
+  - Objective-LevelDB
+
+SPEC REPOS:
+  trunk:
+    - leveldb-library
+    - Objective-LevelDB
+
+SPEC CHECKSUMS:
+  leveldb-library: 10fb39c39e243db4af1828441162405bbcec1404
+  Objective-LevelDB: fa075efd9d0be645aee51847cc3ee70cdadb80ce
+
+PODFILE CHECKSUM: 4124035b33a19f71a924ac30e678abda40da104d
+
+COCOAPODS: 1.12.1
