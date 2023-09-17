@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1694778024
+// @version      1694945534
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -217,6 +217,7 @@
                     id: queryId,
                 }
             }, '*')
+            data = null;
             saveCallback[queryId] = (error) => {
                 if (error === 0) {
                     res(0)
@@ -237,18 +238,22 @@
             switch (e.data.type) {
                 case 2003: {
                     saveCallback[e.data.data.id](e.data.data.error)
+                    saveCallback[e.data.data.id] = undefined
                     break;
                 }
                 case 2004: {
                     readCallback[e.data.data.id](e.data.data.data)
+                    readCallback[e.data.data.id] = undefined;
                     break;
                 }
                 case 2006: {
                     regexCallback[e.data.data.id](e.data.data.data)
+                    regexCallback[e.data.data.id] = undefined;
                     break;
                 }
                 case 2008: {
                     deleteCallback[e.data.data.id](e.data.data.error);
+                    deleteCallback[e.data.data.id] = undefined;
                     break;
                 }
                 case 2010: {
@@ -377,7 +382,7 @@
         const contentType = response.headers.get("Content-Type") || "application/octet-stream";
 
         const reader = response.body.getReader();
-        const chunks = [];
+        let chunks = [];
 
         async function readStream() {
             const { done, value } = await timeoutAsyncRead(reader, 60000);
@@ -395,6 +400,7 @@
         }
         await readStream();
         const blob = new Blob(chunks, { type: contentType });
+        chunks = null;
         return blob;
     }
 
@@ -405,8 +411,9 @@
 
         const url = urls[index];
         try {
-            const blob = await fetchWithSpeedTracking(url);
+            let blob = await fetchWithSpeedTracking(url);
             await saveBlob(table, url + `#m3u8Id-${m3u8Id}`, blob);
+            blob = null;
             successCount++;
             videoTogetherExtension.downloadPercentage = Math.floor((successCount / totalCount) * 100)
             console.log('download ts:', table, index, 'of', total);
@@ -497,7 +504,7 @@
 
     let isDownloadBlackListDomainCache = undefined;
     function isDownloadBlackListDomain() {
-        if (window.location.protocol != 'https:') {
+        if (window.location.protocol != 'http:') {
             return true;
         }
         const domains = [
@@ -3054,7 +3061,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1694778024';
+            this.version = '1694945534';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
