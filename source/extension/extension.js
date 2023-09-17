@@ -50,6 +50,11 @@
         }
         return GM;
     }
+
+    function getRealTableName(table) {
+        return table.replace('-mini', '');
+    }
+
     setInterval(() => {
         if (isWebsite) {
             (function () {
@@ -407,10 +412,11 @@
                 }
                 case 2001: {
                     getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
-                        if (indexedDbWriteHistory[e.data.data.table] == undefined) {
-                            indexedDbWriteHistory[e.data.data.table] = {};
+                        const realTableName = getRealTableName(e.data.data.table)
+                        if (indexedDbWriteHistory[realTableName] == undefined) {
+                            indexedDbWriteHistory[realTableName] = {};
                         }
-                        indexedDbWriteHistory[e.data.data.table][e.data.data.key] = true;
+                        indexedDbWriteHistory[realTableName][e.data.data.key] = true;
                         window.postMessage({
                             source: "VideoTogether",
                             type: 2003,
@@ -426,7 +432,8 @@
                 }
                 case 2002: {
                     try {
-                        if (!indexedDbWriteHistory[e.data.data.table][e.data.data.key]) {
+                        const realTableName = getRealTableName(e.data.data.table)
+                        if (!indexedDbWriteHistory[realTableName][e.data.data.key]) {
                             needTrustPage();
                         }
                     } catch {

@@ -55,7 +55,9 @@ setTimeout(() => {
                 fetch(v, { method: "GET" }).then(r => {
                     realUrl = r.url
                     const limitedStream = limitStream(r.body, 1024); // Limit to 1024 bytes
-                    return new Response(limitedStream, { headers: r.headers });
+                    const resp =  new Response(limitedStream, { headers: r.headers });
+                    resp.__vtRealUrl = realUrl;
+                    return resp;
                 }).then(r => r.text()).then(text => {
                     if (isM3U8(text)) {
                         const blob = new Blob([text], { type: 'application/vnd.apple.mpegurl' });
@@ -169,7 +171,13 @@ setTimeout(() => {
     Response.prototype.text = async function () {
         const text = await originalResponseText.call(this);
         try {
-            processResponseText(this.url, text);
+            let realUrl = undefined;
+            try {
+                if (this.__vtRealUrl) {
+                    realUrl = this.__vtRealUrl;
+                }
+            } catch { }
+            processResponseText(realUrl ? realUrl : this.url, text);
         } catch (e) { console.error(e); }
         return text;
     }
