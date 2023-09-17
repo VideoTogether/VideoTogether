@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1694946190
+// @version      1694950052
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -504,7 +504,7 @@
 
     let isDownloadBlackListDomainCache = undefined;
     function isDownloadBlackListDomain() {
-        if (window.location.protocol != 'http') {
+        if (window.location.protocol != 'http:' || window.location.protocol != 'https:') {
             return true;
         }
         const domains = [
@@ -3061,7 +3061,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1694946190';
+            this.version = '1694950052';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
