@@ -137,7 +137,7 @@
 
     let isDownloadBlackListDomainCache = undefined;
     function isDownloadBlackListDomain() {
-        if (window.location.protocol != 'http:') {
+        if (window.location.protocol != 'http') {
             return true;
         }
         const domains = [
