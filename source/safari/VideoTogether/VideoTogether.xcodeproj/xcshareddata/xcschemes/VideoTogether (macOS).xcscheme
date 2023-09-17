@@ -20,20 +20,6 @@
                ReferencedContainer = "container:VideoTogether.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "4682878D28F1CF25008CFC46"
-               BuildableName = "VideoTogether.app"
-               BlueprintName = "VideoTogether (iOS)"
-               ReferencedContainer = "container:VideoTogether.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -53,25 +39,6 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "4682878D28F1CF25008CFC46"
-            BuildableName = "VideoTogether.app"
-            BlueprintName = "VideoTogether (iOS)"
-            ReferencedContainer = "container:VideoTogether.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "4682879F28F1CF25008CFC46"
-            BuildableName = "VideoTogether.app"
-            BlueprintName = "VideoTogether (macOS)"
-            ReferencedContainer = "container:VideoTogether.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -79,16 +46,6 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "4682879F28F1CF25008CFC46"
-            BuildableName = "VideoTogether.app"
-            BlueprintName = "VideoTogether (macOS)"
-            ReferencedContainer = "container:VideoTogether.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

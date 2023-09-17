@@ -1,21 +1,114 @@
 setTimeout(() => {
+    function isM3U8(textContent) {
+        return textContent.trim().startsWith('#EXTM3U');
+    }
+
     if (sessionStorage.getItem("VideoTogetherSuperEasyShare") === 'true') {
+        function limitStream(stream, limit) {
+            const reader = stream.getReader();
+            let bytesRead = 0;
+            let isM3U8 = false;
+            let buffer = new Uint8Array();
+
+            return new ReadableStream({
+                async pull(controller) {
+                    const { value, done } = await reader.read();
+
+                    if (done) {
+                        controller.close();
+                        return;
+                    }
+
+                    if (!isM3U8 && buffer.length < 7) {
+                        const tmp = new Uint8Array(buffer.length + value.byteLength);
+                        tmp.set(buffer, 0);
+                        tmp.set(value, buffer.length);
+                        buffer = tmp;
+                    }
+
+                    if (!isM3U8 && buffer.length >= 7) {
+                        const textChunk = new TextDecoder().decode(buffer.slice(0, 7));
+                        if (textChunk === "#EXTM3U") {
+                            isM3U8 = true;
+                        }
+                    }
+
+                    if (!isM3U8 && bytesRead >= limit) {
+                        controller.close();
+                        return;
+                    }
+
+                    bytesRead += value.byteLength;
+                    controller.enqueue(value);
+                },
+
+                cancel(reason) {
+                    reader.cancel(reason);
+                }
+            });
+        }
         console.log("VideoTogetherSuperEasyShare");
         // do I need to overwrite setAttribute?
         Object.defineProperty(HTMLVideoElement.prototype, 'src', {
             set: function (v) {
-                fetch(v, { method: "HEAD" }).then(r => {
-                    this.setAttribute('src', r.url);
+                let realUrl = undefined
+                fetch(v, { method: "GET" }).then(r => {
+                    realUrl = r.url
+                    const limitedStream = limitStream(r.body, 1024); // Limit to 1024 bytes
+                    return new Response(limitedStream, { headers: r.headers });
+                }).then(r => r.text()).then(text => {
+                    if (isM3U8(text)) {
+                        const blob = new Blob([text], { type: 'application/vnd.apple.mpegurl' });
+                        const blobUrl = URL.createObjectURL(blob);
+                        const source = document.createElement("source");
+                        source.type = "application/vnd.apple.mpegurl"
+                        source.src = blobUrl;
+                        this.appendChild(source)
+                        this.removeAttribute('src')
+                    } else {
+                        this.setAttribute('src', realUrl);
+                    }
                 }).catch(e => {
-                    this.setAttribute('src', v);
+                    if (realUrl) {
+                        this.setAttribute('src', realUrl);
+                    } else {
+                        this.setAttribute('src', v);
+                    }
                 })
             },
             get: function () { return this.getAttribute('src') }
         })
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes) {
+                    mutation.addedNodes.forEach((node) => {
+                        let video = undefined
+                        if (node instanceof HTMLElement) {
+                            video = node.querySelector("video");
+                        }
+                        if (node instanceof HTMLVideoElement) {
+                            video = node;
+                        }
+                        if (video) {
+                            video.src = video.src
+                        }
+                    });
+                }
+            });
+        });
+        observer.observe(document, {
+            childList: true,
+            subtree: true,
+        });
     }
 }, 1);
 
 (() => {
+    function isM3U8(textContent) {
+        return textContent.trim().startsWith('#EXTM3U');
+    }
+
     let MessageType = {
         UpdateM3u8Files: 1001,
     }
@@ -122,10 +215,6 @@ setTimeout(() => {
                 }, 2000);
             }
         }
-    }
-
-    function isM3U8(textContent) {
-        return textContent.trim().startsWith('#EXTM3U');
     }
 
     function calculateM3U8Duration(textContent) {
