@@ -63,8 +63,8 @@ setTimeout(() => {
                         const source = document.createElement("source");
                         source.type = "application/vnd.apple.mpegurl"
                         source.src = blobUrl;
-                        this.appendChild(source)
                         this.removeAttribute('src')
+                        this.appendChild(source)
                     } else {
                         this.setAttribute('src', realUrl);
                     }
