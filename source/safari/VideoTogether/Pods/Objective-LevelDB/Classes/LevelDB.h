@@ -135,7 +135,7 @@ NSData   * NSDataFromLevelDBKey  (LevelDBKey * key);
  */
 - (void) deleteDatabaseFromDisk;
 
-- (void) compact;
+- (void) compact :(NSString *)beginKey :(NSString *)endKey;
 
 /**
  Close the database.

@@ -646,9 +646,12 @@ LevelDBOptions MakeLevelDBOptions() {
 
 #pragma mark - Bookkeeping
 
-- (void) compact {
-    leveldb::Slice begin("");
-    leveldb::Slice end("~");
+- (void) compact: (NSString *)beginKey :(NSString *)endKey {
+    std::string beginStr = std::string([beginKey UTF8String]);
+    std::string endStr = std::string([endKey UTF8String]);
+    
+    leveldb::Slice begin(beginStr);
+    leveldb::Slice end(endStr);
     db->CompactRange(&begin, &end);
 }
 

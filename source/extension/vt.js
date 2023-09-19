@@ -1753,7 +1753,9 @@
         IosStorageDeleteResult: 3006,
         IosStorageUsage: 3007,
         IosStorageUsageResult: 3008,
-        IosStorageClean: 3009
+        IosStorageCompact: 3009,
+        IosStorageDeletePrefix: 3010,
+        IosStorageDeletePrefixResult: 3011,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -1795,7 +1797,7 @@
 
             this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
             this.video_together_main_host = '{{{ {"":"./config/release_host","order":0} }}}';
-            this.video_together_backup_host = 'https://api.chizhou.in/';
+            this.video_together_backup_host = 'https://121.5.233.124/';
             this.video_tag_names = ["video", "bwp-video"]
 
             this.timer = 0

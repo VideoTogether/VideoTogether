@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1694950365
+// @version      1695129750
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -177,8 +177,8 @@
                     m3u8Id: m3u8Id,
                 })
                 res();
-            } catch {
-                rej();
+            } catch (e) {
+                rej(e);
             }
         })
     }
@@ -222,7 +222,28 @@
                 if (error === 0) {
                     res(0)
                 } else {
-                    rej()
+                    rej(error)
+                }
+            }
+        })
+    }
+
+    window.iosDeleteByPrefix = async function iosDeleteByPrefix(prefix) {
+        const queryId = generateUUID();
+        return new Promise((res, rej) => {
+            window.postMessage({
+                source: "VideoTogether",
+                type: 3010,
+                data: {
+                    prefix: prefix,
+                    id: queryId,
+                }
+            }, '*')
+            deleteByPrefix[queryId] = (error) => {
+                if (error === 0) {
+                    res(0)
+                } else {
+                    rej(error)
                 }
             }
         })
@@ -232,6 +253,7 @@
     let regexCallback = {}
     let deleteCallback = {}
     let saveCallback = {}
+    let deleteByPrefix = {}
 
     window.addEventListener('message', async e => {
         if (e.data.source == "VideoTogether") {
@@ -254,6 +276,11 @@
                 case 2008: {
                     deleteCallback[e.data.data.id](e.data.data.error);
                     deleteCallback[e.data.data.id] = undefined;
+                    break;
+                }
+                case 3011: {
+                    deleteByPrefix[e.data.data.id](e.data.data.error);
+                    deleteByPrefix[e.data.data.id] = undefined;
                     break;
                 }
                 case 2010: {
@@ -286,7 +313,7 @@
                 if (error === 0) {
                     res(true);
                 } else {
-                    rej();
+                    rej(error);
                 }
             }
         })
@@ -337,6 +364,7 @@
     }
 
     const m3u8Id = generateUUID()
+    const m3u8IdHead = `-m3u8Id-${m3u8Id}-end-`
     const downloadM3u8Url = vtArgM3u8Url;
     const numThreads = 10;
     let lastTotalBytes = 0;
@@ -346,12 +374,12 @@
     let successCount = 0;
     videoTogetherExtension.downloadPercentage = 0;
 
-    const m3u8Key = downloadM3u8Url + `#m3u8Id-${m3u8Id}`
+    const m3u8Key = m3u8IdHead + downloadM3u8Url
     if (downloadM3u8Url === undefined) {
         return;
     }
 
-    await saveM3u8(downloadM3u8Url + `#m3u8Id-${m3u8Id}`, vtArgM3u8Content)
+    await saveM3u8(m3u8Key, vtArgM3u8Content)
 
     const otherUrl = extractExtXKeyUrls(vtArgM3u8Content, downloadM3u8Url);
     const totalCount = urls.length + otherUrl.length;
@@ -412,7 +440,7 @@
         const url = urls[index];
         try {
             let blob = await fetchWithSpeedTracking(url);
-            await saveBlob(table, url + `#m3u8Id-${m3u8Id}`, blob);
+            await saveBlob(table, m3u8IdHead + url, blob);
             blob = null;
             successCount++;
             videoTogetherExtension.downloadPercentage = Math.floor((successCount / totalCount) * 100)
@@ -3001,7 +3029,9 @@
         IosStorageDeleteResult: 3006,
         IosStorageUsage: 3007,
         IosStorageUsageResult: 3008,
-        IosStorageClean: 3009
+        IosStorageCompact: 3009,
+        IosStorageDeletePrefix: 3010,
+        IosStorageDeletePrefixResult: 3011,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
@@ -3043,7 +3073,7 @@
 
             this.video_together_host = 'https://vt.panghair.com:5000/';
             this.video_together_main_host = 'https://vt.panghair.com:5000/';
-            this.video_together_backup_host = 'https://api.chizhou.in/';
+            this.video_together_backup_host = 'https://121.5.233.124/';
             this.video_tag_names = ["video", "bwp-video"]
 
             this.timer = 0
@@ -3061,7 +3091,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1694950365';
+            this.version = '1695129750';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

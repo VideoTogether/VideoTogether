@@ -503,6 +503,20 @@
                     getBrowser().runtime.sendMessage(JSON.stringify(e.data))
                     break;
                 }
+                case 3010: {
+                    needTrustPage();
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 3011,
+                            data: {
+                                id: e.data.data.id,
+                                error: response.error
+                            }
+                        })
+                    })
+                    break;
+                }
             }
         }
     });

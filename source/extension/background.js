@@ -10,13 +10,17 @@ function generateUUID() {
     );
 }
 
-async function cleanStorage() {
+async function cleanStorage(beginKey, endKey) {
     if (isSafari) {
         await browser.runtime.sendNativeMessage("VideoTogether.VideoTogether",
             {
                 source: "VideoTogether",
                 type: 3009,
                 id: generateUUID(),
+                data: {
+                    beginKey: beginKey,
+                    endKey: endKey
+                }
             })
     }
 }
@@ -67,6 +71,20 @@ async function iosStorageDeleteRaw(key) {
             id: generateUUID(),
             data: { key: key }
         })
+    return resp;
+}
+
+async function iosStorageDeleteByPrefix(prefix) {
+    const resp = await browser.runtime.sendNativeMessage("VideoTogether.VideoTogether",
+        {
+            source: "VideoTogether",
+            type: 3010,
+            id: generateUUID(),
+            data: { prefix: prefix }
+        })
+    if(resp.type != 3011){
+        throw 'delete by prefix failed'
+    }
     return resp;
 }
 
@@ -122,6 +140,8 @@ async function storageGet(key) {
 
 async function storageRemove(key) {
     if (isSafari) {
+        // safari should call removePrefix
+        return {}
         const value = await iosStorageGetRaw(key);
         const num = chunkNum(value)
         if (num <= 1) {
@@ -136,6 +156,15 @@ async function storageRemove(key) {
         return {}
     } else {
         await chrome.storage.local.remove([key])
+        return {}
+    }
+}
+
+async function storageRemoveByPrefix(prefix) {
+    if (isSafari) {
+        await iosStorageDeleteByPrefix(prefix);
+        return {}
+    } else {
         return {}
     }
 }
@@ -246,10 +275,10 @@ function regexMatchKeysDb(table, regex) {
             const objectStore = transaction.objectStore(table);
             // optimize by index
             let request = undefined
-            if (regex.startsWith('#m3u8Id-') && regex.endsWith('$')) {
+            if (regex.startsWith('^-m3u8Id-') && regex.endsWith('-end-')) {
                 console.log('optimize query for ', regex);
                 var index = objectStore.index("m3u8Id");
-                const m3u8Id = regex.slice(8, -1);
+                const m3u8Id = regex.slice(9, -5);
                 request = index.openCursor(IDBKeyRange.only(m3u8Id));
             } else {
                 request = objectStore.openCursor();
@@ -439,8 +468,13 @@ getBrowser().runtime.onMessage.addListener(function (msgText, sender, sendRespon
             }).catch(r => sendResponse({ error: r }))
             return true;
         case 3009:
-            cleanStorage().then(data => {
+            cleanStorage(msg.data.beginKey, msg.data.endKey).then(data => {
                 sendResponse(JSON.stringify(data))
+            }).catch(r => sendResponse({ error: r }));
+            return true;
+        case 3010:
+            storageRemoveByPrefix(msg.data.prefix).then(data => {
+                sendResponse({ error: 0 })
             }).catch(r => sendResponse({ error: r }));
             return true;
     }
