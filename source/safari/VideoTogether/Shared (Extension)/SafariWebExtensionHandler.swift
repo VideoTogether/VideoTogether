@@ -14,6 +14,13 @@ struct MessageData:Decodable{
     // storage.set and get
     let key: String?
     let value: String?
+    
+    // compact
+    let beginKey: String?
+    let endKey: String?
+    
+    //
+    let prefix: String?
 }
 
 struct ExtensionMessage:Decodable{
@@ -23,29 +30,70 @@ struct ExtensionMessage:Decodable{
     let data: MessageData?
 }
 
+func extractDBName(from string: String) -> String {
+    let pattern = ".*-m3u8Id-.*?-end-"
+    do {
+        let regex = try NSRegularExpression(pattern: pattern, options: [])
+        if let match = regex.firstMatch(in: string, options: [], range: NSRange(location: 0, length: string.count)) {
+            let range = match.range(at: 0)
+            let startIndex = string.index(string.startIndex, offsetBy: range.location)
+            let endIndex = string.index(startIndex, offsetBy: range.length)
+            return String(string[startIndex..<endIndex])
+        }
+    } catch {
+        print("Invalid regex: \(error.localizedDescription)")
+    }
+    return "db"
+}
+
 public class DB  {
     /* Shared Instance */
     static let store = DB()
     
-    let ldb:LevelDB
+    let lock = NSLock()
+    var ldb:LevelDB
+    
     init() {
         self.ldb = LevelDB.databaseInLibrary(withName: "db") as! LevelDB
     }
     
+    func getDB(key: String)->LevelDB {
+        lock.lock()
+        defer { lock.unlock() }
+        let dbName = extractDBName(from: key)
+        if(self.ldb.name != dbName){
+            self.ldb = LevelDB.databaseInLibrary(withName: dbName)  as! LevelDB
+        }
+        return self.ldb
+    }
+    
     func delete(key: String){
-        self.ldb.removeObject(forKey: key)
+        self.getDB(key: key).removeObject(forKey: key)
     }
     
     func put(key:String, value: String){
-        self.ldb.setObject(value, forKey: key)
+        self.getDB(key: key).setObject(value, forKey: key)
     }
     
     func get(key:String)->String{
-        let value =  self.ldb.object(forKey: key)
+        let value =  self.getDB(key: key).object(forKey: key)
+        if(value==nil){
+            return ""
+        }
         return value as! String
     }
-    func compact(){
-        self.ldb.compact()
+    
+    func compact(beginKey: String, endKey: String){
+        self.getDB(key: beginKey).compact(beginKey, endKey)
+    }
+
+    func deleteByPrefix(prefix:String){
+        let dbName = extractDBName(from: prefix)
+        if(prefix==dbName){
+            self.getDB(key: dbName).deleteDatabaseFromDisk()
+        }else{
+            self.getDB(key: prefix).removeAllObjects(withPrefix: prefix)
+        }
     }
 }
 
@@ -84,13 +132,13 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             case 3007:
                 func calculateDiskUsage() -> UInt64 {
                     let fileManager = FileManager.default
-                    guard let documentsURL = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first?.appendingPathComponent("db") else { return 0 }
+                    guard let libraryURL = fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first else { return 0 }
+
+                    var totalSize: UInt64 = 0
                     
-                    do {
-                        let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil, options: [])
+                    if let enumerator = fileManager.enumerator(at: libraryURL, includingPropertiesForKeys: [.fileSizeKey], options: [], errorHandler: nil) {
                         
-                        var totalSize: UInt64 = 0
-                        for fileURL in fileURLs {
+                        for case let fileURL as URL in enumerator {
                             do {
                                 let fileAttributes = try fileURL.resourceValues(forKeys: [.fileSizeKey])
                                 if let fileSize = fileAttributes.fileSize {
@@ -98,21 +146,23 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                                 }
                             } catch {
                                 // Handle error
+                                print("Error getting file attributes: \(error)")
                             }
                         }
-                        
-                        return totalSize
-                    } catch {
-                        // Handle error
-                        return 0
                     }
+
+                    return totalSize
                 }
                 let size = calculateDiskUsage()
                 respType = 3008
                 respData["usage"] = size
                 break;
             case 3009:
-                DB.store.compact()
+                DB.store.compact(beginKey: msg.data!.beginKey!, endKey:  msg.data!.endKey! )
+                break;
+            case 3010:
+                DB.store.deleteByPrefix(prefix: msg.data!.prefix!)
+                respType = 3011
                 break;
             default:
                 break;

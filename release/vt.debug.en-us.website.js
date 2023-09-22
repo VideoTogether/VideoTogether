@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1695129750
+// @version      1695382998
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -203,7 +203,12 @@
         })
     }
 
+    saveToIndexedDBThreads = 1;
     window.saveToIndexedDB = async function saveToIndexedDB(table, key, data) {
+        while (saveToIndexedDBThreads < 1) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+        saveToIndexedDBThreads--;
         const queryId = generateUUID();
         return new Promise((res, rej) => {
             data.saveTime = Date.now()
@@ -219,6 +224,7 @@
             }, '*')
             data = null;
             saveCallback[queryId] = (error) => {
+                saveToIndexedDBThreads++;
                 if (error === 0) {
                     res(0)
                 } else {
@@ -2615,15 +2621,6 @@
 
                     hide(this.confirmDownloadBtn);
                     show(select("#downloadProgress"));
-                    setInterval(() => {
-                        if (extension.downloadPercentage == 100) {
-                            hide(select("#downloadingAlert"))
-                            show(select("#downloadCompleted"))
-                        }
-                        select("#downloadStatus").innerText = extension.downloadPercentage + "% "
-                        select("#downloadSpeed").innerText = extension.downloadSpeedMb.toFixed(2) + "MB/s"
-                        select("#downloadProgressBar").value = extension.downloadPercentage
-                    }, 1000);
                 }
                 this.downloadBtn.onclick = () => {
                     setInterval(() => {
@@ -3073,7 +3070,7 @@
 
             this.video_together_host = 'http://127.0.0.1:5001/';
             this.video_together_main_host = 'https://vt.panghair.com:5000/';
-            this.video_together_backup_host = 'https://121.5.233.124/';
+            this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video"]
 
             this.timer = 0
@@ -3091,7 +3088,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1695129750';
+            this.version = '1695382998';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3551,7 +3548,7 @@
         }
 
         async testM3u8OrVideoUrl(testUrl) {
-            onsecuritypolicyviolation = (e) => {
+            const onsecuritypolicyviolation = (e) => {
                 if (e.blockedURI == testUrl) {
                     // m3u8 can always be fetched, because hls.js
                     this.m3u8UrlTestResult[testUrl] = 'video'
@@ -3592,7 +3589,7 @@
                     res(this.m3u8UrlTestResult[testUrl])
                 }
                 const abortController = new AbortController();
-                fetch(testUrl, { signal: abortController.signal }).then(response => {
+                VideoTogetherFetch(testUrl, { signal: abortController.signal }).then(response => {
                     const contentType = response.headers.get('Content-Type')
                     if (contentType.startsWith('video/')) {
                         rtnType('video');
@@ -3605,14 +3602,13 @@
                         if (isM3U8(txt)) {
                             rtnType('m3u8');
                         } else {
-                            rtnType('unknown');
+                            rtnType('video');
                         }
-                        res(this.m3u8UrlTestResult[testUrl]);
                     }).catch(e => {
                         if (testUrl.startsWith('blob')) {
                             rtnType('unknown');
                         } else {
-                            rej();
+                            rtnType('video');
                         }
                     }).finally(() => {
                         document.removeEventListener("securitypolicyviolation", onsecuritypolicyviolation)
@@ -3932,8 +3928,16 @@
                     break;
                 }
                 case MessageType.DownloadStatus: {
-                    this.downloadSpeedMb = data.downloadSpeedMb;
-                    this.downloadPercentage = data.downloadPercentage;
+                    extension.downloadSpeedMb = data.downloadSpeedMb;
+                    extension.downloadPercentage = data.downloadPercentage;
+                    if (extension.downloadPercentage == 100) {
+                        hide(select("#downloadingAlert"))
+                        show(select("#downloadCompleted"))
+                    }
+                    select("#downloadStatus").innerText = extension.downloadPercentage + "% "
+                    select("#downloadSpeed").innerText = extension.downloadSpeedMb.toFixed(2) + "MB/s"
+                    select("#downloadProgressBar").value = extension.downloadPercentage
+                    break;
                 }
                 default:
                     // console.info("unhandled message:", type, data)

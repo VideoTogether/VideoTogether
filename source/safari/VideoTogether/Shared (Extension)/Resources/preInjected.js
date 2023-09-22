@@ -106,6 +106,8 @@ setTimeout(() => {
     }
 }, 1);
 
+window.VideoTogetherFetch = window.fetch;
+
 (() => {
     function isM3U8(textContent) {
         return textContent.trim().startsWith('#EXTM3U');

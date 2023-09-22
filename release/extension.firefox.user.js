@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1694926457
+// @version      1695382998
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -24,7 +24,7 @@
 (async function () {
     let isDevelopment = false;
 
-    let version = '1694926457'
+    let version = '1695382998'
     let type = 'Firefox'
     function getBrowser() {
         switch (type) {
@@ -501,6 +501,20 @@
                 }
                 case 3009: {
                     getBrowser().runtime.sendMessage(JSON.stringify(e.data))
+                    break;
+                }
+                case 3010: {
+                    needTrustPage();
+                    getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
+                        window.postMessage({
+                            source: "VideoTogether",
+                            type: 3011,
+                            data: {
+                                id: e.data.data.id,
+                                error: response.error
+                            }
+                        })
+                    })
                     break;
                 }
             }
