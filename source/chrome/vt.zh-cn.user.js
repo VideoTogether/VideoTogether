@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1695382998
+// @version      1695462976
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -44,6 +44,9 @@
 
     function downloadEnabled() {
         try {
+            if(window.VideoTogetherDownload == 'disabled'){
+                return false;
+            }
             const type = VideoTogetherStorage.UserscriptType
             return parseInt(window.VideoTogetherStorage.LoaddingVersion) >= 1694758378
                 && (type == "Chrome" || type == "Safari" || type == "Firefox")
@@ -3088,7 +3091,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1695382998';
+            this.version = '1695462976';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

@@ -44,6 +44,9 @@
 
     function downloadEnabled() {
         try {
+            if(window.VideoTogetherDownload == 'disabled'){
+                return false;
+            }
             const type = VideoTogetherStorage.UserscriptType
             return parseInt(window.VideoTogetherStorage.LoaddingVersion) >= 1694758378
                 && (type == "Chrome" || type == "Safari" || type == "Firefox")

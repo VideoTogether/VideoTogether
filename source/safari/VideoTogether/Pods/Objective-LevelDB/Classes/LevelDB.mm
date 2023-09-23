@@ -77,7 +77,7 @@ NSString * const kLevelDBChangeValue        = @"value";
 NSString * const kLevelDBChangeKey          = @"key";
 
 LevelDBOptions MakeLevelDBOptions() {
-    return (LevelDBOptions) {true, true, false, false, true, 0, 0};
+    return (LevelDBOptions) {true, true, false, false, false, 0, 0};
 }
 
 @interface LDBSnapshot ()
