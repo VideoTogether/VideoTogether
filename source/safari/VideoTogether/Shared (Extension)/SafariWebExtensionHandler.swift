@@ -52,17 +52,19 @@ public class DB  {
     
     let lock = NSLock()
     var ldb:LevelDB
-    
+    var dbName: String
     init() {
         self.ldb = LevelDB.databaseInLibrary(withName: "db") as! LevelDB
+        dbName = "db"
     }
     
     func getDB(key: String)->LevelDB {
         lock.lock()
         defer { lock.unlock() }
-        let dbName = extractDBName(from: key)
-        if(self.ldb.name != dbName){
-            self.ldb = LevelDB.databaseInLibrary(withName: dbName)  as! LevelDB
+        let newDbName = extractDBName(from: key)
+        if(newDbName != dbName){
+            dbName = newDbName;
+            self.ldb = LevelDB.databaseInLibrary(withName: newDbName)  as! LevelDB
         }
         return self.ldb
     }
