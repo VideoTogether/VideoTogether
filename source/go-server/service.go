@@ -13,6 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var DownloadCount = 0
+
 type Sponsor struct {
 	Room          string `json:"room"`
 	BackgroundUrl string `json:"backgroundUrl"`
@@ -99,6 +101,9 @@ func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(ctx *VtContext
 }
 
 func (s *VideoTogetherService) CreateRoom(name, password string, hostId string) *Room {
+	if strings.HasPrefix(name, "download_") {
+		DownloadCount++
+	}
 	room := &Room{}
 	room.Name = name
 	room.password = password
@@ -169,6 +174,7 @@ type Statistics struct {
 	EasyShareFailedUrl          *[]string
 	TxtMsg                      int
 	InvalidBroadcast            int
+	DownloadCount               int
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -182,6 +188,7 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	}
 	stat.InvalidBroadcast = invalidBroadcast
 	stat.TxtMsg = TxtMsg
+	stat.DownloadCount = DownloadCount
 	stat.LoaddingTimeList = make([]float64, 0)
 	stat.MemberCountList = make([]int64, 10)
 	stat.D1 = updatePanic
