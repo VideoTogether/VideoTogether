@@ -2001,23 +2001,32 @@
                 });
             }
 
-            if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                return await window.fetch(url, {
-                    method: method,
-                    body: data == null ? undefined : JSON.stringify(data),
-                    signal: controller.signal
-                });
-            } else {
-                GetNativeFunction();
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                return await Global.NativeFetch.call(window, url, {
-                    method: method,
-                    body: data == null ? undefined : JSON.stringify(data),
-                    signal: controller.signal
-                });
+            try {
+                if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    return await window.fetch(url, {
+                        method: method,
+                        body: data == null ? undefined : JSON.stringify(data),
+                        signal: controller.signal
+                    });
+                } else {
+                    GetNativeFunction();
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    return await Global.NativeFetch.call(window, url, {
+                        method: method,
+                        body: data == null ? undefined : JSON.stringify(data),
+                        signal: controller.signal
+                    });
+                }
+            } catch (e) {
+                const host = new URL(extension.video_together_host);
+                const requestUrl = new URL(url);
+                if (host.hostname == requestUrl.hostname) {
+                    extension.httpSucc = false;
+                }
+                throw e;
             }
         }
 
