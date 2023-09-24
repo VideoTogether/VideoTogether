@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1695550213
+// @version      1695558283
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -89,7 +89,7 @@
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
 
-            if (line.startsWith('#EXT-X-KEY')) {
+            if (line.startsWith('#EXT-X-')) {
                 const match = line.match(/URI="(.*?)"/);
 
                 if (match && match[1]) {
@@ -3095,7 +3095,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1695550213';
+            this.version = '1695558283';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
