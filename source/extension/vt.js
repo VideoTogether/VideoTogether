@@ -2968,9 +2968,10 @@
                             }
                         }, 3000);
                     } else {
-                        if (this.video_together_host == this.video_together_backup_host) {
-                            this.SyncTimeWithServer(this.video_together_main_host);
-                        }
+                        // TODO
+                        // if (this.video_together_host == this.video_together_backup_host) {
+                        //     this.SyncTimeWithServer(this.video_together_main_host);
+                        // }
                     }
                 } catch { };
             }
