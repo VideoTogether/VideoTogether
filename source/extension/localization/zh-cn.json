@@ -67,5 +67,6 @@
     "MinuteLabel": "分",
     "SecondLabel": "秒",
     "LocalVideoListTitle": "本地视频列表",
-    "LocalVideoPlayerTitle": "本地视频播放器"
+    "LocalVideoPlayerTitle": "本地视频播放器",
+    "CopyrightNotice": "版权说明"
 }

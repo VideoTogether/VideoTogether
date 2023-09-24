@@ -66,6 +66,7 @@
     "HourLabel": "Hr",
     "MinuteLabel": "Min",
     "SecondLabel": "Sec",
-    "LocalVideoListTitle":"Local Videos",
-    "LocalVideoPlayerTitle":"Local Video Player"
+    "LocalVideoListTitle": "Local Videos",
+    "LocalVideoPlayerTitle": "Local Video Player",
+    "CopyrightNotice": "Copyright Notice"
 }

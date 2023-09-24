@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1695462976
+// @version      1695527274
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1884,8 +1884,12 @@
             <span id="downloadCompleted" style="color: green; display: none;">下载完成</span>
           </div>
         </div>
-        <a target="_blank" style="padding: 10px 5px;"
-          href="https://local.2gether.video/local_videos.zh-cn.html">查看已下载视频</a>
+        <div style="display: block;">
+          <a target="_blank" style="display: block;padding: 5px 5px;"
+            href="https://local.2gether.video/local_videos.zh-cn.html">查看已下载视频</a>
+          <a target="_blank" style="display: block;padding: 5px 5px;"
+            href="https://local.2gether.video/about.zh-cn.html">版权说明</a>
+        </div>
       </div>
       <div id="voicePannel" class="content" style="display: none;">
         <div id="videoVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
@@ -3091,7 +3095,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1695462976';
+            this.version = '1695527274';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
