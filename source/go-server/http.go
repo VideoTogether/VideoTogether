@@ -18,6 +18,9 @@ var adminPassword = randomString(30)
 var easyShareFailedList = make([]string, 0)
 var easyshareSucc = 0
 var easyshareErr = 0
+var confirmM3u8Download = 0
+var confirmVideoDownload = 0
+var downloadCompleted = 0
 
 func Init() {
 	vtVersion = randInt(0, 1e9)
@@ -242,6 +245,15 @@ func (h *slashFix) handleCounter(res http.ResponseWriter, req *http.Request) {
 		easyshareErr++
 		failedUrl := req.URL.Query().Get("failedUrl")
 		easyShareFailedList = append(easyShareFailedList, failedUrl)
+		break
+	case "confirm_m3u8_download":
+		confirmM3u8Download++
+		break
+	case "download_m3u8_completed":
+		downloadCompleted++
+		break
+	case "confirm_video_download":
+		confirmVideoDownload++
 		break
 	}
 }

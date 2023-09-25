@@ -175,6 +175,9 @@ type Statistics struct {
 	TxtMsg                      int
 	InvalidBroadcast            int
 	DownloadCount               int
+	DownloadCompleted           int
+	ConfirmM3u8Download         int
+	ConfirmVideoDownload        int
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -186,6 +189,9 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	if pwd == adminPassword {
 		stat.EasyShareFailedUrl = &easyShareFailedList
 	}
+	stat.DownloadCompleted = downloadCompleted
+	stat.ConfirmM3u8Download = confirmM3u8Download
+	stat.ConfirmVideoDownload = confirmVideoDownload
 	stat.InvalidBroadcast = invalidBroadcast
 	stat.TxtMsg = TxtMsg
 	stat.DownloadCount = DownloadCount

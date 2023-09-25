@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1695558283
+// @version      1695650900
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -44,7 +44,7 @@
 
     function downloadEnabled() {
         try {
-            if(window.VideoTogetherDownload == 'disabled'){
+            if (window.VideoTogetherDownload == 'disabled') {
                 return false;
             }
             const type = VideoTogetherStorage.UserscriptType
@@ -2609,13 +2609,22 @@
                 this.confirmDownloadBtn = wrapper.querySelector("#confirmDownloadBtn")
                 this.confirmDownloadBtn.onclick = () => {
                     if (extension.downloadM3u8UrlType == "video") {
+                        extension.Fetch(extension.video_together_host + "/beta/counter?key=confirm_video_download")
                         console.log(extension.downloadM3u8Url, extension.downloadM3u8UrlType)
+                        sendMessageToTop(MessageType.SetStorageValue, {
+                            key: "PublicNextDownload", value: {
+                                filename: document.title + '.mp4',
+                                url: extension.downloadM3u8Url
+                            }
+                        });
                         const a = document.createElement("a");
                         a.href = extension.downloadM3u8Url;
                         a.target = "_blank";
+                        a.download = document.title + ".mp4";
                         a.click();
                         return;
                     }
+                    extension.Fetch(extension.video_together_host + "/beta/counter?key=confirm_m3u8_download")
                     isDownloading = true;
                     const m3u8url = extension.downloadM3u8Url
                     sendMessageTo(extension.m3u8PostWindows[extension.GetM3u8WindowId(m3u8url)], MessageType.StartDownload, {
@@ -3095,7 +3104,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1695558283';
+            this.version = '1695650900';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3793,6 +3802,16 @@
                         return;
                     }
                     try {
+                        if (window.VideoTogetherStorage.PublicNextDownload.url == window.location.href
+                            && this.HasDownload != true) {
+                            const a = document.createElement("a");
+                            a.href = window.VideoTogetherStorage.PublicNextDownload.url;
+                            a.download = window.VideoTogetherStorage.PublicNextDownload.filename;
+                            a.click();
+                            this.HasDownload = true;
+                        }
+                    } catch { }
+                    try {
                         if (!this.RecoveryStateFromTab) {
                             this.RecoveryStateFromTab = true;
                             this.RecoveryState()
@@ -3947,6 +3966,10 @@
                     extension.downloadSpeedMb = data.downloadSpeedMb;
                     extension.downloadPercentage = data.downloadPercentage;
                     if (extension.downloadPercentage == 100) {
+                        if (this.downloadM3u8Completed != true) {
+                            this.downloadM3u8Completed = true;
+                            extension.Fetch(extension.video_together_host + "/beta/counter?key=download_m3u8_completed")
+                        }
                         hide(select("#downloadingAlert"))
                         show(select("#downloadCompleted"))
                     }
