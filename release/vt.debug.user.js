@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1695650900
+// @version      1695962125
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1870,7 +1870,7 @@
 
       <div id="downloadPannel" style="display: none;">
         <div>
-          <span id="downloadVideoInfo">检测视频视频中...</span>
+          <span id="downloadVideoInfo">检测视频中...</span>
           <button id="confirmDownloadBtn" style="display: none;" class="vt-btn vt-btn-primary" type="button">
             <span>确认并下载</span>
           </button>
@@ -2648,7 +2648,7 @@
                             select('#downloadVideoInfo').innerText = getDurationStr(extension.downloadDuration);
                         } else {
                             hide(this.confirmDownloadBtn);
-                            select('#downloadVideoInfo').innerText = "检测视频视频中..."
+                            select('#downloadVideoInfo').innerText = "检测视频中..."
                         }
                     }, 1000);
                     inDownload = true;
@@ -3104,7 +3104,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1695650900';
+            this.version = '1695962125';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

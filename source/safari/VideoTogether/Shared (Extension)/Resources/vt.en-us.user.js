@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1695462976
+// @version      1695650900
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -44,7 +44,7 @@
 
     function downloadEnabled() {
         try {
-            if(window.VideoTogetherDownload == 'disabled'){
+            if (window.VideoTogetherDownload == 'disabled') {
                 return false;
             }
             const type = VideoTogetherStorage.UserscriptType
@@ -89,7 +89,7 @@
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
 
-            if (line.startsWith('#EXT-X-KEY')) {
+            if (line.startsWith('#EXT-X-')) {
                 const match = line.match(/URI="(.*?)"/);
 
                 if (match && match[1]) {
@@ -1884,8 +1884,12 @@
             <span id="downloadCompleted" style="color: green; display: none;">Download complete</span>
           </div>
         </div>
-        <a target="_blank" style="padding: 10px 5px;"
-          href="https://local.2gether.video/local_videos.en-us.html">View downloaded videos</a>
+        <div style="display: block;">
+          <a target="_blank" style="display: block;padding: 5px 5px;"
+            href="https://local.2gether.video/local_videos.en-us.html">View downloaded videos</a>
+          <a target="_blank" style="display: block;padding: 5px 5px;"
+            href="https://local.2gether.video/about.en-us.html">Copyright Notice</a>
+        </div>
       </div>
       <div id="voicePannel" class="content" style="display: none;">
         <div id="videoVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
@@ -2605,13 +2609,22 @@
                 this.confirmDownloadBtn = wrapper.querySelector("#confirmDownloadBtn")
                 this.confirmDownloadBtn.onclick = () => {
                     if (extension.downloadM3u8UrlType == "video") {
+                        extension.Fetch(extension.video_together_host + "/beta/counter?key=confirm_video_download")
                         console.log(extension.downloadM3u8Url, extension.downloadM3u8UrlType)
+                        sendMessageToTop(MessageType.SetStorageValue, {
+                            key: "PublicNextDownload", value: {
+                                filename: document.title + '.mp4',
+                                url: extension.downloadM3u8Url
+                            }
+                        });
                         const a = document.createElement("a");
                         a.href = extension.downloadM3u8Url;
                         a.target = "_blank";
+                        a.download = document.title + ".mp4";
                         a.click();
                         return;
                     }
+                    extension.Fetch(extension.video_together_host + "/beta/counter?key=confirm_m3u8_download")
                     isDownloading = true;
                     const m3u8url = extension.downloadM3u8Url
                     sendMessageTo(extension.m3u8PostWindows[extension.GetM3u8WindowId(m3u8url)], MessageType.StartDownload, {
@@ -3091,7 +3104,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1695462976';
+            this.version = '1695650900';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3283,23 +3296,32 @@
                 });
             }
 
-            if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                return await window.fetch(url, {
-                    method: method,
-                    body: data == null ? undefined : JSON.stringify(data),
-                    signal: controller.signal
-                });
-            } else {
-                GetNativeFunction();
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                return await Global.NativeFetch.call(window, url, {
-                    method: method,
-                    body: data == null ? undefined : JSON.stringify(data),
-                    signal: controller.signal
-                });
+            try {
+                if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.fetch))) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    return await window.fetch(url, {
+                        method: method,
+                        body: data == null ? undefined : JSON.stringify(data),
+                        signal: controller.signal
+                    });
+                } else {
+                    GetNativeFunction();
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    return await Global.NativeFetch.call(window, url, {
+                        method: method,
+                        body: data == null ? undefined : JSON.stringify(data),
+                        signal: controller.signal
+                    });
+                }
+            } catch (e) {
+                const host = new URL(extension.video_together_host);
+                const requestUrl = new URL(url);
+                if (host.hostname == requestUrl.hostname) {
+                    extension.httpSucc = false;
+                }
+                throw e;
             }
         }
 
@@ -3780,6 +3802,16 @@
                         return;
                     }
                     try {
+                        if (window.VideoTogetherStorage.PublicNextDownload.url == window.location.href
+                            && this.HasDownload != true) {
+                            const a = document.createElement("a");
+                            a.href = window.VideoTogetherStorage.PublicNextDownload.url;
+                            a.download = window.VideoTogetherStorage.PublicNextDownload.filename;
+                            a.click();
+                            this.HasDownload = true;
+                        }
+                    } catch { }
+                    try {
                         if (!this.RecoveryStateFromTab) {
                             this.RecoveryStateFromTab = true;
                             this.RecoveryState()
@@ -3934,6 +3966,10 @@
                     extension.downloadSpeedMb = data.downloadSpeedMb;
                     extension.downloadPercentage = data.downloadPercentage;
                     if (extension.downloadPercentage == 100) {
+                        if (this.downloadM3u8Completed != true) {
+                            this.downloadM3u8Completed = true;
+                            extension.Fetch(extension.video_together_host + "/beta/counter?key=download_m3u8_completed")
+                        }
                         hide(select("#downloadingAlert"))
                         show(select("#downloadCompleted"))
                     }
@@ -4241,9 +4277,10 @@
                             }
                         }, 3000);
                     } else {
-                        if (this.video_together_host == this.video_together_backup_host) {
-                            this.SyncTimeWithServer(this.video_together_main_host);
-                        }
+                        // TODO
+                        // if (this.video_together_host == this.video_together_backup_host) {
+                        //     this.SyncTimeWithServer(this.video_together_main_host);
+                        // }
                     }
                 } catch { };
             }
