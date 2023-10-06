@@ -2421,7 +2421,7 @@
                                 return;
                             })
                         }
-                        if (d < 3) {
+                        if (d < 3 || d / data.duration < 0.03) {
                             m3u8Url = selected.m3u8Url;
                         }
                     } catch { }

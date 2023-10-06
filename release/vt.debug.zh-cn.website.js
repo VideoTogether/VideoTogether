@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1696572717
+// @version      1696582274
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3104,7 +3104,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1696572717';
+            this.version = '1696582274';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3707,7 +3707,7 @@
                                 return;
                             })
                         }
-                        if (d < 3) {
+                        if (d < 3 || d / data.duration < 0.03) {
                             m3u8Url = selected.m3u8Url;
                         }
                     } catch { }
