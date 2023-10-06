@@ -2491,12 +2491,14 @@
                     window.location = data.url;
                     let currentUrl = new URL(window.location);
                     let newUrl = new URL(data.url);
-                    currentUrl.hash = "";
-                    newUrl.hash = "";
-                    if (currentUrl.href == newUrl.href) {
-                        extension.url = data.url;
+                    if (newUrl.hash != "") {
+                        currentUrl.hash = "";
+                        newUrl.hash = "";
+                        if (currentUrl.href == newUrl.href) {
+                            extension.url = data.url;
+                            // window.location.reload();// for hash change
+                        }
                     }
-                    // window.location.reload();// for hash change
                     break;
                 case MessageType.ChangeVideoVolume:
                     this.ForEachVideo(video => {
