@@ -6,9 +6,6 @@
 
 [ English ] [ [中文](https://github.com/VideoTogether/VideoTogether/blob/main/README_zh.MD) ]
 
-Welcome to join our Telegram: https://t.me/videotogether_group
-
-
 ## Installation
 
 Please visit our website https://2gether.video/ for installation guide
