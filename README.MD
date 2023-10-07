@@ -1,5 +1,6 @@
 # <a name="0">VideoTogether</a>
 
+## VideoTogether is a browser extension let you watch videos in brower with friends at the same time. Chrome, Edge, Safari are supported.
 
 ## Visit http://2gether.video/ for more information
 
@@ -26,16 +27,4 @@ run `python script/build_extension.py` to build, the output directory is `./rele
 ### Service
 
 service code is in `source/go-server`
-
-
-
-### Sponsor
-
-
-
-<img src="https://user-images.githubusercontent.com/23057110/175770059-c8faad24-dc79-42da-9359-bf462eb7e884.png" width="300">
-
-
-
-<img width="290" alt="B54A4B2B-D606-4CD8-B5BF-0AA53CD1B010" src="https://user-images.githubusercontent.com/23057110/182861201-022c9460-9174-47ce-b8d8-3ab3ff737e25.png">
 
