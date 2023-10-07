@@ -1,4 +1,4 @@
-# <a name="0">VideoTogether</a>
+# VideoTogether
 
 ## VideoTogether is a browser extension let you watch videos in brower with friends at the same time. Chrome, Edge, Safari are supported.
 
