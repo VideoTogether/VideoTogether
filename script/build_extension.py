@@ -115,11 +115,12 @@ def build():
 
 
 if __name__ == '__main__':
-    build()
     global rootPath
     os.system(
         "git clone https://github.com/VideoTogether/localvideo {}/source/local".format(rootPath))
     os.system("cd {}/source/local && git pull".format(rootPath))
+
+    build()
 
     def cp(src, dst):
         shutil.copyfile(rootPath.joinpath(src),
