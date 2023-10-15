@@ -92,8 +92,6 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
 def build():
     global releasePath
     global rootPath
-    path = Path(os.path.realpath(sys.argv[0]))
-    rootPath = path.parent.parent
     sourcePath = rootPath.joinpath("source")
     releasePath = rootPath.joinpath("release")
     allSource = os.walk(sourcePath)
@@ -116,6 +114,8 @@ def build():
 
 if __name__ == '__main__':
     global rootPath
+    path = Path(os.path.realpath(sys.argv[0]))
+    rootPath = path.parent.parent
     os.system(
         "git clone https://github.com/VideoTogether/localvideo {}/source/local".format(rootPath))
     os.system("cd {}/source/local && git pull".format(rootPath))
