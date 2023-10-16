@@ -802,7 +802,7 @@
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
-            if (window.location.protocol != "https:") {
+            if (window.location.protocol != "https:" && window.location.protocol != 'file:') {
                 Voice.errorMessage = "{$only_support_https_website$}";
                 Voice.status = VoiceStatus.ERROR;
                 return;
