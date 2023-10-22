@@ -68,5 +68,8 @@
     "SecondLabel": "Sec",
     "LocalVideoListTitle": "Local Videos",
     "LocalVideoPlayerTitle": "Local Video Player",
-    "CopyrightNotice": "Copyright Notice"
+    "CopyrightNotice": "Copyright Notice",
+    "ExportAsfile": "Export as file(experimental)",
+    "FsNotSupport": "File System API is not supported in your browser, large video may not be able to export.",
+    "DownloadingFFmepg": "Downloading FFmpeg, please wait a few minutes."
 }

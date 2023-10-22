@@ -68,5 +68,8 @@
     "SecondLabel": "秒",
     "LocalVideoListTitle": "本地视频列表",
     "LocalVideoPlayerTitle": "本地视频播放器",
-    "CopyrightNotice": "版权说明"
+    "CopyrightNotice": "版权说明",
+    "ExportAsfile": "导出视频文件(实验性)",
+    "FsNotSupport": "你使用的浏览器不支持 File System API, 太大的视频可能会导出失败。",
+    "DownloadingFFmepg": "正在下载FFmpeg, 请等待几分钟"
 }
