@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1697955756
+// @version      1698072826
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2660,9 +2660,13 @@
                 }
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
-                        await navigator.clipboard.writeText("点击链接，和我一起看吧：<main_share_link> , 如果打不开可以尝试备用链接：<china_share_link>"
-                            .replace("<main_share_link>", extension.generateEasyShareLink())
-                            .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                        if (isWeb()) {
+                            await navigator.clipboard.writeText(extension.linkWithMemberState(window.location, extension.RoleEnum.Member, false))
+                        } else {
+                            await navigator.clipboard.writeText("点击链接，和我一起看吧：<main_share_link> , 如果打不开可以尝试备用链接：<china_share_link>"
+                                .replace("<main_share_link>", extension.generateEasyShareLink())
+                                .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                        }
                         popupError("复制成功，快去分享吧");
                     } catch {
                         popupError("复制失败");
@@ -2912,6 +2916,9 @@
             try {
                 speechSynthesis.getVoices();
             } catch { };
+            try {
+                sendMessageToTop(MessageType.SetStorageValue, { key: "PublicVtRoomPassword", value: { password: extension.password, name: extension.roomName } });
+            } catch { };
             this.Maximize();
             this.inputRoomName.disabled = true;
             hide(this.lobbyBtnGroup)
@@ -3104,7 +3111,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1697955756';
+            this.version = '1698072826';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3741,7 +3748,11 @@
                             show(windowPannel.easyShareCopyBtn);
                         } else {
                             this.currentM3u8Url = undefined;
-                            hide(windowPannel.easyShareCopyBtn);
+                            if (isWeb()) {
+                                show(windowPannel.easyShareCopyBtn);
+                            } else {
+                                hide(windowPannel.easyShareCopyBtn);
+                            }
                         }
                     } catch { };
                     try {
@@ -3799,6 +3810,7 @@
                     break;
                 }
                 case MessageType.SyncStorageValue: {
+                    const firstSync = (window.VideoTogetherSettingEnabled == undefined)
                     window.VideoTogetherStorage = data;
                     if (!this.isMain) {
                         return;
@@ -3824,7 +3836,7 @@
                             windowPannel.voiceSelect.value = data.PublicMessageVoice;
                         }
                     } catch { };
-                    if (!window.videoTogetherFlyPannel.disableDefaultSize && !window.VideoTogetherSettingEnabled) {
+                    if (!window.videoTogetherFlyPannel.disableDefaultSize && firstSync) {
                         if (data.MinimiseDefault) {
                             window.videoTogetherFlyPannel.Minimize(true);
                         } else {
@@ -3835,7 +3847,7 @@
                         sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
                     try {
-                        if (window.VideoTogetherSettingEnabled == undefined) {
+                        if (firstSync) {
                             if (!isWeb()) {
                                 window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
                                 show(select('#videoTogetherSetting'));
@@ -3851,7 +3863,12 @@
                     try {
                         dsply(select('#downloadBtn'), downloadEnabled() && !windowPannel.isInRoom)
                     } catch { }
-
+                    try {
+                        if (data.PublicVtRoomPassword != undefined && firstSync) {
+                            windowPannel.inputRoomName.value = data.PublicVtRoomPassword.name
+                            windowPannel.inputRoomPassword.value = data.PublicVtRoomPassword.password
+                        }
+                    } catch { }
                     window.VideoTogetherSettingEnabled = true;
                     break;
                 }
@@ -4593,18 +4610,15 @@
             } catch (e) { console.error(e); }
         }
 
-        linkWithMemberState(link) {
+        linkWithMemberState(link, newRole = undefined, expire = true) {
             let url = new URL(link);
             let tmpSearch = url.search;
             url.search = "";
-            if (link.toLowerCase().includes("youtube")) {
-                url.searchParams.set("app", "desktop");
-            }
             url.searchParams.set("VideoTogetherUrl", link);
             url.searchParams.set("VideoTogetherRoomName", this.roomName);
             url.searchParams.set("VideoTogetherPassword", this.password);
-            url.searchParams.set("VideoTogetherRole", this.role);
-            url.searchParams.set("VideoTogetherTimestamp", Date.now() / 1000);
+            url.searchParams.set("VideoTogetherRole", newRole ? newRole : this.role);
+            url.searchParams.set("VideoTogetherTimestamp", expire ? Date.now() / 1000 : 1e10);
             let urlStr = url.toString();
             if (tmpSearch.length > 1) {
                 urlStr = urlStr + "&" + tmpSearch.slice(1);

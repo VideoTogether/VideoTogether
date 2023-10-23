@@ -1374,9 +1374,13 @@
                 }
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
-                        await navigator.clipboard.writeText("{$easy_share_line_template$}"
-                            .replace("<main_share_link>", extension.generateEasyShareLink())
-                            .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                        if (isWeb()) {
+                            await navigator.clipboard.writeText(extension.linkWithMemberState(window.location, extension.RoleEnum.Member, false))
+                        } else {
+                            await navigator.clipboard.writeText("{$easy_share_line_template$}"
+                                .replace("<main_share_link>", extension.generateEasyShareLink())
+                                .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                        }
                         popupError("{$easy_share_link_copied$}");
                     } catch {
                         popupError("{$easy_share_link_copy_failed$}");
@@ -1625,6 +1629,9 @@
         InRoom() {
             try {
                 speechSynthesis.getVoices();
+            } catch { };
+            try {
+                sendMessageToTop(MessageType.SetStorageValue, { key: "PublicVtRoomPassword", value: { password: extension.password, name: extension.roomName } });
             } catch { };
             this.Maximize();
             this.inputRoomName.disabled = true;
@@ -2455,7 +2462,11 @@
                             show(windowPannel.easyShareCopyBtn);
                         } else {
                             this.currentM3u8Url = undefined;
-                            hide(windowPannel.easyShareCopyBtn);
+                            if (isWeb()) {
+                                show(windowPannel.easyShareCopyBtn);
+                            } else {
+                                hide(windowPannel.easyShareCopyBtn);
+                            }
                         }
                     } catch { };
                     try {
@@ -2513,6 +2524,7 @@
                     break;
                 }
                 case MessageType.SyncStorageValue: {
+                    const firstSync = (window.VideoTogetherSettingEnabled == undefined)
                     window.VideoTogetherStorage = data;
                     if (!this.isMain) {
                         return;
@@ -2538,7 +2550,7 @@
                             windowPannel.voiceSelect.value = data.PublicMessageVoice;
                         }
                     } catch { };
-                    if (!window.videoTogetherFlyPannel.disableDefaultSize && !window.VideoTogetherSettingEnabled) {
+                    if (!window.videoTogetherFlyPannel.disableDefaultSize && firstSync) {
                         if (data.MinimiseDefault) {
                             window.videoTogetherFlyPannel.Minimize(true);
                         } else {
@@ -2549,7 +2561,7 @@
                         sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
                     try {
-                        if (window.VideoTogetherSettingEnabled == undefined) {
+                        if (firstSync) {
                             if (!isWeb()) {
                                 window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
                                 show(select('#videoTogetherSetting'));
@@ -2565,7 +2577,12 @@
                     try {
                         dsply(select('#downloadBtn'), downloadEnabled() && !windowPannel.isInRoom)
                     } catch { }
-
+                    try {
+                        if (data.PublicVtRoomPassword != undefined && firstSync) {
+                            windowPannel.inputRoomName.value = data.PublicVtRoomPassword.name
+                            windowPannel.inputRoomPassword.value = data.PublicVtRoomPassword.password
+                        }
+                    } catch { }
                     window.VideoTogetherSettingEnabled = true;
                     break;
                 }
@@ -3307,18 +3324,15 @@
             } catch (e) { console.error(e); }
         }
 
-        linkWithMemberState(link) {
+        linkWithMemberState(link, newRole = undefined, expire = true) {
             let url = new URL(link);
             let tmpSearch = url.search;
             url.search = "";
-            if (link.toLowerCase().includes("youtube")) {
-                url.searchParams.set("app", "desktop");
-            }
             url.searchParams.set("VideoTogetherUrl", link);
             url.searchParams.set("VideoTogetherRoomName", this.roomName);
             url.searchParams.set("VideoTogetherPassword", this.password);
-            url.searchParams.set("VideoTogetherRole", this.role);
-            url.searchParams.set("VideoTogetherTimestamp", Date.now() / 1000);
+            url.searchParams.set("VideoTogetherRole", newRole ? newRole : this.role);
+            url.searchParams.set("VideoTogetherTimestamp", expire ? Date.now() / 1000 : 1e10);
             let urlStr = url.toString();
             if (tmpSearch.length > 1) {
                 urlStr = urlStr + "&" + tmpSearch.slice(1);
