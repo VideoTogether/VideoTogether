@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1698072826
+// @version      1698142947
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2916,9 +2916,6 @@
             try {
                 speechSynthesis.getVoices();
             } catch { };
-            try {
-                sendMessageToTop(MessageType.SetStorageValue, { key: "PublicVtRoomPassword", value: { password: extension.password, name: extension.roomName } });
-            } catch { };
             this.Maximize();
             this.inputRoomName.disabled = true;
             hide(this.lobbyBtnGroup)
@@ -3111,7 +3108,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1698072826';
+            this.version = '1698142947';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3862,12 +3859,6 @@
                     } catch (e) { }
                     try {
                         dsply(select('#downloadBtn'), downloadEnabled() && !windowPannel.isInRoom)
-                    } catch { }
-                    try {
-                        if (data.PublicVtRoomPassword != undefined && firstSync) {
-                            windowPannel.inputRoomName.value = data.PublicVtRoomPassword.name
-                            windowPannel.inputRoomPassword.value = data.PublicVtRoomPassword.password
-                        }
                     } catch { }
                     window.VideoTogetherSettingEnabled = true;
                     break;
