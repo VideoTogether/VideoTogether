@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1698142947
+// @version      1699527761
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1845,7 +1845,7 @@
           <span id="videoTogetherRoleText"></span>
           <span id="memberCount"></span>
         </div>
-        <div id="videoTogetherStatusText" style="height: 22.5px;"><a target='_blank' href='https://www.bilibili.com/video/BV1Kw411F7ev/'>下载功能介绍(求点赞)</a></div>
+        <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
         <div style="margin-bottom: 10px;">
           <span id="videoTogetherRoomNameLabel">房间</span>
           <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="请输入房间名">
@@ -3108,7 +3108,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1698142947';
+            this.version = '1699527761';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

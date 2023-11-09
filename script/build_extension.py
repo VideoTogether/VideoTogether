@@ -129,6 +129,8 @@ if __name__ == '__main__':
     def mv(src, dst):
         shutil.move(rootPath.joinpath(src),
                     rootPath.joinpath(dst))
+    def remove(src):
+        os.remove(rootPath.joinpath(src))
     mv("release/local_video_player.en-us.html",
        'source/local/local_video_player.en-us.html')
     mv("release/local_video_player.zh-cn.html",
@@ -137,9 +139,9 @@ if __name__ == '__main__':
     mv("release/local_videos.zh-cn.html", 'source/local/local_videos.zh-cn.html')
     mv("release/local_page.en-us.js", 'source/local/local_page.en-us.js')
     mv("release/local_page.zh-cn.js", 'source/local/local_page.zh-cn.js')
-    os.remove("release/local_video_player.html")
-    os.remove("release/local_videos.html")
-    os.remove("release/local_page.js")
+    remove("release/local_video_player.html")
+    remove("release/local_videos.html")
+    remove("release/local_page.js")
     shutil.copyfile(rootPath.joinpath("release/load.en-us.js"),
                     rootPath.joinpath("source/chrome/load.en-us.js"))
     shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
