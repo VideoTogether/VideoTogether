@@ -1961,7 +1961,7 @@
 
         generateEasyShareLink(china = false) {
             if (china) {
-                return `https://videotogether.gitee.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`
+                return ''
             } else {
                 return `https://2gether.video/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
             }

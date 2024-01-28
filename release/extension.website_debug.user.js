@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1695382998
+// @version      1706416707
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -24,7 +24,7 @@
 (async function () {
     let isDevelopment = false;
 
-    let version = '1695382998'
+    let version = '1706416707'
     let type = 'website_debug'
     function getBrowser() {
         switch (type) {
@@ -328,7 +328,7 @@
 
         if (isTrustPageCache == undefined) {
             const domains = [
-                '2gether.video', 'videotogether.github.io', 'videotogether.gitee.io'
+                '2gether.video', 'videotogether.github.io'
             ];
 
             const hostname = window.location.hostname;
@@ -389,8 +389,7 @@
                     break;
                 }
                 case 15: {
-                    if (window.location.hostname.endsWith("videotogether.gitee.io")
-                        || window.location.hostname.endsWith("videotogether.github.io")
+                    if (window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
                         || e.data.data.key.startsWith("Public")
                         || isWebsite) {

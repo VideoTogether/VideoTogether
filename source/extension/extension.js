@@ -328,7 +328,7 @@
 
         if (isTrustPageCache == undefined) {
             const domains = [
-                '2gether.video', 'videotogether.github.io', 'videotogether.gitee.io'
+                '2gether.video', 'videotogether.github.io'
             ];
 
             const hostname = window.location.hostname;
@@ -389,8 +389,7 @@
                     break;
                 }
                 case 15: {
-                    if (window.location.hostname.endsWith("videotogether.gitee.io")
-                        || window.location.hostname.endsWith("videotogether.github.io")
+                    if (window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
                         || e.data.data.key.startsWith("Public")
                         || isWebsite) {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1698142947
+// @version      1706416507
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3108,7 +3108,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1698142947';
+            this.version = '1706416507';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3247,7 +3247,7 @@
 
         generateEasyShareLink(china = false) {
             if (china) {
-                return `https://videotogether.gitee.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`
+                return ''
             } else {
                 return `https://2gether.video/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
             }
