@@ -1446,30 +1446,11 @@
                 hide(this.videoTogetherSetting);
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPasswordInput");
-                this.inputRoomPasswordButton = wrapper.querySelector("#videoTogetherShowPassword");
-                this.inputRoomPasswordShownIcon = wrapper.querySelector("#vt-pass-shown-icon");
-                this.inputRoomPasswordHiddenIcon = wrapper.querySelector("#vt-pass-hidden-icon");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
                 this.videoTogetherHeader = wrapper.querySelector("#videoTogetherHeader");
                 this.videoTogetherFlyPannel = wrapper.getElementById("videoTogetherFlyPannel");
                 this.videoTogetherSamllIcon = wrapper.getElementById("videoTogetherSamllIcon");
-
-                // Register password show/hide events.
-                this.inputRoomPasswordButton.onmousedown = () => {
-                    hide(this.inputRoomPasswordHiddenIcon);
-                    show(this.inputRoomPasswordShownIcon);
-                    this.inputRoomPassword.type = "text";
-                };
-                this.inputRoomPasswordButton.onmouseup = () => {
-                    hide(this.inputRoomPasswordShownIcon);
-                    show(this.inputRoomPasswordHiddenIcon);
-                    this.inputRoomPassword.type = "password";
-                };
-
-                // Password is hidden by default.
-                hide(this.inputRoomPasswordShownIcon);
-                // hide(this.inputRoomPasswordHiddenIcon);
 
                 this.volume = 1;
                 this.statusText = wrapper.querySelector("#videoTogetherStatusText");
@@ -1656,7 +1637,6 @@
             this.exitButton.style = "";
             hide(this.inputRoomPasswordLabel);
             hide(this.inputRoomPassword);
-            hide(this.inputRoomPasswordButton);
             this.inputRoomName.placeholder = "";
             this.isInRoom = true;
             hide(this.downloadBtn)
@@ -1669,7 +1649,6 @@
             this.inputRoomName.disabled = false;
             this.inputRoomPasswordLabel.style.display = "inline-block";
             this.inputRoomPassword.style.display = "inline-block";
-            this.inputRoomPasswordButton.style.display = "inline-block";
             this.inputRoomName.placeholder = "{$room_input_placeholder$}"
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
