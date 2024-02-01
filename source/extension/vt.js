@@ -1805,7 +1805,7 @@
             this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
             this.video_together_main_host = '{{{ {"":"./config/release_host","order":0} }}}';
             this.video_together_backup_host = 'https://api.chizhou.in/';
-            this.video_tag_names = ["video", "bwp-video"]
+            this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
             this.timer = 0
             this.roomName = ""

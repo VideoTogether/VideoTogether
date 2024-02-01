@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1706416507
+// @version      1706801957
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3091,7 +3091,7 @@
             this.video_together_host = 'https://vt.panghair.com:5000/';
             this.video_together_main_host = 'https://vt.panghair.com:5000/';
             this.video_together_backup_host = 'https://api.chizhou.in/';
-            this.video_tag_names = ["video", "bwp-video"]
+            this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
             this.timer = 0
             this.roomName = ""
@@ -3108,7 +3108,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1706416507';
+            this.version = '1706801957';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
