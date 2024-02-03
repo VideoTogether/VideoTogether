@@ -71,5 +71,6 @@
     "CopyrightNotice": "版权说明",
     "ExportAsfile": "导出视频文件(实验性)",
     "FsNotSupport": "你使用的浏览器不支持 File System API, 太大的视频可能会导出失败。",
-    "DownloadingFFmepg": "正在下载FFmpeg, 请等待几分钟"
+    "DownloadingFFmepg": "正在下载FFmpeg, 请等待几分钟",
+    "StorageAlert": "这里是临时的存储空间, 存储过多视频会导致浏览器崩溃, 请及时删除不需要的视频,如果要长期保存请在视频播放页导出视频文件"
 }

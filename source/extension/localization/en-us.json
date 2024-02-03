@@ -71,5 +71,6 @@
     "CopyrightNotice": "Copyright Notice",
     "ExportAsfile": "Export as file(experimental)",
     "FsNotSupport": "File System API is not supported in your browser, large video may not be able to export.",
-    "DownloadingFFmepg": "Downloading FFmpeg, please wait a few minutes."
+    "DownloadingFFmepg": "Downloading FFmpeg, please wait a few minutes.",
+    "StorageAlert": "This is a temporary storage space. Storing too many videos will cause the browser to crash. Please delete unnecessary videos in time. If you want to save it for a long time, please export the video file on the video playback page."
 }

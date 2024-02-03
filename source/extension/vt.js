@@ -1831,6 +1831,7 @@
             this.voiceVolume = null;
             this.videoVolume = null;
             this.m3u8Files = {};
+            this.m3u8DurationReCal = {};
             this.m3u8UrlTestResult = {};
             this.hasCheckedM3u8Url = {};
             this.m3u8PostWindows = {};
@@ -2604,6 +2605,29 @@
                 case MessageType.UpdateM3u8Files: {
                     data['m3u8Files'].forEach(m3u8 => {
                         try {
+                            function calculateM3U8Duration(textContent) {
+                                let totalDuration = 0;
+                                const lines = textContent.split('\n');
+
+                                for (let i = 0; i < lines.length; i++) {
+                                    if (lines[i].startsWith('#EXTINF:')) {
+                                        if (i + 1 >= lines.length || lines[i + 1].startsWith('#')) {
+                                            continue;
+                                        }
+                                        let durationLine = lines[i];
+                                        let durationParts = durationLine.split(':');
+                                        if (durationParts.length > 1) {
+                                            let durationValue = durationParts[1].split(',')[0];
+                                            let duration = parseFloat(durationValue);
+                                            if (!isNaN(duration)) {
+                                                totalDuration += duration;
+                                            }
+                                        }
+                                    }
+                                }
+                                return totalDuration;
+                            }
+
                             const cyrb53 = (str, seed = 0) => {
                                 let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
                                 for (let i = 0, ch; i < str.length; i++) {
@@ -2621,6 +2645,10 @@
                             if (m3u8.m3u8Url.startsWith("data:")) {
                                 m3u8.m3u8Url = `${cyrb53(m3u8.m3u8Url)}`;
                             }
+                            if (this.m3u8DurationReCal[m3u8.m3u8Url] == undefined) {
+                                this.m3u8DurationReCal[m3u8.m3u8Url] = calculateM3U8Duration(m3u8.m3u8Content);
+                            }
+                            m3u8.duration = this.m3u8DurationReCal[m3u8.m3u8Url];
                         } catch { }
                     })
                     this.m3u8Files[data['id']] = data['m3u8Files'];
