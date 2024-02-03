@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -19,10 +20,14 @@ type Sponsor struct {
 	Room          string `json:"room"`
 	BackgroundUrl string `json:"backgroundUrl"`
 }
+type Configuration struct {
+	Sponsors     map[string]Sponsor `json:"sponsors"`
+	BlockDomains map[string]bool    `json:"blockDomains"`
+}
 
 func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService {
 	s := &VideoTogetherService{
-		sponsors:       make(map[string]Sponsor),
+		config:         Configuration{},
 		rooms:          sync.Map{},
 		roomExpireTime: roomExpireTime,
 	}
@@ -31,7 +36,7 @@ func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService
 }
 
 type VideoTogetherService struct {
-	sponsors       map[string]Sponsor
+	config         Configuration
 	rooms          sync.Map
 	roomExpireTime time.Duration
 }
@@ -45,29 +50,40 @@ func (s *VideoTogetherService) Timestamp() float64 {
 }
 
 func (s *VideoTogetherService) LoadSponsorData() {
-	sponsorStr, err := os.ReadFile("./sponsor.json")
+	configStr, err := os.ReadFile("./config.json")
 	if err != nil {
 		log.Panic("Error when opening file: ", err)
 		return
 	}
-	var sponsorList []Sponsor
-	err = json.Unmarshal(sponsorStr, &sponsorList)
+	type ConfigRaw struct {
+		Sponsors     []Sponsor `json:"sponsors"`
+		BlockDomains []string
+	}
+	var configRaw ConfigRaw
+	err = json.Unmarshal(configStr, &configRaw)
 	if err != nil {
 		log.Panic("Error during Unmarshal(): ", err)
 		return
 	}
 	sponsorMap := make(map[string]Sponsor)
-	for _, sponsor := range sponsorList {
+	for _, sponsor := range configRaw.Sponsors {
 		sponsorMap[sponsor.Room] = sponsor
 	}
-	s.sponsors = sponsorMap
+	blockDomains := make(map[string]bool)
+	for _, domain := range configRaw.BlockDomains {
+		blockDomains[domain] = true
+	}
+	s.config.Sponsors = sponsorMap
+	// print config
+	log.Println("Sponsors: ", sponsorMap)
+	log.Println("BlockDomains: ", blockDomains)
 }
 
 func (s *VideoTogetherService) GetRoomBackgroundUrl(room string) string {
-	if sponsor, ok := s.sponsors[room]; ok {
+	if sponsor, ok := s.config.Sponsors[room]; ok {
 		return sponsor.BackgroundUrl
 	}
-	if sponsor, ok := s.sponsors[""]; ok {
+	if sponsor, ok := s.config.Sponsors[""]; ok {
 		return sponsor.BackgroundUrl
 	}
 	return ""
@@ -178,6 +194,7 @@ type Statistics struct {
 	DownloadCompleted           int
 	ConfirmM3u8Download         int
 	ConfirmVideoDownload        int
+	nonBlockDomainUrlCount      int
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -201,6 +218,8 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	stat.D2 = joinPanic
 	stat.EasyshareSucc = easyshareSucc
 	stat.EasyshareErr = easyshareErr
+	stat.nonBlockDomainUrlCount = 0
+
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {
@@ -208,6 +227,12 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 		} else {
 			if room.isEasyShare {
 				stat.EasyShareRoomCount++
+			}
+			u, err := url.Parse(room.Url)
+			if err == nil {
+				if _, ok := s.config.BlockDomains[u.Host]; !ok {
+					stat.nonBlockDomainUrlCount++
+				}
 			}
 			if room.M3u8Url != "" {
 				stat.EasyShareSupportedRoomCount++
