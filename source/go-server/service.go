@@ -194,7 +194,7 @@ type Statistics struct {
 	DownloadCompleted           int
 	ConfirmM3u8Download         int
 	ConfirmVideoDownload        int
-	nonBlockDomainUrlCount      int
+	NonBlockDomainUrlCount      int
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -218,7 +218,7 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	stat.D2 = joinPanic
 	stat.EasyshareSucc = easyshareSucc
 	stat.EasyshareErr = easyshareErr
-	stat.nonBlockDomainUrlCount = 0
+	stat.NonBlockDomainUrlCount = 0
 
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
@@ -231,7 +231,7 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 			u, err := url.Parse(room.Url)
 			if err == nil {
 				if _, ok := s.config.BlockDomains[u.Host]; !ok {
-					stat.nonBlockDomainUrlCount++
+					stat.NonBlockDomainUrlCount++
 				}
 			}
 			if room.M3u8Url != "" {
