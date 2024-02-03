@@ -74,6 +74,7 @@ func (s *VideoTogetherService) LoadSponsorData() {
 		blockDomains[domain] = true
 	}
 	s.config.Sponsors = sponsorMap
+	s.config.BlockDomains = blockDomains
 	// print config
 	log.Println("Sponsors: ", sponsorMap)
 	log.Println("BlockDomains: ", blockDomains)
@@ -230,8 +231,13 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 			}
 			u, err := url.Parse(room.Url)
 			if err == nil {
-				if _, ok := s.config.BlockDomains[u.Host]; !ok {
-					stat.NonBlockDomainUrlCount++
+				// get the top level domain of the url
+				strs := strings.Split(u.Host, ".")
+				if len(strs) > 1 {
+					domain := strs[len(strs)-2] + "." + strs[len(strs)-1]
+					if _, ok := s.config.BlockDomains[domain]; !ok {
+						stat.NonBlockDomainUrlCount++
+					}
 				}
 			}
 			if room.M3u8Url != "" {
