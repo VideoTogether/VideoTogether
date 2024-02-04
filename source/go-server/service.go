@@ -84,11 +84,11 @@ func (s *VideoTogetherService) GetRoomBackgroundUrl(ctx *VtContext, room string)
 	if sponsor, ok := s.config.Sponsors[room]; ok {
 		return sponsor.BackgroundUrl
 	}
-	if sponsor, ok := s.config.Sponsors[""]; ok {
-		return sponsor.BackgroundUrl
-	}
 	langBackgroundKey := "Background_" + ctx.Language
 	if sponsor, ok := s.config.Sponsors[langBackgroundKey]; ok {
+		return sponsor.BackgroundUrl
+	}
+	if sponsor, ok := s.config.Sponsors[""]; ok {
 		return sponsor.BackgroundUrl
 	}
 	return ""
