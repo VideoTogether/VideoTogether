@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1707045344
+// @version      1707046407
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1852,7 +1852,7 @@
         </div>
         <div>
           <span id="videoTogetherRoomPasswordLabel">密码</span>
-          <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="输入建房密码">
+          <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="输入建房密码">
         </div>
         <div>
           <div id="textMessageChat" style="display: none;">
@@ -2296,7 +2296,7 @@
   }
 
   #videoTogetherRoomNameInput,
-  #videoTogetherRoomPasswordInput {
+  #videoTogetherRoomPdIpt {
     width: 150px;
     height: auto;
     font-family: inherit;
@@ -2737,7 +2737,7 @@
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
                 hide(this.videoTogetherSetting);
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
-                this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPasswordInput");
+                this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPdIpt");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
                 this.videoTogetherHeader = wrapper.querySelector("#videoTogetherHeader");
@@ -3114,7 +3114,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1707045344';
+            this.version = '1707046407';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

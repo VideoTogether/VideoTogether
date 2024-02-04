@@ -1445,7 +1445,7 @@
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
                 hide(this.videoTogetherSetting);
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
-                this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPasswordInput");
+                this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPdIpt");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
                 this.videoTogetherHeader = wrapper.querySelector("#videoTogetherHeader");
