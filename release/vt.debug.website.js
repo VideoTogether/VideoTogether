@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1706973466
+// @version      1707045344
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2030,6 +2030,12 @@
 </div>
 
 <style>
+  :host {
+    all: initial;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+  }
+
   #videoTogetherFlyPannel {
     background-color: #ffffff !important;
     display: block;
@@ -3108,7 +3114,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1706973466';
+            this.version = '1707045344';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
