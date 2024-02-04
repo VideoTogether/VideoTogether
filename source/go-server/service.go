@@ -80,11 +80,15 @@ func (s *VideoTogetherService) LoadSponsorData() {
 	log.Println("BlockDomains: ", blockDomains)
 }
 
-func (s *VideoTogetherService) GetRoomBackgroundUrl(room string) string {
+func (s *VideoTogetherService) GetRoomBackgroundUrl(ctx *VtContext, room string) string {
 	if sponsor, ok := s.config.Sponsors[room]; ok {
 		return sponsor.BackgroundUrl
 	}
 	if sponsor, ok := s.config.Sponsors[""]; ok {
+		return sponsor.BackgroundUrl
+	}
+	langBackgroundKey := "Background_" + ctx.Language
+	if sponsor, ok := s.config.Sponsors[langBackgroundKey]; ok {
 		return sponsor.BackgroundUrl
 	}
 	return ""
@@ -94,7 +98,7 @@ func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(ctx *VtContext
 
 	room := s.QueryRoom(roomName)
 	if room == nil {
-		room = s.CreateRoom(roomName, roomPassword, userId)
+		room = s.CreateRoom(ctx, roomName, roomPassword, userId)
 	}
 
 	isNewUser := !room.QueryUser(userId)
@@ -117,7 +121,7 @@ func (s *VideoTogetherService) GetAndCheckUpdatePermissionsOfRoom(ctx *VtContext
 	return room, nil
 }
 
-func (s *VideoTogetherService) CreateRoom(name, password string, hostId string) *Room {
+func (s *VideoTogetherService) CreateRoom(ctx *VtContext, name, password string, hostId string) *Room {
 	if strings.HasPrefix(name, "download_") {
 		DownloadCount++
 	}
@@ -126,7 +130,7 @@ func (s *VideoTogetherService) CreateRoom(name, password string, hostId string) 
 	room.password = password
 	room.LastUpdateClientTime = s.Timestamp()
 	room.hostId = hostId
-	room.BackgroundUrl = s.GetRoomBackgroundUrl(name)
+	room.BackgroundUrl = s.GetRoomBackgroundUrl(ctx, name)
 	room.Uuid = uuid.New().String()
 	room.members = sync.Map{}
 	room.userIds = sync.Map{}
