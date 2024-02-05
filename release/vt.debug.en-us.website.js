@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1707046407
+// @version      1707141762
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1756,6 +1756,7 @@
                 this.minimized = false;
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
+                shadowWrapper.ontouchstart = (e) => { e.stopPropagation() }
                 let wrapper;
                 try {
                     wrapper = AttachShadow(shadowWrapper, { mode: "open" });
@@ -3114,7 +3115,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1707046407';
+            this.version = '1707141762';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

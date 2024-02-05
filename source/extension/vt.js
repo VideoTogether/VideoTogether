@@ -1264,6 +1264,7 @@
                 this.minimized = false;
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
+                shadowWrapper.ontouchstart = (e) => { e.stopPropagation() }
                 let wrapper;
                 try {
                     wrapper = AttachShadow(shadowWrapper, { mode: "open" });
