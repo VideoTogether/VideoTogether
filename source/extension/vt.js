@@ -3266,6 +3266,9 @@
                 m3u8UrlType = this.m3u8UrlTestResult[nativeSrc]
 
             } catch { };
+            if (isEasyShareMember()) {
+                m3u8Url = window.location.hash.substring(1);
+            }
             sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
                 password: data.password,
