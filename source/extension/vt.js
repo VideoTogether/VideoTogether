@@ -24,6 +24,17 @@
     // request can only be called up to 10 times in 5 seconds
     const periodSec = 5;
     const timeLimitation = 15;
+    const isMain = (window.self == window.top);
+    const isWrapperFrame = (window.location.href == 'http://127.0.0.1:8078/videotogether_wrapper.html');
+
+    class WrapperIframe {
+        constructor() {
+            this.frame = document.createElement('iframe');
+            this.frame.src = 'http://127.0.0.1:8078/videotogether_wrapper.html';
+            this.frame.style = 'position: absolute; left: 0px; top: 0px; width: 270px; height: 220px; background: transparent; border: none;';
+            (document.body || document.documentElement).appendChild(this.frame);
+        }
+    }
 
     function getDurationStr(duration) {
         try {
@@ -1189,7 +1200,10 @@
             this.sessionKey = "VideoTogetherFlySaveSessionKey";
             this.isInRoom = false;
 
-            this.isMain = (window.self == window.top);
+            this.isMain = isWrapperFrame;
+            if (isMain) {
+                new WrapperIframe();
+            }
             setInterval(() => {
                 if (getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
                     && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
@@ -1824,7 +1838,7 @@
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
             this.version = '{{timestamp}}';
-            this.isMain = (window.self == window.top);
+            this.isMain = isWrapperFrame;
             this.UserId = undefined;
 
             this.callbackMap = new Map;
