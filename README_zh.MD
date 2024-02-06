@@ -21,6 +21,8 @@ QQ群: 170200260
 
 ## 开发
 
+请查阅 [开发文档](./docs/zh-cn/development.md)
+
 ### 插件
 
 插件的核心代码在 `main/source/extension/vt.js`
