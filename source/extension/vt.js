@@ -25,12 +25,12 @@
     const periodSec = 5;
     const timeLimitation = 15;
     const isMain = (window.self == window.top);
-    const isWrapperFrame = (window.location.href == 'http://127.0.0.1:8078/videotogether_wrapper.html');
+    const isWrapperFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
 
     class WrapperIframe {
         constructor() {
             this.frame = document.createElement('iframe');
-            this.frame.src = 'http://127.0.0.1:8078/videotogether_wrapper.html';
+            this.frame.src = 'https://2gether.video/videotogether_wrapper.html';
             this.frame.style = 'position: absolute; left: 0px; top: 0px; width: 270px; height: 220px; background: transparent; border: none;';
             (document.body || document.documentElement).appendChild(this.frame);
         }
