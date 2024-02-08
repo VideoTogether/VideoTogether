@@ -79,7 +79,8 @@
         constructor() {
             this.frame = document.createElement('iframe');
             this.frame.src = 'https://2gether.video/videotogether_wrapper.html';
-            this.frame.style = 'position: absolute; right: 0px; bottom: 0px; width: 260px; height: 210px; background: transparent; border: none; z-index: 2147483647;';
+            this.frame.allow = 'microphone;';
+            this.frame.style = 'position: absolute; right: 0px; bottom: 0px; width: 262px; height: 212px; background: transparent; border: none; z-index: 2147483647;';
             (document.body || document.documentElement).appendChild(this.frame);
             window.addEventListener('message', (e) => {
                 if (e.data.source == WrapperIframeSource) {
