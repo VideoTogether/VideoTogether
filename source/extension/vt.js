@@ -9,7 +9,7 @@
 // @grant        none
 // ==/UserScript==
 
-(function () {
+(async function () {
     const language = '{$language$}'
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
     const vtMsgSrc = 'VideoTogether'
@@ -27,6 +27,7 @@
     const periodSec = 5;
     const timeLimitation = 15;
     const isTopFrame = (window.self == window.top);
+    const isVtFrameEnabled = true;
     const isWrapperFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
     const _topFrameState = {
         url: undefined,
@@ -39,10 +40,29 @@
         return _topFrameState;
     }
 
+    window.addEventListener('message', (e) => {
+        if (e.data.source == vtMsgSrc) {
+            switch (e.data.type) {
+                case 36: {
+                    _topFrameState.url = e.data.data.url;
+                    _topFrameState.title = e.data.data.title;
+                    break;
+                }
+            }
+        }
+    })
+    if(isVtFrameEnabled && isWrapperFrame){
+        while(true){
+            await new Promise(r => setTimeout(r, 1000))
+            if(_topFrameState.url != undefined){
+                break;
+            }
+        }
+    }
+
     function checkVtFrame(frame) {
         return frame != undefined && frame.src == 'https://2gether.video/videotogether_wrapper.html';
     }
-    const isVtFrameEnabled = true;
     const mouseMoveEvent = ['mousemove', 'touchmove', 'pointermove'];
     const mouseUpEvent = ['mouseup', 'touchend', 'pointerup'];
 
