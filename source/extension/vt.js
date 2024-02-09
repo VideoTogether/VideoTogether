@@ -29,35 +29,66 @@
     const isTopFrame = (window.self == window.top);
     const isVtFrameEnabled = true;
     const isWrapperFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
-    const _topFrameState = {
-        url: undefined,
-        title: undefined,
-    }
-    function getTopFrame(){
-        if(_topFrameState.url == undefined){
-            throw new Error("top frame url is undefined")
-        }
-        return _topFrameState;
-    }
-
-    window.addEventListener('message', (e) => {
-        if (e.data.source == vtMsgSrc) {
-            switch (e.data.type) {
-                case 36: {
-                    _topFrameState.url = e.data.data.url;
-                    _topFrameState.title = e.data.data.title;
-                    break;
+    class TopFrameState{
+        constructor(){
+            if(!isWrapperFrame){
+                return;
+            }
+            this._url = undefined;
+            this._title = undefined;
+            this._isEasySharePage = undefined;
+            this._initCallback = undefined;
+            window.addEventListener('message', (e) => {
+                if (e.data.source == vtMsgSrc) {
+                    switch (e.data.type) {
+                        case 36: {
+                            this._url = e.data.data.url;
+                            this._title = e.data.data.title;
+                            this._isEasySharePage = e.data.data.isEasySharePage;
+                            if(this._initCallback!=undefined){
+                                this._initCallback();
+                                this._initCallback = undefined;
+                            }
+                            break;
+                        }
+                    }
                 }
-            }
+            })
         }
-    })
-    if(isVtFrameEnabled && isWrapperFrame){
-        while(true){
-            await new Promise(r => setTimeout(r, 1000))
-            if(_topFrameState.url != undefined){
-                break;
+        async asyncInit(){
+            if(this.url != undefined){
+                return;
             }
+            return new Promise((res, rej) => {
+                if(this._initCallback!=undefined){
+                    rej("init callback is already set")
+                }
+                this._initCallback = res;
+            })
         }
+        get url(){
+            if(!isWrapperFrame){
+                return window.location.href;
+            }
+            return this._url;
+        }
+        get title(){
+            if(!isWrapperFrame){
+                return document.title;
+            }
+            return this._title;
+        }
+        get isEasySharePage(){
+            if(!isWrapperFrame){
+                return window.VideoTogetherEasyShareMemberSite;
+            }
+            return this._isEasySharePage;
+        }
+    }
+    const topFrameState = new TopFrameState();
+    await topFrameState.asyncInit();
+    function getTopFrame() {
+        return topFrameState;
     }
 
     function checkVtFrame(frame) {
@@ -80,7 +111,7 @@
             this.frame = document.createElement('iframe');
             this.frame.src = 'https://2gether.video/videotogether_wrapper.html';
             this.frame.allow = 'microphone;';
-            this.frame.style = 'position: absolute; right: 0px; bottom: 0px; width: 262px; height: 212px; background: transparent; border: none; z-index: 2147483647;';
+            this.frame.style = 'position: absolute; right: 0px; bottom: 0px; width: 262px; height: 212px; background: transparent; border: none; z-index: 2147483647; position:fixed;';
             (document.body || document.documentElement).appendChild(this.frame);
             window.addEventListener('message', (e) => {
                 if (e.data.source == WrapperIframeSource) {
@@ -356,7 +387,11 @@
 
     function isEasyShareMember() {
         try {
-            return window.VideoTogetherEasyShareMemberSite == true;
+            if (isVtFrameEnabled && isWrapperFrame) {
+                return topFrameState.isEasySharePage;
+            } else {
+                return window.VideoTogetherEasyShareMemberSite == true;
+            }
         } catch {
             return false;
         }
@@ -1920,6 +1955,7 @@
         ExtMessageTo: 34,
         InitMsgChan: 35,
         TopFrameState: 36,
+        RequestTopFrameState: 37,
 
         UpdateM3u8Files: 1001,
 
@@ -2795,7 +2831,7 @@
                     break;
                 }
                 case MessageType.UpdateM3u8Files: {
-                    if(isVtFrameEnabled && !isWrapperFrame){
+                    if (isVtFrameEnabled && !isWrapperFrame) {
                         sendMessageToVt(MessageType.UpdateM3u8Files, data);
                         break;
                     }
@@ -3164,10 +3200,11 @@
                 }
             } catch { };
             try {
-                if(isTopFrame){
-                    sendMessageToVt(MessageType.TopFrameState,{
+                if (isTopFrame) {
+                    sendMessageToVt(MessageType.TopFrameState, {
                         url: window.location.href,
                         title: document.title,
+                        isEasySharePage: window.VideoTogetherEasyShareMemberSite
                     })
                 }
             } catch { };
