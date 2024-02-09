@@ -2795,6 +2795,10 @@
                     break;
                 }
                 case MessageType.UpdateM3u8Files: {
+                    if(isVtFrameEnabled && !isWrapperFrame){
+                        sendMessageToVt(MessageType.UpdateM3u8Files, data);
+                        break;
+                    }
                     data['m3u8Files'].forEach(m3u8 => {
                         try {
                             function calculateM3U8Duration(textContent) {
