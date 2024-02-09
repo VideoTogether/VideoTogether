@@ -44,7 +44,26 @@ def isChanged(path, content: str):
             return True
         idx = idx+len(s)+len(timestamp_str)
     return False
+DELETE_BEGIN = '/*delete-this-begin*/'
+DELETE_END = '/*delete-this-end*/'
 
+def processImportContent(content):
+    while DELETE_BEGIN in content:
+        start = content.index(DELETE_BEGIN)
+        end = content.index(DELETE_END)+len(DELETE_END)
+        content = content[0:start] + content[end:]
+    return content
+
+def compileImport(sourceSubDir, extension, rawFilename, subNameList: list, content):
+    while '\nimport' in content:
+        start = content.index('\nimport')+1
+        end = content.index('\n', start+1)
+        importLine = content[start:end]
+        importFilename = importLine.split("'")[-2]
+        importContent = ReadSource(Path(sourceSubDir).joinpath(importFilename))
+        importContent = processImportContent(importContent)
+        content = content[0:start] + importContent + content[end:]
+    return content
 
 def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
     global rootPath
@@ -60,6 +79,8 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
                     for key in strings:
                         newContent = newContent.replace(
                             '{$'+key+'$}', strings[key])
+                newContent = compileImport(sourceSubDir, extension,
+                        rawFilename, newSubNameList, newContent)
                 compile(sourceSubDir, extension,
                         rawFilename, newSubNameList, newContent)
             return

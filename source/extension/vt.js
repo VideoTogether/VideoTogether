@@ -9,6 +9,8 @@
 // @grant        none
 // ==/UserScript==
 
+import { MessageType } from './src/MessageType.js'
+
 (async function () {
     const language = '{$language$}'
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
@@ -29,9 +31,9 @@
     const isTopFrame = (window.self == window.top);
     const isVtFrameEnabled = true;
     const isWrapperFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
-    class TopFrameState{
-        constructor(){
-            if(!isWrapperFrame){
+    class TopFrameState {
+        constructor() {
+            if (!isWrapperFrame) {
                 return;
             }
             this._url = undefined;
@@ -45,7 +47,7 @@
                             this._url = e.data.data.url;
                             this._title = e.data.data.title;
                             this._isEasySharePage = e.data.data.isEasySharePage;
-                            if(this._initCallback!=undefined){
+                            if (this._initCallback != undefined) {
                                 this._initCallback();
                                 this._initCallback = undefined;
                             }
@@ -55,31 +57,31 @@
                 }
             })
         }
-        async asyncInit(){
-            if(this.url != undefined){
+        async asyncInit() {
+            if (this.url != undefined) {
                 return;
             }
             return new Promise((res, rej) => {
-                if(this._initCallback!=undefined){
+                if (this._initCallback != undefined) {
                     rej("init callback is already set")
                 }
                 this._initCallback = res;
             })
         }
-        get url(){
-            if(!isWrapperFrame){
+        get url() {
+            if (!isWrapperFrame) {
                 return window.location.href;
             }
             return this._url;
         }
-        get title(){
-            if(!isWrapperFrame){
+        get title() {
+            if (!isWrapperFrame) {
                 return document.title;
             }
             return this._title;
         }
-        get isEasySharePage(){
-            if(!isWrapperFrame){
+        get isEasySharePage() {
+            if (!isWrapperFrame) {
                 return window.VideoTogetherEasyShareMemberSite;
             }
             return this._isEasySharePage;
@@ -1913,77 +1915,6 @@
             this.refreshTime = refreshTime;
             this.priority = priority;
         }
-    }
-
-    let MessageType = {
-        ActivatedVideo: 1,
-        ReportVideo: 2,
-        SyncMemberVideo: 3,
-        SyncMasterVideo: 4,
-        UpdateStatusText: 5,
-        JumpToNewPage: 6,
-        GetRoomData: 7,
-        ChangeVoiceVolume: 8,
-        ChangeVideoVolume: 9,
-
-        FetchRequest: 13,
-        FetchResponse: 14,
-
-        SetStorageValue: 15,
-        SyncStorageValue: 16,
-
-        ExtensionInitSuccess: 17,
-
-        SetTabStorage: 18,
-        SetTabStorageSuccess: 19,
-
-        UpdateRoomRequest: 20,
-        CallScheduledTask: 21,
-
-        RoomDataNotification: 22,
-        UpdateMemberStatus: 23,
-        TimestampV2Resp: 24,
-        // EasyShareCheckSucc: 25,
-        FetchRealUrlReq: 26,
-        FetchRealUrlResp: 27,
-        FetchRealUrlFromIframeReq: 28,
-        FetchRealUrlFromIframeResp: 29,
-        SendTxtMsg: 30,
-        GotTxtMsg: 31,
-        StartDownload: 32,
-        DownloadStatus: 33,
-        ExtMessageTo: 34,
-        InitMsgChan: 35,
-        TopFrameState: 36,
-        RequestTopFrameState: 37,
-
-        UpdateM3u8Files: 1001,
-
-        SaveIndexedDb: 2001,
-        ReadIndexedDb: 2002,
-        SaveIndexedDbResult: 2003,
-        ReadIndexedDbResult: 2004,
-        RegexMatchKeysDb: 2005,
-        RegexMatchKeysDbResult: 2006,
-        DeleteFromIndexedDb: 2007,
-        DeleteFromIndexedDbResult: 2008,
-        StorageEstimate: 2009,
-        StorageEstimateResult: 2010,
-        ReadIndexedDbSw: 2011,
-        ReadIndexedDbSwResult: 2012,
-        //2013 used
-
-        IosStorageSet: 3001,
-        IosStorageSetResult: 3002,
-        IosStorageGet: 3003,
-        IosStorageGetResult: 3004,
-        IosStorageDelete: 3005,
-        IosStorageDeleteResult: 3006,
-        IosStorageUsage: 3007,
-        IosStorageUsageResult: 3008,
-        IosStorageCompact: 3009,
-        IosStorageDeletePrefix: 3010,
-        IosStorageDeletePrefixResult: 3011,
     }
 
     let VIDEO_EXPIRED_SECOND = 10
