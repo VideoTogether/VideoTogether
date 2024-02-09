@@ -9,85 +9,34 @@
 // @grant        none
 // ==/UserScript==
 
+const language = '{$language$}'
+const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
+const vtMsgSrc = 'VideoTogether'
+
+const realUrlCache = {}
+const m3u8ContentCache = {}
+
+let inDownload = false;
+let isDownloading = false;
+
+let roomUuid = null;
+
+const lastRunQueue = []
+// request can only be called up to 10 times in 5 seconds
+const periodSec = 5;
+const timeLimitation = 15;
+const isTopFrame = (window.self == window.top);
+const isVtFrameEnabled = true;
+const isWrapperFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
+
 import { MessageType } from './src/MessageType.js'
+import { GetNativeFunction, Global } from './src/NativeMethods.js'
+import { PostMessage } from './src/PostMessage.js'
+import { TopFrameState } from './src/TopFrameState.js'
+const topFrameState = new TopFrameState();
+import { WrapperIframe } from './src/WrapperIframe.js'
 
 (async function () {
-    const language = '{$language$}'
-    const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
-    const vtMsgSrc = 'VideoTogether'
-
-    const realUrlCache = {}
-    const m3u8ContentCache = {}
-
-    let inDownload = false;
-    let isDownloading = false;
-
-    let roomUuid = null;
-
-    const lastRunQueue = []
-    // request can only be called up to 10 times in 5 seconds
-    const periodSec = 5;
-    const timeLimitation = 15;
-    const isTopFrame = (window.self == window.top);
-    const isVtFrameEnabled = true;
-    const isWrapperFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
-    class TopFrameState {
-        constructor() {
-            if (!isWrapperFrame) {
-                return;
-            }
-            this._url = undefined;
-            this._title = undefined;
-            this._isEasySharePage = undefined;
-            this._initCallback = undefined;
-            window.addEventListener('message', (e) => {
-                if (e.data.source == vtMsgSrc) {
-                    switch (e.data.type) {
-                        case 36: {
-                            this._url = e.data.data.url;
-                            this._title = e.data.data.title;
-                            this._isEasySharePage = e.data.data.isEasySharePage;
-                            if (this._initCallback != undefined) {
-                                this._initCallback();
-                                this._initCallback = undefined;
-                            }
-                            break;
-                        }
-                    }
-                }
-            })
-        }
-        async asyncInit() {
-            if (this.url != undefined) {
-                return;
-            }
-            return new Promise((res, rej) => {
-                if (this._initCallback != undefined) {
-                    rej("init callback is already set")
-                }
-                this._initCallback = res;
-            })
-        }
-        get url() {
-            if (!isWrapperFrame) {
-                return window.location.href;
-            }
-            return this._url;
-        }
-        get title() {
-            if (!isWrapperFrame) {
-                return document.title;
-            }
-            return this._title;
-        }
-        get isEasySharePage() {
-            if (!isWrapperFrame) {
-                return window.VideoTogetherEasyShareMemberSite;
-            }
-            return this._isEasySharePage;
-        }
-    }
-    const topFrameState = new TopFrameState();
     await topFrameState.asyncInit();
     function getTopFrame() {
         return topFrameState;
@@ -95,129 +44,6 @@ import { MessageType } from './src/MessageType.js'
 
     function checkVtFrame(frame) {
         return frame != undefined && frame.src == 'https://2gether.video/videotogether_wrapper.html';
-    }
-    const mouseMoveEvent = ['mousemove', 'touchmove', 'pointermove'];
-    const mouseUpEvent = ['mouseup', 'touchend', 'pointerup'];
-
-    const SelfWrapperState = {
-        positionX: 0,
-        positionY: 0,
-        sizeX: 0,
-        sizeY: 0,
-        movingOffsetX: 0,
-        movingOffsetY: 0,
-    }
-    const WrapperIframeSource = 'VT_WrapperIframe';
-    class WrapperIframe {
-        constructor() {
-            this.frame = document.createElement('iframe');
-            this.frame.src = 'https://2gether.video/videotogether_wrapper.html';
-            this.frame.allow = 'microphone;';
-            this.frame.style = 'position: absolute; right: 0px; bottom: 0px; width: 262px; height: 212px; background: transparent; border: none; z-index: 2147483647; position:fixed;';
-            (document.body || document.documentElement).appendChild(this.frame);
-            window.addEventListener('message', (e) => {
-                if (e.data.source == WrapperIframeSource) {
-                    switch (e.data.type) {
-                        case 'moving':
-                            this._move(e.data.data.x, e.data.data.y);
-                            break;
-                        case 'init':
-                            this._notifyState();
-                            break;
-                    }
-                }
-            })
-            window.addEventListener('resize', (e) => {
-                const left = window.getComputedStyle(this.frame).getPropertyValue('left').split('px')[0] * 1;
-                const top = window.getComputedStyle(this.frame).getPropertyValue('top').split('px')[0] * 1;
-                this._move(left, top)
-            })
-        }
-        _notifyState() {
-            const left = window.getComputedStyle(this.frame).getPropertyValue('left').split('px')[0] * 1;
-            const top = window.getComputedStyle(this.frame).getPropertyValue('top').split('px')[0] * 1;
-            const width = window.getComputedStyle(this.frame).getPropertyValue('width').split('px')[0] * 1;
-            const height = window.getComputedStyle(this.frame).getPropertyValue('height').split('px')[0] * 1;
-            PostMessage(this.frame.contentWindow, {
-                source: WrapperIframeSource,
-                type: 'state',
-                data: {
-                    left: left,
-                    top: top,
-                    width: width,
-                    height: height
-                }
-            });
-        }
-
-        _move(screenX, screenY) {
-            screenX = Math.max(0, Math.min(screenX, window.innerWidth - this.frame.offsetWidth));
-            screenY = Math.max(0, Math.min(screenY, window.innerHeight - this.frame.offsetHeight));
-            this.frame.style.left = `${screenX}px`;
-            this.frame.style.top = `${screenY}px`;
-            this._notifyState();
-        }
-        static Moving(e) {
-            let targetX;
-            let targetY;
-
-            if (e.screenX) {
-                targetX = SelfWrapperState.movingOffsetX + e.screenX;
-                targetY = SelfWrapperState.movingOffsetY + e.screenY;
-            } else {
-                targetX = SelfWrapperState.movingOffsetX + e.touches[0].screenX;
-                targetY = SelfWrapperState.movingOffsetY + e.touches[0].screenY;
-            }
-            PostMessage(window.parent, {
-                source: WrapperIframeSource,
-                type: 'moving',
-                data: {
-                    x: targetX,
-                    y: targetY
-                }
-            })
-        }
-        static stopMoving(e) {
-            mouseMoveEvent.forEach(function (event) {
-                document.removeEventListener(event, WrapperIframe.Moving);
-            })
-        }
-        static startMoving(e) {
-            if (e.screenX) {
-                SelfWrapperState.movingOffsetX = SelfWrapperState.positionX - e.screenX;
-                SelfWrapperState.movingOffsetY = SelfWrapperState.positionY - e.screenY;
-            } else {
-                SelfWrapperState.movingOffsetX = SelfWrapperState.positionX - e.touches[0].screenX;
-                SelfWrapperState.movingOffsetY = SelfWrapperState.positionY - e.touches[0].screenY;
-            }
-            mouseMoveEvent.forEach(event => {
-                document.addEventListener(event, WrapperIframe.Moving);
-            })
-            mouseUpEvent.forEach(event => {
-                document.addEventListener(event, WrapperIframe.stopMoving);
-            })
-        }
-        static onStateChange(data) {
-            SelfWrapperState.positionX = data.left;
-            SelfWrapperState.positionY = data.top;
-            SelfWrapperState.sizeX = data.width;
-            SelfWrapperState.sizeY = data.height;
-        }
-        static InitState() {
-            window.addEventListener('message', (e) => {
-                if (e.data.source == WrapperIframeSource) {
-                    switch (e.data.type) {
-                        case 'state':
-                            WrapperIframe.onStateChange(e.data.data);
-                            break;
-                    }
-                }
-            })
-            PostMessage(window.parent, {
-                source: WrapperIframeSource,
-                type: 'init',
-            })
-        }
     }
     WrapperIframe.InitState();
 
@@ -528,41 +354,12 @@ import { MessageType } from './src/MessageType.js'
         }, 1));
     }
 
-    const Global = {
-        inited: false,
-        NativePostMessageFunction: null,
-        NativeAttachShadow: null,
-        NativeFetch: null
-    }
-
     function AttachShadow(e, options) {
         try {
             return e.attachShadow(options);
         } catch (err) {
             GetNativeFunction();
             return Global.NativeAttachShadow.call(e, options);
-        }
-    }
-
-    function GetNativeFunction() {
-        if (Global.inited) {
-            return;
-        }
-        Global.inited = true;
-        let temp = document.createElement("iframe");
-        hide(temp);
-        document.body.append(temp);
-        Global.NativePostMessageFunction = temp.contentWindow.postMessage;
-        Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
-        Global.NativeFetch = temp.contentWindow.fetch;
-    }
-
-    function PostMessage(window, data) {
-        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
-            window.postMessage(data, "*");
-        } else {
-            GetNativeFunction();
-            Global.NativePostMessageFunction.call(window, data, "*");
         }
     }
 
@@ -641,7 +438,7 @@ import { MessageType } from './src/MessageType.js'
                 "lastUpdateClientTime": localTimestamp,
                 "duration": duration,
                 "protected": isRoomProtected(),
-                "videoTitle": extension.isMain ? document.title : extension.videoTitle,
+                "videoTitle": extension.isMain ? topFrameState.title : extension.videoTitle,
                 "sendLocalTimestamp": Date.now() / 1000,
                 "m3u8Url": m3u8Url
             }
@@ -1547,14 +1344,14 @@ import { MessageType } from './src/MessageType.js'
                         console.log(extension.downloadM3u8Url, extension.downloadM3u8UrlType)
                         sendMessageToVt(MessageType.SetStorageValue, {
                             key: "PublicNextDownload", value: {
-                                filename: document.title + '.mp4',
+                                filename: topFrameState.title + '.mp4',
                                 url: extension.downloadM3u8Url
                             }
                         });
                         const a = document.createElement("a");
                         a.href = extension.downloadM3u8Url;
                         a.target = "_blank";
-                        a.download = document.title + ".mp4";
+                        a.download = topFrameState.title + ".mp4";
                         a.click();
                         return;
                     }
@@ -1565,7 +1362,7 @@ import { MessageType } from './src/MessageType.js'
                         m3u8Url: m3u8url,
                         m3u8Content: extension.GetM3u8Content(m3u8url),
                         urls: extension.GetAllM3u8SegUrls(m3u8url),
-                        title: document.title,
+                        title: topFrameState.title,
                         pageUrl: window.location.href
                     });
 
@@ -2349,7 +2146,7 @@ import { MessageType } from './src/MessageType.js'
                 data: data,
                 context: {
                     tempUser: this.tempUser,
-                    videoTitle: this.isMain ? document.title : this.videoTitle,
+                    videoTitle: this.isMain ? topFrameState.title : this.videoTitle,
                     voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
                     VideoTogetherStorage: window.VideoTogetherStorage,
                     timeOffset: this.timeOffset,
@@ -3682,7 +3479,7 @@ import { MessageType } from './src/MessageType.js'
             apiUrl.searchParams.set("duration", duration);
             apiUrl.searchParams.set("tempUser", this.tempUser);
             apiUrl.searchParams.set("protected", isRoomProtected());
-            apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
+            apiUrl.searchParams.set("videoTitle", this.isMain ? topFrameState.title : this.videoTitle);
             apiUrl.searchParams.set("m3u8Url", emptyStrIfUdf(m3u8Url));
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
