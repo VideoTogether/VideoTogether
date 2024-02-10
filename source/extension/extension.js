@@ -463,6 +463,7 @@
                     if (e.data.data.isVtFrame) {
                         pageIdMap['vtFrame'] = e.source;
                     }
+                    break;
                 }
                 case 2001: {
                     getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
