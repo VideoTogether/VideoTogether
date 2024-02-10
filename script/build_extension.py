@@ -55,11 +55,15 @@ def processImportContent(content):
     return content
 
 def compileImport(sourceSubDir, extension, rawFilename, subNameList: list, content):
+    importedFiles = []
     while '\nimport' in content:
         start = content.index('\nimport')+1
         end = content.index('\n', start+1)
         importLine = content[start:end]
         importFilename = importLine.split("'")[-2]
+        if importFilename in importedFiles:
+            continue
+        importedFiles.append(importFilename)
         importContent = ReadSource(Path(sourceSubDir).joinpath(importFilename))
         importContent = processImportContent(importContent)
         content = content[0:start] + importContent + content[end:]
@@ -180,6 +184,8 @@ if __name__ == '__main__':
                     rootPath.joinpath("source/chrome/vt.en-us.user.js"))
     shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
                     rootPath.joinpath("source/chrome/vt.zh-cn.user.js"))
+    cp("release/vt.frame.en-us.user.js", "source/chrome/vt.frame.en-us.user.js")
+    cp("release/vt.frame.zh-cn.user.js", "source/chrome/vt.frame.zh-cn.user.js")
     # shutil.copyfile(rootPath.joinpath("release/vt.debug.en-us.user.js"),
     #                 rootPath.joinpath("source/chrome/vt.debug.en-us.user.js"))
     # shutil.copyfile(rootPath.joinpath("release/vt.debug.zh-cn.user.js"),

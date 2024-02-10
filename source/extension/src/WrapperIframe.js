@@ -1,3 +1,6 @@
+/*delete-this-begin*/
+import { PostMessage } from './PostMessage.js';
+/*delete-this-end*/
 
 const mouseMoveEvent = ['mousemove', 'touchmove', 'pointermove'];
 const mouseUpEvent = ['mouseup', 'touchend', 'pointerup'];

@@ -26,9 +26,11 @@ const lastRunQueue = []
 const periodSec = 5;
 const timeLimitation = 15;
 const isTopFrame = (window.self == window.top);
-const isVtFrameEnabled = true;
+const isWrapperFrameEnabled = (`{{{ {"": "./config/false", "frame": "./config/true","order":98} }}}`== 'true');
 const isWrapperFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
+const isVtFrame = isWrapperFrameEnabled ? isWrapperFrame : isTopFrame;
 
+import { hide, show } from './src/HtmlUtils.js'
 import { MessageType } from './src/MessageType.js'
 import { GetNativeFunction, Global } from './src/NativeMethods.js'
 import { PostMessage } from './src/PostMessage.js'
@@ -215,7 +217,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
     function isEasyShareMember() {
         try {
-            if (isVtFrameEnabled && isWrapperFrame) {
+            if (isWrapperFrameEnabled && isWrapperFrame) {
                 return topFrameState.isEasySharePage;
             } else {
                 return window.VideoTogetherEasyShareMemberSite == true;
@@ -299,14 +301,6 @@ import { WrapperIframe } from './src/WrapperIframe.js'
         return e;
     }
 
-    function hide(e) {
-        if (e) e.style.display = 'none';
-    }
-
-    function show(e) {
-        if (e) e.style.display = null;
-    }
-
     function isVideoLoadded(video) {
         try {
             if (isNaN(video.readyState)) {
@@ -380,7 +374,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
     }
 
     async function sendMessageToVt(type, data) {
-        if (isVtFrameEnabled) {
+        if (isWrapperFrameEnabled) {
             PostMessage(window, {
                 source: vtMsgSrc,
                 type: MessageType.ExtMessageTo,
@@ -1202,8 +1196,8 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             this.sessionKey = "VideoTogetherFlySaveSessionKey";
             this.isInRoom = false;
 
-            this.isMain = isWrapperFrame;
-            if (isTopFrame) {
+            this.isMain = isVtFrame;
+            if (isTopFrame && isWrapperFrameEnabled) {
                 new WrapperIframe();
             }
             setInterval(() => {
@@ -1772,7 +1766,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
             this.version = '{{timestamp}}';
-            this.isMain = isWrapperFrame;
+            this.isMain = isVtFrame;
             this.UserId = undefined;
 
             this.callbackMap = new Map;
@@ -2559,7 +2553,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     break;
                 }
                 case MessageType.UpdateM3u8Files: {
-                    if (isVtFrameEnabled && !isWrapperFrame) {
+                    if (isWrapperFrameEnabled && !isWrapperFrame) {
                         sendMessageToVt(MessageType.UpdateM3u8Files, data);
                         break;
                     }
@@ -2688,11 +2682,6 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     select("#downloadStatus").innerText = extension.downloadPercentage + "% "
                     select("#downloadSpeed").innerText = extension.downloadSpeedMb.toFixed(2) + "MB/s"
                     select("#downloadProgressBar").value = extension.downloadPercentage
-                    break;
-                }
-                case MessageType.TopFrameState: {
-                    _topFrameState.url = data.url;
-                    _topFrameState.title = data.title;
                     break;
                 }
                 default:
@@ -3529,8 +3518,10 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
 
                 target.videoTogetherMoving = true;
-                WrapperIframe.startMoving(e);
-                return;
+                if (isWrapperFrame) {
+                    WrapperIframe.startMoving(e);
+                    return;
+                }
                 if (e.clientX) {
                     target.oldX = e.clientX;
                     target.oldY = e.clientY;

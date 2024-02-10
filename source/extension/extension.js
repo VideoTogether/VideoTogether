@@ -438,7 +438,7 @@
                     break;
                 }
                 case 34: {
-                    if(window.top != window.self){
+                    if (window.top != window.self) {
                         window.top.postMessage(e.data, "*");
                         return;
                     }
@@ -648,7 +648,8 @@
                 }
             });
             if (isDevelopment) {
-                script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
+                const isWrapperFrame = await getGM().getValue('WrapperFrame') != false;
+                script.src = getBrowser().runtime.getURL(`vt${isWrapperFrame ? ".frame" : ""}.${language}.user.js`);
             } else {
                 script.src = getBrowser().runtime.getURL(`load.${language}.js`);
             }
