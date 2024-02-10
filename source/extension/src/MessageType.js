@@ -69,6 +69,6 @@ const MessageType = {
     IosStorageDeletePrefixResult: 3011,
 }
 
-/*delete-this-begin*/
+//delete-this-begin
 module.exports = { MessageType };
-/*delete-this-end*/
+//delete-this-end

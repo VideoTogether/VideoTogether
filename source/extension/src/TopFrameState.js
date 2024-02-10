@@ -54,6 +54,6 @@ class TopFrameState {
         return this._isEasySharePage;
     }
 }
-/*delete-this-begin*/
+//delete-this-begin
 module.exports = { TopFrameState };
-/*delete-this-end*/
+//delete-this-end

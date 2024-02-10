@@ -9,6 +9,8 @@
 // @grant        none
 // ==/UserScript==
 
+//delete-this-begin//delete-this-end(function () {
+
 const language = '{$language$}'
 const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
 const vtMsgSrc = 'VideoTogether'
@@ -3602,3 +3604,5 @@ import { WrapperIframe } from './src/WrapperIframe.js'
         document.querySelector("#videoTogetherLoading").remove()
     } catch { }
 })()
+
+//delete-this-begin//delete-this-end})()

@@ -6,6 +6,6 @@ function show(e) {
     if (e) e.style.display = null;
 }
 
-/*delete-this-begin*/
+//delete-this-begin
 module.exports = { hide, show };
-/*delete-this-end*/
+//delete-this-end

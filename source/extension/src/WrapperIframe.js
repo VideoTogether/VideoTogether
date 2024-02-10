@@ -1,6 +1,6 @@
-/*delete-this-begin*/
+//delete-this-begin
 import { PostMessage } from './PostMessage.js';
-/*delete-this-end*/
+//delete-this-end
 
 const mouseMoveEvent = ['mousemove', 'touchmove', 'pointermove'];
 const mouseUpEvent = ['mouseup', 'touchend', 'pointerup'];
@@ -126,6 +126,6 @@ class WrapperIframe {
     }
 }
 
-/*delete-this-begin*/
+//delete-this-begin
 module.exports = { WrapperIframe };
-/*delete-this-end*/
+//delete-this-end

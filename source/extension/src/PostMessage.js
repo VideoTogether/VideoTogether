@@ -9,6 +9,6 @@ function PostMessage(window, data) {
 }
 
 
-/*delete-this-begin*/
+//delete-this-begin
 module.exports = { PostMessage };
-/*delete-this-end*/
+//delete-this-end

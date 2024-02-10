@@ -22,6 +22,6 @@ function GetNativeFunction() {
     }
 }
 
-/*delete-this-begin*/
+//delete-this-begin
 module.exports = { Global, GetNativeFunction};
-/*delete-this-end*/
+//delete-this-end

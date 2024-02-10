@@ -44,8 +44,8 @@ def isChanged(path, content: str):
             return True
         idx = idx+len(s)+len(timestamp_str)
     return False
-DELETE_BEGIN = '/*delete-this-begin*/'
-DELETE_END = '/*delete-this-end*/'
+DELETE_BEGIN = '//delete-this-begin'
+DELETE_END = '//delete-this-end'
 
 def processImportContent(content):
     while DELETE_BEGIN in content:
@@ -70,6 +70,7 @@ def compileImport(sourceSubDir, extension, rawFilename, subNameList: list, conte
     return content
 
 def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
+    content = processImportContent(content)
     global rootPath
     global releasePath
     if r"{{{" not in content:
