@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      {{timestamp}}
+// @version      1707141762
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -9,53 +9,27 @@
 // @grant        none
 // ==/UserScript==
 
-//delete-this-begin//delete-this-end(function () {
+(function () {
+    const language = 'en-us'
+    const vtRuntime = `website`;
+    const realUrlCache = {}
+    const m3u8ContentCache = {}
 
-const language = '{$language$}'
-const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
-const vtMsgSrc = 'VideoTogether'
+    let inDownload = false;
+    let isDownloading = false;
 
-const realUrlCache = {}
-const m3u8ContentCache = {}
+    let roomUuid = null;
 
-let inDownload = false;
-let isDownloading = false;
-
-let roomUuid = null;
-
-const lastRunQueue = []
-// request can only be called up to 10 times in 5 seconds
-const periodSec = 5;
-const timeLimitation = 15;
-const isTopFrame = (window.self == window.top);
-const isWrapperFrameEnabled = (`{{{ {"": "./config/false", "frame": "./config/true","order":98} }}}`== 'true');
-const isWrapperFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
-const isVtFrame = isWrapperFrameEnabled ? isWrapperFrame : isTopFrame;
-
-import { hide, show } from './src/HtmlUtils.js'
-import { MessageType } from './src/MessageType.js'
-import { GetNativeFunction, Global } from './src/NativeMethods.js'
-import { PostMessage } from './src/PostMessage.js'
-import { TopFrameState } from './src/TopFrameState.js'
-const topFrameState = new TopFrameState();
-import { WrapperIframe } from './src/WrapperIframe.js'
-
-(async function () {
-    await topFrameState.asyncInit();
-    function getTopFrame() {
-        return topFrameState;
-    }
-
-    function checkVtFrame(frame) {
-        return frame != undefined && frame.src == 'https://2gether.video/videotogether_wrapper.html';
-    }
-    WrapperIframe.InitState();
+    const lastRunQueue = []
+    // request can only be called up to 10 times in 5 seconds
+    const periodSec = 5;
+    const timeLimitation = 15;
 
     function getDurationStr(duration) {
         try {
             let d = parseInt(duration);
             let str = ""
-            let units = [" {$SecondLabel$} ", " {$MinuteLabel$} ", " {$HourLabel$} "]
+            let units = [" Sec ", " Min ", " Hr "]
             for (let i in units) {
                 if (d > 0) {
                     str = d % 60 + units[i] + str;
@@ -105,7 +79,408 @@ import { WrapperIframe } from './src/WrapperIframe.js'
     }
 
     function startDownload(_vtArgM3u8Url, _vtArgM3u8Content, _vtArgM3u8Urls, _vtArgTitle, _vtArgPageUrl) {
-        /*{{{ {"":"../local/download.js", "order":100} }}}*/
+        /*//*/
+(async function () {
+
+    function extractExtXKeyUrls(m3u8Content, baseUrl) {
+        const uris = [];
+        const lines = m3u8Content.split('\n');
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+
+            if (line.startsWith('#EXT-X-')) {
+                const match = line.match(/URI="(.*?)"/);
+
+                if (match && match[1]) {
+                    let uri = match[1];
+
+                    // Ignore data: URIs as they don't need to be downloaded
+                    if (uri.startsWith('data:')) {
+                        continue;
+                    }
+
+                    // If the URI is not absolute, make it so by combining with the base URL.
+                    if (!uri.startsWith('http://') && !uri.startsWith('https://')) {
+                        uri = new URL(uri, baseUrl).href;
+                    }
+
+                    uris.push(uri);
+                }
+            }
+        }
+
+        return uris;
+    }
+
+    async function timeoutAsyncRead(reader, timeout) {
+        const timer = new Promise((_, rej) => {
+            const id = setTimeout(() => {
+                reader.cancel();
+                rej(new Error('Stream read timed out'));
+            }, timeout);
+        });
+
+        return Promise.race([
+            reader.read(),
+            timer
+        ]);
+    }
+
+    function generateUUID() {
+        if (crypto.randomUUID != undefined) {
+            return crypto.randomUUID();
+        }
+        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+
+    window.updateM3u8Status = async function updateM3u8Status(m3u8Url, status) {
+        // 0 downloading  1 completed 2 deleting
+        let m3u8mini = await readFromIndexedDB('m3u8s-mini', m3u8Url);
+        m3u8mini.status = status
+        await saveToIndexedDB('m3u8s-mini', m3u8Url, m3u8mini);
+    }
+
+    async function saveM3u8(m3u8Url, m3u8Content) {
+        await saveToIndexedDB('m3u8s', m3u8Url,
+            {
+                data: m3u8Content,
+                title: vtArgTitle,
+                pageUrl: vtArgPageUrl,
+                m3u8Url: m3u8Url,
+                m3u8Id: m3u8Id,
+                status: 0
+            }
+        )
+
+    }
+
+    async function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                resolve(event.target.result);
+            };
+            reader.onerror = function (event) {
+                reject(new Error("Failed to read blob"));
+            };
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function saveBlob(table, url, blob) {
+        return new Promise(async (res, rej) => {
+            try {
+                const dataUrl = await blobToDataUrl(blob);
+                await saveToIndexedDB(table, url, {
+                    data: dataUrl,
+                    m3u8Url: downloadM3u8Url,
+                    m3u8Id: m3u8Id,
+                })
+                res();
+            } catch (e) {
+                rej(e);
+            }
+        })
+    }
+
+    window.regexMatchKeys = function regexMatchKeys(table, regex) {
+        const queryId = generateUUID()
+        return new Promise((res, rej) => {
+            window.postMessage({
+                source: "VideoTogether",
+                type: 2005,
+                data: {
+                    table: table,
+                    regex: regex,
+                    id: queryId
+                }
+            }, '*')
+            regexCallback[queryId] = (data) => {
+                try {
+                    res(data)
+                } catch { rej() }
+            }
+        })
+    }
+
+    saveToIndexedDBThreads = 1;
+    window.saveToIndexedDB = async function saveToIndexedDB(table, key, data) {
+        while (saveToIndexedDBThreads < 1) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+        saveToIndexedDBThreads--;
+        const queryId = generateUUID();
+        return new Promise((res, rej) => {
+            data.saveTime = Date.now()
+            window.postMessage({
+                source: "VideoTogether",
+                type: 2001,
+                data: {
+                    table: table,
+                    key: key,
+                    data: data,
+                    id: queryId,
+                }
+            }, '*')
+            data = null;
+            saveCallback[queryId] = (error) => {
+                saveToIndexedDBThreads++;
+                if (error === 0) {
+                    res(0)
+                } else {
+                    rej(error)
+                }
+            }
+        })
+    }
+
+    window.iosDeleteByPrefix = async function iosDeleteByPrefix(prefix) {
+        const queryId = generateUUID();
+        return new Promise((res, rej) => {
+            window.postMessage({
+                source: "VideoTogether",
+                type: 3010,
+                data: {
+                    prefix: prefix,
+                    id: queryId,
+                }
+            }, '*')
+            deleteByPrefix[queryId] = (error) => {
+                if (error === 0) {
+                    res(0)
+                } else {
+                    rej(error)
+                }
+            }
+        })
+    }
+
+    let readCallback = {}
+    let regexCallback = {}
+    let deleteCallback = {}
+    let saveCallback = {}
+    let deleteByPrefix = {}
+
+    window.addEventListener('message', async e => {
+        if (e.data.source == "VideoTogether") {
+            switch (e.data.type) {
+                case 2003: {
+                    saveCallback[e.data.data.id](e.data.data.error)
+                    saveCallback[e.data.data.id] = undefined
+                    break;
+                }
+                case 2004: {
+                    readCallback[e.data.data.id](e.data.data.data)
+                    readCallback[e.data.data.id] = undefined;
+                    break;
+                }
+                case 2006: {
+                    regexCallback[e.data.data.id](e.data.data.data)
+                    regexCallback[e.data.data.id] = undefined;
+                    break;
+                }
+                case 2008: {
+                    deleteCallback[e.data.data.id](e.data.data.error);
+                    deleteCallback[e.data.data.id] = undefined;
+                    break;
+                }
+                case 3011: {
+                    deleteByPrefix[e.data.data.id](e.data.data.error);
+                    deleteByPrefix[e.data.data.id] = undefined;
+                    break;
+                }
+                case 2010: {
+                    console.log(e.data.data.data);
+                    break;
+                }
+            }
+        }
+    })
+    window.requestStorageEstimate = function requestStorageEstimate() {
+        window.postMessage({
+            source: "VideoTogether",
+            type: 2009,
+            data: {}
+        }, '*')
+    }
+    window.deleteFromIndexedDB = function deleteFromIndexedDB(table, key) {
+        const queryId = generateUUID()
+        window.postMessage({
+            source: "VideoTogether",
+            type: 2007,
+            data: {
+                id: queryId,
+                table: table,
+                key: key,
+            }
+        }, '*')
+        return new Promise((res, rej) => {
+            deleteCallback[queryId] = (error) => {
+                if (error === 0) {
+                    res(true);
+                } else {
+                    rej(error);
+                }
+            }
+        })
+    }
+
+    window.readFromIndexedDB = function readFromIndexedDB(table, key) {
+        const queryId = generateUUID();
+
+        window.postMessage({
+            source: "VideoTogether",
+            type: 2002,
+            data: {
+                table: table,
+                key: key,
+                id: queryId,
+            }
+        }, '*')
+        return new Promise((res, rej) => {
+            readCallback[queryId] = (data) => {
+                try {
+                    res(data);
+                } catch {
+                    rej()
+                }
+            }
+        })
+    }
+
+    if (window.videoTogetherExtension === undefined) {
+        return;
+    }
+    if (window.location.hostname == 'local.2gether.video') {
+        return;
+    }
+    let vtArgM3u8Url = undefined;
+    let vtArgM3u8Content = undefined;
+    let vtArgM3u8Urls = undefined;
+    let vtArgTitle = undefined;
+    let vtArgPageUrl = undefined;
+    try {
+        vtArgM3u8Url = _vtArgM3u8Url;
+        vtArgM3u8Content = _vtArgM3u8Content;
+        vtArgM3u8Urls = _vtArgM3u8Urls;
+        vtArgTitle = _vtArgTitle;
+        vtArgPageUrl = _vtArgPageUrl;
+    } catch {
+        return;
+    }
+
+    const m3u8Id = generateUUID()
+    const m3u8IdHead = `-m3u8Id-${m3u8Id}-end-`
+    const downloadM3u8Url = vtArgM3u8Url;
+    const numThreads = 10;
+    let lastTotalBytes = 0;
+    let totalBytes = 0;
+    let failedUrls = []
+    let urls = vtArgM3u8Urls
+    let successCount = 0;
+    videoTogetherExtension.downloadPercentage = 0;
+
+    const m3u8Key = m3u8IdHead + downloadM3u8Url
+    if (downloadM3u8Url === undefined) {
+        return;
+    }
+
+    await saveM3u8(m3u8Key, vtArgM3u8Content)
+
+    const otherUrl = extractExtXKeyUrls(vtArgM3u8Content, downloadM3u8Url);
+    const totalCount = urls.length + otherUrl.length;
+
+    console.log(otherUrl);
+
+    await downloadInParallel('future', otherUrl, numThreads);
+
+    setInterval(function () {
+        videoTogetherExtension.downloadSpeedMb = (totalBytes - lastTotalBytes) / 1024 / 1024;
+        lastTotalBytes = totalBytes;
+    }, 1000);
+
+    await downloadInParallel('videos', urls, numThreads);
+    await updateM3u8Status(m3u8Key, 1)
+    async function fetchWithSpeedTracking(url) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => {
+            controller.abort();
+        }, 20000);
+
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer)
+        if (!response.body) {
+            throw new Error("ReadableStream not yet supported in this browser.");
+        }
+
+        const contentType = response.headers.get("Content-Type") || "application/octet-stream";
+
+        const reader = response.body.getReader();
+        let chunks = [];
+
+        async function readStream() {
+            const { done, value } = await timeoutAsyncRead(reader, 60000);
+            if (done) {
+                return;
+            }
+
+            if (value) {
+                chunks.push(value);
+                totalBytes += value.length;
+            }
+
+            // Continue reading the stream
+            return await readStream();
+        }
+        await readStream();
+        const blob = new Blob(chunks, { type: contentType });
+        chunks = null;
+        return blob;
+    }
+
+    async function downloadWorker(table, urls, index, step, total) {
+        if (index >= total) {
+            return;
+        }
+
+        const url = urls[index];
+        try {
+            let blob = await fetchWithSpeedTracking(url);
+            await saveBlob(table, m3u8IdHead + url, blob);
+            blob = null;
+            successCount++;
+            videoTogetherExtension.downloadPercentage = Math.floor((successCount / totalCount) * 100)
+            console.log('download ts:', table, index, 'of', total);
+        } catch (e) {
+            await new Promise(r => setTimeout(r, 2000));
+            failedUrls.push(url);
+            console.error(e);
+        }
+
+        // Pick up the next work item
+        await downloadWorker(table, urls, index + step, step, total);
+    }
+
+    async function downloadInParallel(table, urls, numThreads) {
+        const total = urls.length;
+
+        // Start numThreads download workers
+        const promises = Array.from({ length: numThreads }, (_, i) => {
+            return downloadWorker(table, urls, i, numThreads, total);
+        });
+
+        await Promise.all(promises);
+        if (failedUrls.length != 0) {
+            urls = failedUrls;
+            failedUrls = [];
+            await downloadInParallel(table, urls, numThreads);
+        }
+    }
+})()
+//*/
     }
 
     function isLimited() {
@@ -219,11 +594,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
     function isEasyShareMember() {
         try {
-            if (isWrapperFrameEnabled && isWrapperFrame) {
-                return topFrameState.isEasySharePage;
-            } else {
-                return window.VideoTogetherEasyShareMemberSite == true;
-            }
+            return window.VideoTogetherEasyShareMemberSite == true;
         } catch {
             return false;
         }
@@ -231,7 +602,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
     function useMobileStyle(videoDom) {
         let isMobile = false;
-        if (getTopFrame().url.startsWith('https://m.bilibili.com/')) {
+        if (window.location.href.startsWith('https://m.bilibili.com/')) {
             isMobile = true;
         }
         if (!isMobile) {
@@ -303,6 +674,14 @@ import { WrapperIframe } from './src/WrapperIframe.js'
         return e;
     }
 
+    function hide(e) {
+        if (e) e.style.display = 'none';
+    }
+
+    function show(e) {
+        if (e) e.style.display = null;
+    }
+
     function isVideoLoadded(video) {
         try {
             if (isNaN(video.readyState)) {
@@ -350,12 +729,41 @@ import { WrapperIframe } from './src/WrapperIframe.js'
         }, 1));
     }
 
+    const Global = {
+        inited: false,
+        NativePostMessageFunction: null,
+        NativeAttachShadow: null,
+        NativeFetch: null
+    }
+
     function AttachShadow(e, options) {
         try {
             return e.attachShadow(options);
         } catch (err) {
             GetNativeFunction();
             return Global.NativeAttachShadow.call(e, options);
+        }
+    }
+
+    function GetNativeFunction() {
+        if (Global.inited) {
+            return;
+        }
+        Global.inited = true;
+        let temp = document.createElement("iframe");
+        hide(temp);
+        document.body.append(temp);
+        Global.NativePostMessageFunction = temp.contentWindow.postMessage;
+        Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
+        Global.NativeFetch = temp.contentWindow.fetch;
+    }
+
+    function PostMessage(window, data) {
+        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
+            window.postMessage(data, "*");
+        } else {
+            GetNativeFunction();
+            Global.NativePostMessageFunction.call(window, data, "*");
         }
     }
 
@@ -367,29 +775,13 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             return await Global.NativeFetch.call(window, url, init);
         }
     }
-    async function sendMessageToTop(type, data) {
+
+    function sendMessageToTop(type, data) {
         PostMessage(window.top, {
             source: "VideoTogether",
             type: type,
             data: data
         });
-    }
-
-    async function sendMessageToVt(type, data) {
-        if (isWrapperFrameEnabled) {
-            PostMessage(window, {
-                source: vtMsgSrc,
-                type: MessageType.ExtMessageTo,
-                data: {
-                    source: vtMsgSrc,
-                    type: type,
-                    data: data,
-                    target: 'vtFrame'
-                }
-            });
-        } else {
-            sendMessageToTop(type, data);
-        }
     }
 
     function sendMessageToSelf(type, data) {
@@ -434,7 +826,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 "lastUpdateClientTime": localTimestamp,
                 "duration": duration,
                 "protected": isRoomProtected(),
-                "videoTitle": extension.isMain ? topFrameState.title : extension.videoTitle,
+                "videoTitle": extension.isMain ? document.title : extension.videoTitle,
                 "sendLocalTimestamp": Date.now() / 1000,
                 "m3u8Url": m3u8Url
             }
@@ -582,7 +974,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 }
             }
             if (data['method'] == 'replay_timestamp') {
-                sendMessageToVt(MessageType.TimestampV2Resp, { ts: Date.now() / 1000, data: data['data'] })
+                sendMessageToTop(MessageType.TimestampV2Resp, { ts: Date.now() / 1000, data: data['data'] })
             }
             if (data['method'] == 'url_req') {
                 extension.UrlRequest(data['data'].m3u8Url, data['data'].idx, data['data'].origin)
@@ -598,9 +990,9 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
             }
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
-                popupError("{$new_message_change_voice$}");
+                popupError("New Messages (<a id='changeVoiceBtn' style='color:inherit' href='#''>Change Voice</a>)");
                 extension.gotTextMsg(data['data'].id, data['data'].msg);
-                sendMessageToVt(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
+                sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
         },
         getRoom() {
@@ -708,7 +1100,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             let voiceConnErrBtn = select('#voiceConnErrBtn');
             if (voiceConnErrBtn != undefined) {
                 voiceConnErrBtn.onclick = () => {
-                    alert('{$voice_connection_error_help$}')
+                    alert('If you have installed uBlock and other adblock extensions, please disable those extensions and try again.')
                 }
             }
         },
@@ -801,18 +1193,18 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             try {
                 notNullUuid = await waitForRoomUuid();
             } catch {
-                Voice.errorMessage = "{$room_uuid_missing$}";
+                Voice.errorMessage = "uuid is missing";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
             const rnameRPC = fixedEncodeURIComponent(notNullUuid + "_" + rname);
             if (rnameRPC.length > 256) {
-                Voice.errorMessage = "{$room_name_too_long$}";
+                Voice.errorMessage = "Room name too long";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
             if (window.location.protocol != "https:" && window.location.protocol != 'file:') {
-                Voice.errorMessage = "{$only_support_https_website$}";
+                Voice.errorMessage = "Only support https website";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
@@ -853,7 +1245,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             } catch (e) {
                 if (Voice.status == VoiceStatus.CONNECTTING) {
                     Voice.status = VoiceStatus.ERROR;
-                    Voice.errorMessage = "{$connection_error$}";
+                    Voice.errorMessage = "Connection error (<a id='voiceConnErrBtn' style='color:inherit' href='#''>Help</a>)";
                 }
             }
 
@@ -915,7 +1307,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 } catch (err) {
                     if (Voice.status == VoiceStatus.CONNECTTING) {
-                        Voice.errorMessage = "{$no_micphone_access$}";
+                        Voice.errorMessage = "No microphone access";
                         Voice.status = VoiceStatus.ERROR;
                     }
                     return;
@@ -936,11 +1328,11 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                         await subscribe(Voice.conn);
                     }
                 } else {
-                    throw new Error('{$unknown_error$}');
+                    throw new Error('Unknown error');
                 }
                 Voice.conn.oniceconnectionstatechange = e => {
                     if (Voice.conn.iceConnectionState == "disconnected" || Voice.conn.iceConnectionState == "failed" || Voice.conn.iceConnectionState == "closed") {
-                        Voice.errorMessage = "{$connection_lost$}";
+                        Voice.errorMessage = "Connection lost";
                         Voice.status = VoiceStatus.ERROR;
                     } else {
                         if (Voice.status == VoiceStatus.ERROR) {
@@ -1198,10 +1590,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             this.sessionKey = "VideoTogetherFlySaveSessionKey";
             this.isInRoom = false;
 
-            this.isMain = isVtFrame;
-            if (isTopFrame && isWrapperFrameEnabled) {
-                new WrapperIframe();
-            }
+            this.isMain = (window.self == window.top);
             setInterval(() => {
                 if (getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
                     && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
@@ -1222,7 +1611,98 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                         wrapper.addEventListener('keydown', (e) => e.stopPropagation());
                         this.fullscreenWrapper = wrapper;
                     } catch (e) { console.error(e); }
-                    wrapper.innerHTML = `{{{ {"": "./html/fullscreen.html","order":100} }}}`;
+                    wrapper.innerHTML = `<style>
+    .container {
+        position: absolute;
+        top: 50%;
+        left: 0px;
+        border: 1px solid #000;
+        padding: 0px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: fit-content;
+        justify-content: center;
+        border-radius: 5px;
+        opacity: 80%;
+        background: #000;
+        color: white;
+        z-index: 2147483647;
+    }
+
+    .container input[type='text'] {
+        padding: 0px;
+        flex-grow: 1;
+        border: none;
+        height: 24px;
+        width: 0px;
+        height: 32px;
+        transition: width 0.1s linear;
+        background-color: transparent;
+        color: white;
+    }
+
+    .container input[type='text'].expand {
+        width: 150px;
+    }
+
+    .container .user-info {
+        display: flex;
+        align-items: center;
+    }
+
+    .container button {
+        height: 32px;
+        font-size: 16px;
+        border: 0px;
+        color: white;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        background-color: #1890ff;
+        transition-duration: 0.4s;
+        border-radius: 4px;
+    }
+
+    .container #expand-button {
+        color: black;
+        font-weight: bolder;
+        height: 32px;
+        width: 32px;
+        background-size: cover;
+        background-image: url(data:image/png;base64,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);
+    }
+
+    .container #close-btn {
+        height: 16px;
+        max-width: 24px;
+        background-color: rgba(255, 0, 0, 0.5);
+        font-size: 8px;
+    }
+
+    .container #close-btn:hover {
+        background-color: rgba(255, 0, 0, 0.3);
+    }
+
+    .container button:hover {
+        background-color: #6ebff4;
+    }
+
+    .container button:disabled,
+    .container button:disabled:hover {
+        background-color: rgb(76, 76, 76);
+    }
+</style>
+<div class="container" id="container">
+    <button id="expand-button">&lt;</button>
+    <div style="padding: 0 5px 0 5px;" class="user-info" id="user-info">
+        <span class="emoji">👥</span>
+        <span id="memberCount">0</span>
+    </div>
+    <button id="close-btn">x</button>
+    <input style="margin: 0 0 0 5px;" type="text" placeholder="Text Message" id="text-input" class="expand" />
+    <button id="send-button">Send</button>
+</div>`;
                     document.fullscreenElement.appendChild(shadowWrapper);
                     var container = wrapper.getElementById('container');
                     let expandBtn = wrapper.getElementById('expand-button');
@@ -1247,7 +1727,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     wrapper.getElementById('expand-button').addEventListener('click', () => expand());
                     sendBtn.onclick = () => {
                         extension.currentSendingMsgId = generateUUID();
-                        sendMessageToVt(MessageType.SendTxtMsg, { currentSendingMsgId: extension.currentSendingMsgId, value: msgInput.value });
+                        sendMessageToTop(MessageType.SendTxtMsg, { currentSendingMsgId: extension.currentSendingMsgId, value: msgInput.value });
                     }
                     GotTxtMsgCallback = (id, msg) => {
                         console.log(id, msg);
@@ -1285,7 +1765,807 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
-                wrapper.innerHTML = `{{{ {"": "./html/pannel.html","order":100} }}}`;
+                wrapper.innerHTML = `<div id="peer" style="display: none;"></div>
+<div id="videoTogetherFlyPannel" style="display: none;">
+  <div id="videoTogetherHeader" class="vt-modal-header">
+    <div style="display: flex;align-items: center;">
+      <img style="width: 16px; height: 16px;"
+        src="data:image/png;base64,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">
+      <div class="vt-modal-title">VideoTogether</div>
+    </div>
+
+    <button id="downloadBtn" type="button" class="vt-modal-title-button vt-modal-easyshare">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"
+            stroke="currentColor" stroke-width="1.67">
+            <path
+              d="M12.5535 16.5061C12.4114 16.6615 12.2106 16.75 12 16.75C11.7894 16.75 11.5886 16.6615 11.4465 16.5061L7.44648 12.1311C7.16698 11.8254 7.18822 11.351 7.49392 11.0715C7.79963 10.792 8.27402 10.8132 8.55352 11.1189L11.25 14.0682V3C11.25 2.58579 11.5858 2.25 12 2.25C12.4142 2.25 12.75 2.58579 12.75 3V14.0682L15.4465 11.1189C15.726 10.8132 16.2004 10.792 16.5061 11.0715C16.8118 11.351 16.833 11.8254 16.5535 12.1311L12.5535 16.5061Z"
+              fill="currentColor" />
+            <path
+              d="M3.75 15C3.75 14.5858 3.41422 14.25 3 14.25C2.58579 14.25 2.25 14.5858 2.25 15V15.0549C2.24998 16.4225 2.24996 17.5248 2.36652 18.3918C2.48754 19.2919 2.74643 20.0497 3.34835 20.6516C3.95027 21.2536 4.70814 21.5125 5.60825 21.6335C6.47522 21.75 7.57754 21.75 8.94513 21.75H15.0549C16.4225 21.75 17.5248 21.75 18.3918 21.6335C19.2919 21.5125 20.0497 21.2536 20.6517 20.6516C21.2536 20.0497 21.5125 19.2919 21.6335 18.3918C21.75 17.5248 21.75 16.4225 21.75 15.0549V15C21.75 14.5858 21.4142 14.25 21 14.25C20.5858 14.25 20.25 14.5858 20.25 15C20.25 16.4354 20.2484 17.4365 20.1469 18.1919C20.0482 18.9257 19.8678 19.3142 19.591 19.591C19.3142 19.8678 18.9257 20.0482 18.1919 20.1469C17.4365 20.2484 16.4354 20.25 15 20.25H9C7.56459 20.25 6.56347 20.2484 5.80812 20.1469C5.07435 20.0482 4.68577 19.8678 4.40901 19.591C4.13225 19.3142 3.9518 18.9257 3.85315 18.1919C3.75159 17.4365 3.75 16.4354 3.75 15Z"
+              fill="currentColor" />
+          </svg>
+        </span>
+      </span>
+    </button>
+
+    <button style="display: none;" id="easyShareCopyBtn" type="button" class="vt-modal-title-button vt-modal-easyshare">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32">
+            <path fill="currentColor"
+              d="M0 25.472q0 2.368 1.664 4.032t4.032 1.664h18.944q2.336 0 4-1.664t1.664-4.032v-8.192l-3.776 3.168v5.024q0 0.8-0.544 1.344t-1.344 0.576h-18.944q-0.8 0-1.344-0.576t-0.544-1.344v-18.944q0-0.768 0.544-1.344t1.344-0.544h9.472v-3.776h-9.472q-2.368 0-4.032 1.664t-1.664 4v18.944zM5.696 19.808q0 2.752 1.088 5.28 0.512-2.944 2.24-5.344t4.288-3.872 5.632-1.664v5.6l11.36-9.472-11.36-9.472v5.664q-2.688 0-5.152 1.056t-4.224 2.848-2.848 4.224-1.024 5.152zM32 22.080v0 0 0z">
+            </path>
+          </svg>
+        </span>
+      </span>
+    </button>
+
+    <a href="https://afdian.net/a/videotogether" target="_blank" id="vtDonate" type="button"
+      class="vt-modal-donate vt-modal-title-button">
+      <span class="vt-modal-close-x">
+        <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+            <path fill="currentColor"
+              d="M12 4.435c-1.989-5.399-12-4.597-12 3.568 0 4.068 3.06 9.481 12 14.997 8.94-5.516 12-10.929 12-14.997 0-8.118-10-8.999-12-3.568z" />
+          </svg>
+        </span>
+      </span>
+    </a>
+
+    <a href="https://setting.2gether.video/" target="_blank" id="videoTogetherSetting" type="button"
+      aria-label="Setting" class="vt-modal-setting vt-modal-title-button">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+            <path fill="currentColor"
+              d="M24 13.616v-3.232c-1.651-.587-2.694-.752-3.219-2.019v-.001c-.527-1.271.1-2.134.847-3.707l-2.285-2.285c-1.561.742-2.433 1.375-3.707.847h-.001c-1.269-.526-1.435-1.576-2.019-3.219h-3.232c-.582 1.635-.749 2.692-2.019 3.219h-.001c-1.271.528-2.132-.098-3.707-.847l-2.285 2.285c.745 1.568 1.375 2.434.847 3.707-.527 1.271-1.584 1.438-3.219 2.02v3.232c1.632.58 2.692.749 3.219 2.019.53 1.282-.114 2.166-.847 3.707l2.285 2.286c1.562-.743 2.434-1.375 3.707-.847h.001c1.27.526 1.436 1.579 2.019 3.219h3.232c.582-1.636.75-2.69 2.027-3.222h.001c1.262-.524 2.12.101 3.698.851l2.285-2.286c-.744-1.563-1.375-2.433-.848-3.706.527-1.271 1.588-1.44 3.221-2.021zm-12 2.384c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z" />
+          </svg>
+        </span>
+      </span>
+    </a>
+    <button id="videoTogetherMinimize" type="button" aria-label="Close" class="vt-modal-close vt-modal-title-button">
+      <span class="vt-modal-close-x">
+        <span role="img" aria-label="close" class="vt-anticon vt-anticon-close vt-modal-close-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true"
+            role="img" class="iconify iconify--ic" width="20" height="20" preserveAspectRatio="xMidYMid meet"
+            viewBox="0 0 24 24">
+            <path fill="currentColor" d="M18 12.998H6a1 1 0 0 1 0-2h12a1 1 0 0 1 0 2z"></path>
+          </svg>
+        </span>
+      </span>
+    </button>
+  </div>
+
+  <div class="vt-modal-content">
+
+    <div class="vt-modal-body">
+      <div id="mainPannel" class="content">
+        <div style="height: 22.5px;">
+          <span id="videoTogetherRoleText"></span>
+          <span id="memberCount"></span>
+        </div>
+        <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
+        <div style="margin-bottom: 10px;">
+          <span id="videoTogetherRoomNameLabel">Room</span>
+          <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="Name of room">
+        </div>
+        <div>
+          <span id="videoTogetherRoomPasswordLabel">Password</span>
+          <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="Host's password">
+        </div>
+        <div>
+          <div id="textMessageChat" style="display: none;">
+            <input id="textMessageInput" autocomplete="off" placeholder="Text Message">
+            <button id="textMessageSend" class="vt-btn vt-btn-primary" type="button">
+              <span>Send</span>
+            </button>
+          </div>
+          <div id="textMessageConnecting" style="display: none;">
+            <span id="textMessageConnectingStatus">Connecting to Message service...</span>
+            <span id="zhcnTtsMissing"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="downloadPannel" style="display: none;">
+        <div>
+          <span id="downloadVideoInfo">Detecting video...</span>
+          <button id="confirmDownloadBtn" style="display: none;" class="vt-btn vt-btn-primary" type="button">
+            <span>Confirm and download</span>
+          </button>
+          <div id="downloadProgress" style="display: none;">
+            <progress id="downloadProgressBar" style="width: 100%;" value="0" max="100"></progress>
+            <div id="speedAndStatus" style="width: 100%;">
+              <span id="downloadStatus"></span>
+              <span id="downloadSpeed"></span>
+            </div>
+            <span id="downloadingAlert" style="color: red;">Downloading, do not close page</span>
+            <span id="downloadCompleted" style="color: green; display: none;">Download complete</span>
+          </div>
+        </div>
+        <div style="display: block;">
+          <a target="_blank" style="display: block;padding: 5px 5px;"
+            href="https://local.2gether.video/local_videos.en-us.html">View downloaded videos</a>
+          <a target="_blank" style="display: block;padding: 5px 5px;"
+            href="https://local.2gether.video/about.en-us.html">Copyright Notice</a>
+        </div>
+      </div>
+      <div id="voicePannel" class="content" style="display: none;">
+        <div id="videoVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
+          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Video volume</span>
+          <div class="range-slider">
+            <input id="videoVolume" class="slider" type="range" value="100" min="0" max="100">
+          </div>
+
+        </div>
+        <div id="callVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
+          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Call Volume</span>
+          <div class="range-slider">
+            <input id="callVolume" class="slider" type="range" value="100" min="0" max="100">
+          </div>
+        </div>
+        <div id="iosVolumeErr" style="display: none;">
+          <p>iOS does not support volume adjustment</p>
+        </div>
+        <!-- <div style="margin-top: 5px;width: 100%;text-align: left;">
+          <span
+            style="margin-top: 0px;display: inline-block;margin-left: 20px; margin-right: 10px;">Noise cancelling voice</span>
+          <label class="toggler-wrapper style-1">
+            <input id="voiceNc" type="checkbox">
+            <div class="toggler-slider">
+              <div class="toggler-knob"></div>
+            </div>
+          </label>
+
+        </div> -->
+      </div>
+
+    </div>
+
+    <div id="snackbar"></div>
+
+    <div class="vt-modal-footer">
+
+      <div id="lobbyBtnGroup">
+        <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
+          <span>Create</span>
+        </button>
+        <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
+          <span>Join</span>
+        </button>
+      </div>
+
+
+      <div id="roomButtonGroup" style="display: none;">
+
+        <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button">
+          <span>Exit</span>
+        </button>
+
+        <button id="callBtn" class="vt-btn vt-btn-dangerous" type="button">
+          <span>Call</span>
+        </button>
+
+
+        <div id="callConnecting" class="lds-ellipsis" style="display: none;">
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+
+        <button id="callErrorBtn" class="vt-modal-title-button error-button" style="display: none;">
+          <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" d="M11.001 10h2v5h-2zM11 16h2v2h-2z" />
+            <path fill="currentColor"
+              d="M13.768 4.2C13.42 3.545 12.742 3.138 12 3.138s-1.42.407-1.768 1.063L2.894 18.064a1.986 1.986 0 0 0 .054 1.968A1.984 1.984 0 0 0 4.661 21h14.678c.708 0 1.349-.362 1.714-.968a1.989 1.989 0 0 0 .054-1.968L13.768 4.2zM4.661 19 12 5.137 19.344 19H4.661z" />
+          </svg>
+        </button>
+
+        <button id="audioBtn" style="display: none;" type="button" aria-label="Close"
+          class="vt-modal-audio vt-modal-title-button">
+          <span class="vt-modal-close-x">
+            <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
+              <svg width="24px" height="24px" viewBox="0 0 489.6 489.6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M361.1,337.6c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c18.7-26.3,28.5-57.4,28.5-89.9s-9.9-63.6-28.5-89.9
+                c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c15.7,22.1,24,48.3,24,75.8c0,27.4-8.3,53.6-24,75.8
+                C354.3,326.1,355.6,333.7,361.1,337.6z" />
+                <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M425.4,396.3c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c30.8-43.4,47.1-94.8,47.1-148.6s-16.3-105.1-47.1-148.6
+                c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c27.9,39.3,42.6,85.7,42.6,134.4c0,48.6-14.7,95.1-42.6,134.4
+                C418.6,384.7,419.9,392.3,425.4,396.3z" />
+                <path stroke="currentColor" stroke-width="16" fill="currentColor"
+                  d="M254.7,415.7c4.3,2.5,9.2,3.8,14.2,3.8l0,0c7.4,0,14.4-2.8,19.7-7.9c5.6-5.4,8.7-12.6,8.7-20.4V98.5
+                c0-15.7-12.7-28.4-28.4-28.4c-4.9,0-9.8,1.3-14.2,3.8c-0.3,0.2-0.6,0.3-0.8,0.5l-100.1,69.2H73.3C32.9,143.6,0,176.5,0,216.9v55.6
+                c0,40.4,32.9,73.3,73.3,73.3h84.5l95.9,69.2C254,415.3,254.4,415.5,254.7,415.7z M161.8,321.3H73.3c-26.9,0-48.8-21.9-48.8-48.8
+                v-55.6c0-26.9,21.9-48.8,48.8-48.8h84.3c2.5,0,4.9-0.8,7-2.2l102.7-71c0.5-0.3,1.1-0.4,1.6-0.4c1.6,0,3.9,1.2,3.9,3.9v292.7
+                c0,1.1-0.4,2-1.1,2.8c-0.7,0.7-1.8,1.1-2.7,1.1c-0.5,0-1-0.1-1.5-0.3l-98.4-71.1C166.9,322.1,164.4,321.3,161.8,321.3z" />
+              </svg>
+            </span>
+          </span>
+        </button>
+      </div>
+
+      <button id="micBtn" style="display: none;" type="button" aria-label="Close"
+        class="vt-modal-mic vt-modal-title-button">
+        <span class="vt-modal-close-x">
+          <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
+            <svg width="24px" height="24px" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" fill="white" fill-opacity="0" />
+              <path
+                d="M31 24V11C31 7.13401 27.866 4 24 4C20.134 4 17 7.13401 17 11V24C17 27.866 20.134 31 24 31C27.866 31 31 27.866 31 24Z"
+                stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+              <path d="M9 23C9 31.2843 15.7157 38 24 38C32.2843 38 39 31.2843 39 23" stroke="currentColor"
+                stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M24 38V44" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path id="disabledMic" d="M42 42L6 6" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            <svg id="enabledMic" style="display: none;" width="24px" height="24px" viewBox="0 0 48 48" fill="none"
+              xmlns="http://www.w3.org/2000/svg">
+              <rect width="48" height="48" fill="white" fill-opacity="0" />
+              <path
+                d="M31 24V11C31 7.13401 27.866 4 24 4C20.134 4 17 7.13401 17 11V24C17 27.866 20.134 31 24 31C27.866 31 31 27.866 31 24Z"
+                stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+              <path d="M9 23C9 31.2843 15.7157 38 24 38C32.2843 38 39 31.2843 39 23" stroke="currentColor"
+                stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M24 38V44" stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </span>
+        </span>
+      </button>
+
+      <button id="videoTogetherHelpButton" class="vt-btn" type="button">
+        <span>Help</span>
+      </button>
+    </div>
+  </div>
+</div>
+<div style="width: 24px; height: 24px;" id="videoTogetherSamllIcon">
+  <img draggable="false" width="24px" height="24px" id="videoTogetherMaximize"
+    src="data:image/png;base64,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">
+  </img>
+</div>
+
+<style>
+  :host {
+    all: initial;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+  }
+
+  #videoTogetherFlyPannel {
+    background-color: #ffffff !important;
+    display: block;
+    z-index: 2147483647;
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    width: 260px;
+    height: 210px;
+    text-align: center;
+    border: solid 1px #e9e9e9 !important;
+    box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d;
+    border-radius: 10px;
+    line-height: 1.2;
+  }
+
+  #videoTogetherFlyPannel #videoTogetherHeader {
+    cursor: move;
+    touch-action: none;
+    align-items: center;
+    display: flex;
+  }
+
+  .vt-modal-content {
+    /* position: relative; */
+    width: 100%;
+    height: 100%;
+  }
+
+  #roomButtonGroup,
+  #lobbyBtnGroup,
+  .content {
+    display: contents;
+  }
+
+  .vt-modal-audio {
+    position: absolute;
+    top: 10px;
+    right: 140px;
+  }
+
+  .vt-modal-mic {
+    position: absolute;
+    top: 10px;
+    right: 100px;
+  }
+
+  .vt-modal-setting {
+    position: absolute;
+    top: -1px;
+    right: 65px;
+  }
+
+  .vt-modal-easyshare {
+    position: absolute;
+    top: -1px;
+    right: 90px;
+  }
+
+  .vt-modal-donate {
+    position: absolute;
+    top: -1px;
+    right: 40px;
+  }
+
+  .vt-modal-title-button {
+    z-index: 10;
+    padding: 0;
+    color: #6c6c6c;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    cursor: pointer;
+    transition: color .3s;
+  }
+
+  .vt-modal-close {
+    position: absolute;
+    top: 0;
+    right: 15px;
+  }
+
+  .vt-modal-close-x {
+    width: 18px;
+    height: 46px;
+    font-size: 16px;
+    font-style: normal;
+    line-height: 46px;
+    text-align: center;
+    text-transform: none;
+    text-rendering: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vt-modal-close-x:hover {
+    color: #1890ff;
+  }
+
+  .error-button {
+    color: #ff6f72;
+  }
+
+  .error-button:hover {
+    color: red;
+  }
+
+  .vt-modal-header {
+    display: flex;
+    padding: 12px;
+    color: #000000d9;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+    border-radius: 10px 10px 0 0;
+    align-items: center;
+  }
+
+  .vt-modal-title {
+    margin: 0;
+    margin-left: 10px;
+    color: #000000d9;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+    word-wrap: break-word;
+  }
+
+  .vt-modal-body {
+    height: 164px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    font-size: 16px;
+    color: black;
+    border-radius: 0 0 10px 10px;
+    background-size: cover;
+  }
+
+  .vt-modal-footer {
+    padding: 10px 16px;
+    text-align: right;
+    background: transparent;
+    border-top: 1px solid #f0f0f0;
+    border-radius: 0 0 2px 2px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .vt-btn {
+    line-height: 1.5715;
+    position: relative;
+    display: inline-block;
+    font-weight: 400;
+    white-space: nowrap;
+    text-align: center;
+    background-image: none;
+    border: 1px solid transparent;
+    box-shadow: 0 2px #00000004;
+    cursor: pointer;
+    transition: all .3s cubic-bezier(.645, .045, .355, 1);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    height: 32px;
+    padding: 4px 15px;
+    font-size: 14px;
+    border-radius: 2px;
+    color: #000000d9;
+    border-color: #d9d9d9;
+    background: #fff;
+    outline: 0;
+    text-shadow: 0 -1px 0 rgb(0 0 0 / 12%);
+    box-shadow: 0 2px #0000000b;
+  }
+
+  .vt-btn:hover {
+    border-color: #e3e5e7 !important;
+    background-color: #e3e5e7 !important;
+  }
+
+  .vt-btn-primary {
+    color: #fff;
+    border-color: #1890ff;
+    background: #1890ff !important;
+  }
+
+  .vt-btn-primary:hover {
+    border-color: #6ebff4 !important;
+    background-color: #6ebff4 !important;
+  }
+
+  .vt-btn-secondary {
+    color: #fff;
+    border-color: #23d591;
+    background: #23d591 !important;
+  }
+
+  .vt-btn-secondary:hover {
+    border-color: #8af0bf !important;
+    background-color: #8af0bf !important;
+  }
+
+  .vt-btn-dangerous {
+    color: #fff;
+    border-color: #ff4d4f;
+    background-color: #ff4d4f;
+  }
+
+  .vt-btn-dangerous:hover {
+    border-color: #f77173 !important;
+    background-color: #f77173 !important;
+  }
+
+  .vt-modal-content-item {
+    cursor: pointer;
+    box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.16);
+    padding: 0 12px;
+    width: 45%;
+    height: 60px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+  }
+
+  .vt-modal-content-item:hover {
+    background-color: #efefef;
+  }
+
+  #videoTogetherSamllIcon {
+    z-index: 2147483647;
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    text-align: center;
+  }
+
+  #videoTogetherRoomNameLabel,
+  #videoTogetherRoomPasswordLabel {
+    display: inline-block;
+    width: 76px;
+  }
+
+  #videoTogetherRoomNameInput:disabled {
+    border: none;
+    background-color: transparent;
+    color: black;
+  }
+
+  #videoTogetherRoomNameInput,
+  #videoTogetherRoomPdIpt {
+    width: 150px;
+    height: auto;
+    font-family: inherit;
+    font-size: inherit;
+    display: inline-block;
+    padding: 0;
+    color: #00000073;
+    background-color: #ffffff;
+    border: 1px solid #e9e9e9;
+    margin: 0;
+  }
+
+  .lds-ellipsis {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 32px;
+  }
+
+  .lds-ellipsis div {
+    position: absolute;
+    top: 8px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #6c6c6c;
+    animation-timing-function: cubic-bezier(0, 1, 1, 0);
+  }
+
+  .lds-ellipsis div:nth-child(1) {
+    left: 8px;
+    animation: lds-ellipsis1 0.6s infinite;
+  }
+
+  .lds-ellipsis div:nth-child(2) {
+    left: 8px;
+    animation: lds-ellipsis2 0.6s infinite;
+  }
+
+  .lds-ellipsis div:nth-child(3) {
+    left: 32px;
+    animation: lds-ellipsis2 0.6s infinite;
+  }
+
+  .lds-ellipsis div:nth-child(4) {
+    left: 56px;
+    animation: lds-ellipsis3 0.6s infinite;
+  }
+
+  @keyframes lds-ellipsis1 {
+    0% {
+      transform: scale(0);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes lds-ellipsis3 {
+    0% {
+      transform: scale(1);
+    }
+
+    100% {
+      transform: scale(0);
+    }
+  }
+
+  @keyframes lds-ellipsis2 {
+    0% {
+      transform: translate(0, 0);
+    }
+
+    100% {
+      transform: translate(24px, 0);
+    }
+  }
+
+
+
+
+  .range-slider {
+    margin: 0px 0 0 0px;
+    display: inline-block;
+  }
+
+  .range-slider {
+    width: 130px
+  }
+
+  .slider {
+    -webkit-appearance: none;
+    width: calc(100% - (0px));
+    height: 5px;
+    border-radius: 5px;
+    background: #d7dcdf;
+    outline: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2c3e50;
+    cursor: pointer;
+    -webkit-transition: background 0.15s ease-in-out;
+    transition: background 0.15s ease-in-out;
+  }
+
+  .slider::-moz-range-progress {
+    background-color: #1abc9c;
+  }
+
+  .slider::-webkit-slider-thumb:hover {
+    background: #1abc9c;
+  }
+
+  .slider:active::-webkit-slider-thumb {
+    background: #1abc9c;
+  }
+
+  .slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border: 0;
+    border-radius: 50%;
+    background: #2c3e50;
+    cursor: pointer;
+    -moz-transition: background 0.15s ease-in-out;
+    transition: background 0.15s ease-in-out;
+  }
+
+  .slider::-moz-range-thumb:hover {
+    background: #1abc9c;
+  }
+
+  .slider:active::-moz-range-thumb {
+    background: #1abc9c;
+  }
+
+  ::-moz-range-track {
+    background: #d7dcdf;
+    border: 0;
+  }
+
+  input::-moz-focus-inner,
+  input::-moz-focus-outer {
+    border: 0;
+  }
+
+
+
+  .toggler-wrapper {
+    display: inline-block;
+    width: 45px;
+    height: 20px;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .toggler-wrapper input[type="checkbox"] {
+    display: none;
+  }
+
+  .toggler-wrapper input[type="checkbox"]:checked+.toggler-slider {
+    background-color: #1abc9c;
+  }
+
+  .toggler-wrapper .toggler-slider {
+    margin-top: 4px;
+    background-color: #ccc;
+    position: absolute;
+    border-radius: 100px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-transition: all 300ms ease;
+    transition: all 300ms ease;
+  }
+
+  .toggler-wrapper .toggler-knob {
+    position: absolute;
+    -webkit-transition: all 300ms ease;
+    transition: all 300ms ease;
+  }
+
+  .toggler-wrapper.style-1 input[type="checkbox"]:checked+.toggler-slider .toggler-knob {
+    left: calc(100% - 16px - 3px);
+  }
+
+  .toggler-wrapper.style-1 .toggler-knob {
+    width: calc(20px - 6px);
+    height: calc(20px - 6px);
+    border-radius: 50%;
+    left: 3px;
+    top: 3px;
+    background-color: #fff;
+  }
+
+
+  #snackbar {
+    visibility: hidden;
+    width: auto;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 16px 0px 16px 0px;
+    position: relative;
+    z-index: 999999;
+    top: -56px;
+  }
+
+  #snackbar.show {
+    visibility: visible;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+  }
+
+  @keyframes fadein {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeout {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
+  #downloadProgress {
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    align-items: center;
+    margin: auto;
+  }
+
+  #speedAndStatus {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  #downloadPannel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    justify-content: space-between;
+  }
+
+  #downloadVideoInfo {
+    display: block;
+  }
+</style>`;
                 (document.body || document.documentElement).appendChild(shadowWrapper);
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
@@ -1338,16 +2618,16 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     if (extension.downloadM3u8UrlType == "video") {
                         extension.Fetch(extension.video_together_host + "/beta/counter?key=confirm_video_download")
                         console.log(extension.downloadM3u8Url, extension.downloadM3u8UrlType)
-                        sendMessageToVt(MessageType.SetStorageValue, {
+                        sendMessageToTop(MessageType.SetStorageValue, {
                             key: "PublicNextDownload", value: {
-                                filename: topFrameState.title + '.mp4',
+                                filename: document.title + '.mp4',
                                 url: extension.downloadM3u8Url
                             }
                         });
                         const a = document.createElement("a");
                         a.href = extension.downloadM3u8Url;
                         a.target = "_blank";
-                        a.download = topFrameState.title + ".mp4";
+                        a.download = document.title + ".mp4";
                         a.click();
                         return;
                     }
@@ -1358,7 +2638,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                         m3u8Url: m3u8url,
                         m3u8Content: extension.GetM3u8Content(m3u8url),
                         urls: extension.GetAllM3u8SegUrls(m3u8url),
-                        title: topFrameState.title,
+                        title: document.title,
                         pageUrl: window.location.href
                     });
 
@@ -1375,7 +2655,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                             select('#downloadVideoInfo').innerText = getDurationStr(extension.downloadDuration);
                         } else {
                             hide(this.confirmDownloadBtn);
-                            select('#downloadVideoInfo').innerText = "{$DidntDetectVideo$}"
+                            select('#downloadVideoInfo').innerText = "Detecting video..."
                         }
                     }, 1000);
                     inDownload = true;
@@ -1388,15 +2668,15 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
                         if (isWeb()) {
-                            await navigator.clipboard.writeText(extension.linkWithMemberState(getTopFrame().url, extension.RoleEnum.Member, false))
+                            await navigator.clipboard.writeText(extension.linkWithMemberState(window.location, extension.RoleEnum.Member, false))
                         } else {
-                            await navigator.clipboard.writeText("{$easy_share_line_template$}"
+                            await navigator.clipboard.writeText("Click the link to watch together with me: <main_share_link>"
                                 .replace("<main_share_link>", extension.generateEasyShareLink())
                                 .replace("<china_share_link>", extension.generateEasyShareLink(true)));
                         }
-                        popupError("{$easy_share_link_copied$}");
+                        popupError("Copied");
                     } catch {
-                        popupError("{$easy_share_link_copy_failed$}");
+                        popupError("Copy failed");
                     }
                 }
                 this.callErrorBtn.onclick = () => {
@@ -1404,7 +2684,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 }
                 this.videoVolume.oninput = () => {
                     extension.videoVolume = this.videoVolume.value;
-                    sendMessageToVt(MessageType.ChangeVideoVolume, { volume: extension.getVideoVolume() / 100 });
+                    sendMessageToTop(MessageType.ChangeVideoVolume, { volume: extension.getVideoVolume() / 100 });
                 }
                 this.callVolumeSlider.oninput = () => {
                     extension.voiceVolume = this.callVolumeSlider.value;
@@ -1519,7 +2799,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             });
             document.body.appendChild(touch);
 
-            this.setTxtMsgTouchPannelText("{$you_have_a_new_msg$}");
+            this.setTxtMsgTouchPannelText("VideoTogether: You got a new message, click the screen to receive");
         }
 
         setTxtMsgInterface(type) {
@@ -1535,7 +2815,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             }
             if (type == 2) {
                 show(this.textMessageConnecting);
-                this.textMessageConnectingStatus.innerText = "{$textMessageConnecting$}"
+                this.textMessageConnectingStatus.innerText = "Connecting to Message service..."
                 show(this.textMessageConnectingStatus);
             }
             if (type == 3) {
@@ -1544,7 +2824,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             }
             if (type == 4) {
                 show(this.textMessageConnecting);
-                this.textMessageConnectingStatus.innerText = "{$textMessageDisabled$}"
+                this.textMessageConnectingStatus.innerText = "Text Message is disabled"
                 show(this.textMessageConnectingStatus);
             }
         }
@@ -1573,7 +2853,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 e.stopPropagation();
             }
             let label = span.cloneNode(true);
-            label.textContent = "{$choose_voice_below$}";
+            label.textContent = "You can select the voice for reading messages:";
             this.txtMsgTouchPannel.shadowRoot.appendChild(document.createElement('br'));
             this.txtMsgTouchPannel.shadowRoot.appendChild(label);
             let voices = speechSynthesis.getVoices();
@@ -1585,7 +2865,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             });
             voiceSelect.oninput = (e) => {
                 console.log(e);
-                sendMessageToVt(MessageType.SetStorageValue, { key: "PublicMessageVoice", value: voiceSelect.value });
+                sendMessageToTop(MessageType.SetStorageValue, { key: "PublicMessageVoice", value: voiceSelect.value });
             }
             voiceSelect.style.fontSize = "20px";
             voiceSelect.style.height = "50px";
@@ -1662,7 +2942,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             this.inputRoomName.disabled = false;
             this.inputRoomPasswordLabel.style.display = "inline-block";
             this.inputRoomPassword.style.display = "inline-block";
-            this.inputRoomName.placeholder = "{$room_input_placeholder$}"
+            this.inputRoomName.placeholder = "Name of room"
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
             hide(this.easyShareCopyBtn);
@@ -1710,6 +2990,74 @@ import { WrapperIframe } from './src/WrapperIframe.js'
         }
     }
 
+    let MessageType = {
+        ActivatedVideo: 1,
+        ReportVideo: 2,
+        SyncMemberVideo: 3,
+        SyncMasterVideo: 4,
+        UpdateStatusText: 5,
+        JumpToNewPage: 6,
+        GetRoomData: 7,
+        ChangeVoiceVolume: 8,
+        ChangeVideoVolume: 9,
+
+        FetchRequest: 13,
+        FetchResponse: 14,
+
+        SetStorageValue: 15,
+        SyncStorageValue: 16,
+
+        ExtensionInitSuccess: 17,
+
+        SetTabStorage: 18,
+        SetTabStorageSuccess: 19,
+
+        UpdateRoomRequest: 20,
+        CallScheduledTask: 21,
+
+        RoomDataNotification: 22,
+        UpdateMemberStatus: 23,
+        TimestampV2Resp: 24,
+        // EasyShareCheckSucc: 25,
+        FetchRealUrlReq: 26,
+        FetchRealUrlResp: 27,
+        FetchRealUrlFromIframeReq: 28,
+        FetchRealUrlFromIframeResp: 29,
+        SendTxtMsg: 30,
+        GotTxtMsg: 31,
+        StartDownload: 32,
+        DownloadStatus: 33,
+
+
+        UpdateM3u8Files: 1001,
+
+        SaveIndexedDb: 2001,
+        ReadIndexedDb: 2002,
+        SaveIndexedDbResult: 2003,
+        ReadIndexedDbResult: 2004,
+        RegexMatchKeysDb: 2005,
+        RegexMatchKeysDbResult: 2006,
+        DeleteFromIndexedDb: 2007,
+        DeleteFromIndexedDbResult: 2008,
+        StorageEstimate: 2009,
+        StorageEstimateResult: 2010,
+        ReadIndexedDbSw: 2011,
+        ReadIndexedDbSwResult: 2012,
+        //2013 used
+
+        IosStorageSet: 3001,
+        IosStorageSetResult: 3002,
+        IosStorageGet: 3003,
+        IosStorageGetResult: 3004,
+        IosStorageDelete: 3005,
+        IosStorageDeleteResult: 3006,
+        IosStorageUsage: 3007,
+        IosStorageUsageResult: 3008,
+        IosStorageCompact: 3009,
+        IosStorageDeletePrefix: 3010,
+        IosStorageDeletePrefixResult: 3011,
+    }
+
     let VIDEO_EXPIRED_SECOND = 10
 
     class VideoWrapper {
@@ -1747,8 +3095,8 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             }
             this.cspBlockedHost = {};
 
-            this.video_together_host = '{{{ {"":"./config/release_host","order":0} }}}';
-            this.video_together_main_host = '{{{ {"":"./config/release_host","order":0} }}}';
+            this.video_together_host = 'http://127.0.0.1:5001/';
+            this.video_together_main_host = 'https://vt.panghair.com:5000/';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
@@ -1767,8 +3115,8 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '{{timestamp}}';
-            this.isMain = isVtFrame;
+            this.version = '1707141762';
+            this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
             this.callbackMap = new Map;
@@ -1894,10 +3242,10 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             this.role = role
             switch (role) {
                 case this.RoleEnum.Master:
-                    setRoleText("{$host_role$}");
+                    setRoleText("Host");
                     break;
                 case this.RoleEnum.Member:
-                    setRoleText("{$memeber_role$}");
+                    setRoleText("Member");
                     break;
                 default:
                     setRoleText("");
@@ -1942,7 +3290,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                         }
                         this.callbackMap.delete(id);
                     })
-                    sendMessageToVt(MessageType.FetchRequest, {
+                    sendMessageToTop(MessageType.FetchRequest, {
                         id: id,
                         url: url.toString(),
                         method: method,
@@ -1951,7 +3299,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     setTimeout(() => {
                         try {
                             if (this.callbackMap.has(id)) {
-                                this.callbackMap.get(id)({ error: "{$timeout$}" });
+                                this.callbackMap.get(id)({ error: "timeout" });
                             }
                         } finally {
                             this.callbackMap.delete(id);
@@ -2136,31 +3484,24 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             if (this.isMain) {
                 this.ctxRole = this.role;
             }
-            const postData = {
-                source: "VideoTogether",
-                type: type,
-                data: data,
-                context: {
-                    tempUser: this.tempUser,
-                    videoTitle: this.isMain ? topFrameState.title : this.videoTitle,
-                    voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
-                    VideoTogetherStorage: window.VideoTogetherStorage,
-                    timeOffset: this.timeOffset,
-                    ctxRole: this.ctxRole,
-                    ctxMemberCount: this.ctxMemberCount,
-                    ctxWsIsOpen: this.ctxWsIsOpen
-                }
-            };
-            if (isWrapperFrame) {
-                PostMessage(window.top, postData);
-                return;
-            }
             let iframs = document.getElementsByTagName("iframe");
             for (let i = 0; i < iframs.length; i++) {
-                if (checkVtFrame(iframs[i])) {
-                    continue;
-                }
-                PostMessage(iframs[i].contentWindow, postData);
+                PostMessage(iframs[i].contentWindow, {
+                    source: "VideoTogether",
+                    type: type,
+                    data: data,
+                    context: {
+                        tempUser: this.tempUser,
+                        videoTitle: this.isMain ? document.title : this.videoTitle,
+                        voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
+                        VideoTogetherStorage: window.VideoTogetherStorage,
+                        timeOffset: this.timeOffset,
+                        ctxRole: this.ctxRole,
+                        ctxMemberCount: this.ctxMemberCount,
+                        ctxWsIsOpen: this.ctxWsIsOpen
+                    }
+                });
+                // console.info("send ", type, iframs[i].contentWindow, data)
             }
         }
 
@@ -2171,7 +3512,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             if (this.isMain) {
                 WS.urlReq(m3u8Url, idx, originUrl);
             } else {
-                sendMessageToVt(MessageType.FetchRealUrlFromIframeReq, { m3u8Url: m3u8Url, idx: idx, origin: originUrl });
+                sendMessageToTop(MessageType.FetchRealUrlFromIframeReq, { m3u8Url: m3u8Url, idx: idx, origin: originUrl });
             }
 
             return new Promise((res, rej) => {
@@ -2327,8 +3668,8 @@ import { WrapperIframe } from './src/WrapperIframe.js'
         // end of download
 
         UpdateStatusText(text, color) {
-            if (!isWrapperFrame) {
-                sendMessageToVt(MessageType.UpdateStatusText, { text: text + "", color: color });
+            if (window.self != window.top) {
+                sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
             } else {
                 window.videoTogetherFlyPannel.UpdateStatusText(text + "", color);
             }
@@ -2422,9 +3763,9 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     try {
                         await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp, data.m3u8Url);
                         if (this.waitForLoadding) {
-                            this.UpdateStatusText("{$wait_for_memeber_loadding$}", "red");
+                            this.UpdateStatusText("wait for memeber loading", "red");
                         } else {
-                            _this.UpdateStatusText("{$sync_success$} " + _this.GetDisplayTimeText(), "green");
+                            _this.UpdateStatusText("Sync " + _this.GetDisplayTimeText(), "green");
                         }
                     } catch (e) {
                         this.UpdateStatusText(e, "red");
@@ -2508,7 +3849,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                         }
                     }
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
-                        sendMessageToVt(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
+                        sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
                     try {
                         if (firstSync) {
@@ -2555,10 +3896,6 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     break;
                 }
                 case MessageType.UpdateM3u8Files: {
-                    if (isWrapperFrameEnabled && !isWrapperFrame) {
-                        sendMessageToVt(MessageType.UpdateM3u8Files, data);
-                        break;
-                    }
                     data['m3u8Files'].forEach(m3u8 => {
                         try {
                             function calculateM3U8Duration(textContent) {
@@ -2622,7 +3959,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                         controller.abort();
                         realUrlCache[data.url] = r.url;
                     }
-                    sendMessageToVt(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
+                    sendMessageToTop(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
                     break;
                 }
                 case MessageType.FetchRealUrlResp: {
@@ -2663,7 +4000,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 case MessageType.StartDownload: {
                     startDownload(data.m3u8Url, data.m3u8Content, data.urls, data.title, data.pageUrl);
                     setInterval(() => {
-                        sendMessageToVt(MessageType.DownloadStatus, {
+                        sendMessageToTop(MessageType.DownloadStatus, {
                             downloadSpeedMb: this.downloadSpeedMb,
                             downloadPercentage: this.downloadPercentage
                         })
@@ -2711,7 +4048,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             if (videoDom.VideoTogetherVideoId == undefined) {
                 videoDom.VideoTogetherVideoId = generateUUID();
             }
-            sendMessageToVt(MessageType.ActivatedVideo, new VideoModel(videoDom.VideoTogetherVideoId, videoDom.duration, Date.now() / 1000, Date.now() / 1000));
+            sendMessageToTop(MessageType.ActivatedVideo, new VideoModel(videoDom.VideoTogetherVideoId, videoDom.duration, Date.now() / 1000, Date.now() / 1000));
         }
 
         addListenerMulti(el, s, fn) {
@@ -2723,7 +4060,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             // maybe we need to check if the event is activated by user interaction
             this.setActivatedVideoDom(e.target);
             if (!isLimited()) {
-                sendMessageToVt(MessageType.CallScheduledTask, {});
+                sendMessageToTop(MessageType.CallScheduledTask, {});
             }
         }
 
@@ -2786,7 +4123,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             this.httpSucc = true
             this.video_together_host = url;
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
-            sendMessageToVt(MessageType.SetStorageValue, { key: "PublicVtVersion", value: data["vtVersion"] });
+            sendMessageToTop(MessageType.SetStorageValue, { key: "PublicVtVersion", value: data["vtVersion"] });
         }
 
         RecoveryState() {
@@ -2825,7 +4162,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 }
             }
 
-            let url = new URL(getTopFrame().url);
+            let url = new URL(window.location);
             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                 try {
                     RecoveryStateFrom.bind(this)(key => window.VideoTogetherStorage.VideoTogetherTabStorage[key]);
@@ -2849,7 +4186,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
         async JoinRoom(name, password) {
             if (name == "") {
-                popupError("{$please_input_room_name$}")
+                popupError("Please input room name")
                 return;
             }
             try {
@@ -2878,7 +4215,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             this.setRole(this.RoleEnum.Null);
             window.videoTogetherFlyPannel.InLobby();
             let state = this.GetRoomState("");
-            sendMessageToVt(MessageType.SetTabStorage, state);
+            sendMessageToTop(MessageType.SetTabStorage, state);
             this.SaveStateToSessionStorageWhenSameOrigin("");
         }
 
@@ -2919,15 +4256,6 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 }
             } catch { };
             try {
-                if (isTopFrame) {
-                    sendMessageToVt(MessageType.TopFrameState, {
-                        url: window.location.href,
-                        title: document.title,
-                        isEasySharePage: window.VideoTogetherEasyShareMemberSite
-                    })
-                }
-            } catch { };
-            try {
                 if (this.isMain) {
                     if (windowPannel.videoVolume.value != this.getVideoVolume()) {
                         windowPannel.videoVolume.value = this.getVideoVolume()
@@ -2939,7 +4267,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     }
 
                     if (this.videoVolume != null) {
-                        sendMessageToVt(MessageType.ChangeVideoVolume, { volume: this.getVideoVolume() / 100 });
+                        sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.getVideoVolume() / 100 });
                     }
                     [...select('#peer').querySelectorAll("*")].forEach(e => {
                         e.volume = this.getVoiceVolume() / 100;
@@ -2953,9 +4281,9 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     }
                     if (video instanceof VideoWrapper || video.VideoTogetherChoosed == true) {
                         // ad hoc
-                        sendMessageToVt(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
+                        sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
                     } else {
-                        sendMessageToVt(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000));
+                        sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000));
                     }
                 })
                 this.videoMap.forEach((video, id, map) => {
@@ -3009,41 +4337,41 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     case this.RoleEnum.Master: {
                         if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                             let state = this.GetRoomState("");
-                            sendMessageToVt(MessageType.SetTabStorage, state);
+                            sendMessageToTop(MessageType.SetTabStorage, state);
                         }
                         this.SaveStateToSessionStorageWhenSameOrigin("");
                         let video = this.GetVideoDom();
                         if (video == undefined) {
                             await this.UpdateRoom(this.roomName,
                                 this.password,
-                                this.linkWithoutState(getTopFrame().url),
+                                this.linkWithoutState(window.location),
                                 1,
                                 0,
                                 true,
                                 1e9,
                                 this.getLocalTimestamp());
-                            throw new Error("{$no_video_in_this_page$}");
+                            throw new Error("No video in this page");
                         } else {
-                            sendMessageToVt(MessageType.SyncMasterVideo, {
+                            sendMessageToTop(MessageType.SyncMasterVideo, {
                                 waitForLoadding: this.waitForLoadding,
                                 video: video,
                                 password: this.password,
                                 roomName: this.roomName,
-                                link: this.linkWithoutState(getTopFrame().url)
+                                link: this.linkWithoutState(window.location)
                             });
                         }
                         break;
                     }
                     case this.RoleEnum.Member: {
                         let room = await this.GetRoom(this.roomName, this.password);
-                        sendMessageToVt(MessageType.RoomDataNotification, room);
+                        sendMessageToTop(MessageType.RoomDataNotification, room);
                         this.duration = room["duration"];
                         let newUrl = room["url"];
                         if (isEasyShareMember()) {
                             if (isEmpty(room['m3u8Url'])) {
-                                throw new Error("{$video_not_supported$}");
+                                throw new Error("Can't sync this video");
                             } else {
-                                let _url = new URL(getTopFrame().url);
+                                let _url = new URL(window.location);
                                 _url.hash = room['m3u8Url'];
                                 newUrl = _url.href;
                                 window.VideoTogetherEasyShareUrl = room['url'];
@@ -3053,14 +4381,14 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                         if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(newUrl);
-                                sendMessageToVt(MessageType.SetTabStorage, state);
+                                sendMessageToTop(MessageType.SetTabStorage, state);
                                 setInterval(() => {
                                     if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == newUrl) {
                                         try {
                                             if (isWeb()) {
-                                                if (!this._jumping && (new URL(getTopFrame().url)).origin != (new URL(newUrl).origin)) {
+                                                if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
                                                     this._jumping = true;
-                                                    alert("{$please_join_again_after_jump$}");
+                                                    alert("Please join again after jump");
                                                 }
                                             }
                                         } catch { };
@@ -3079,16 +4407,16 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                             }
                         } else {
                             let state = this.GetRoomState("");
-                            sendMessageToVt(MessageType.SetTabStorage, state);
+                            sendMessageToTop(MessageType.SetTabStorage, state);
                         }
                         if (this.PlayAdNow()) {
-                            throw new Error("{$ad_playing$}");
+                            throw new Error("Playing AD");
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
-                            throw new Error("{$no_video_in_this_page$}");
+                            throw new Error("No video in this page");
                         } else {
-                            sendMessageToVt(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
+                            sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
                         }
                         break;
                     }
@@ -3101,7 +4429,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
         PlayAdNow() {
             try {
                 // iqiyi
-                if ((new URL(getTopFrame().url)).hostname.endsWith('iqiyi.com')) {
+                if (window.location.hostname.endsWith('iqiyi.com')) {
                     let cdTimes = document.querySelectorAll('.cd-time');
                     for (let i = 0; i < cdTimes.length; i++) {
                         if (cdTimes[i].offsetParent != null) {
@@ -3111,7 +4439,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 }
             } catch { }
             try {
-                if ((new URL(getTopFrame().url)).hostname.endsWith('v.qq.com')) {
+                if (window.location.hostname.endsWith('v.qq.com')) {
                     let adCtrls = document.querySelectorAll('.txp_ad_control:not(.txp_none)');
                     for (let i = 0; i < adCtrls.length; i++) {
                         if (adCtrls[i].getAttribute('data-role') == 'creative-player-video-ad-control') {
@@ -3121,7 +4449,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 }
             } catch { }
             try {
-                if ((new URL(getTopFrame().url)).hostname.endsWith('youku.com')) {
+                if (window.location.hostname.endsWith('youku.com')) {
                     if (document.querySelector('.advertise-layer').querySelector('div')) {
                         return true;
                     }
@@ -3230,7 +4558,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 m3u8UrlType = this.m3u8UrlTestResult[nativeSrc]
 
             } catch { };
-            sendMessageToVt(MessageType.UpdateRoomRequest, {
+            sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
                 password: data.password,
                 url: data.link,
@@ -3291,7 +4619,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 let sameOrigin = false;
                 if (link != "") {
                     let url = new URL(link);
-                    let currentUrl = new URL(getTopFrame().url);
+                    let currentUrl = new URL(window.location);
                     sameOrigin = (url.origin == currentUrl.origin);
                 }
 
@@ -3346,7 +4674,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             this.lastSyncMemberVideo = Date.now() / 1000;
 
             let room = data.room;
-            sendMessageToVt(MessageType.GetRoomData, room);
+            sendMessageToTop(MessageType.GetRoomData, room);
 
             // useless
             this.duration = room["duration"];
@@ -3380,16 +4708,16 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                             // check if the video is ready
                             if (window.location.hostname.endsWith('aliyundrive.com')) {
                                 if (videoDom.readyState == 0) {
-                                    throw new Error("{$need_to_play_manually$}");
+                                    throw new Error("Need to play manually");
                                 }
                             }
                         }
                         await videoDom.play();
                         if (videoDom.paused) {
-                            throw new Error("{$need_to_play_manually$}");
+                            throw new Error("Need to play manually");
                         }
                     } catch (e) {
-                        throw new Error("{$need_to_play_manually$}");
+                        throw new Error("Need to play manually");
                     }
                 }
             }
@@ -3399,9 +4727,9 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                 } catch (e) { }
             }
             if (isNaN(videoDom.duration)) {
-                throw new Error("{$need_to_play_manually$}");
+                throw new Error("Need to play manually");
             }
-            sendMessageToVt(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" });
+            sendMessageToTop(MessageType.UpdateStatusText, { text: "Sync " + this.GetDisplayTimeText(), color: "green" });
 
             setTimeout(() => {
                 try {
@@ -3412,7 +4740,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
                     }
                 } catch { isLoading = false };
                 // make the member count update slow
-                sendMessageToVt(MessageType.UpdateMemberStatus, { isLoadding: isLoading });
+                sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoading });
             }, 1);
         }
 
@@ -3430,12 +4758,12 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
         async CreateRoom(name, password) {
             if (name == "") {
-                popupError("{$please_input_room_name$}")
+                popupError("Please input room name")
                 return;
             }
             try {
                 this.tempUser = generateTempUserId();
-                let url = this.linkWithoutState(getTopFrame().url);
+                let url = this.linkWithoutState(window.location);
                 let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0, this.getLocalTimestamp()), 2);
                 this.setRole(this.RoleEnum.Master);
                 this.roomName = name;
@@ -3452,11 +4780,17 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
         async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url = "") {
             m3u8Url = emptyStrIfUdf(m3u8Url);
+            try {
+                if (window.location.pathname == "/page") {
+                    let url = new URL(atob(new URL(window.location).searchParams.get("url")));
+                    window.location = url;
+                }
+            } catch { }
             WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url);
             let WSRoom = WS.getRoom();
             if (WSRoom != null) {
                 this.setWaitForLoadding(WSRoom['waitForLoadding']);
-                sendMessageToVt(MessageType.RoomDataNotification, WSRoom);
+                sendMessageToTop(MessageType.RoomDataNotification, WSRoom);
                 return WSRoom;
             }
             let apiUrl = new URL(this.video_together_host + "/room/update");
@@ -3470,13 +4804,13 @@ import { WrapperIframe } from './src/WrapperIframe.js'
             apiUrl.searchParams.set("duration", duration);
             apiUrl.searchParams.set("tempUser", this.tempUser);
             apiUrl.searchParams.set("protected", isRoomProtected());
-            apiUrl.searchParams.set("videoTitle", this.isMain ? topFrameState.title : this.videoTitle);
+            apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
             apiUrl.searchParams.set("m3u8Url", emptyStrIfUdf(m3u8Url));
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
-            sendMessageToVt(MessageType.RoomDataNotification, data);
+            sendMessageToTop(MessageType.RoomDataNotification, data);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
@@ -3520,10 +4854,7 @@ import { WrapperIframe } from './src/WrapperIframe.js'
 
 
                 target.videoTogetherMoving = true;
-                if (isWrapperFrame) {
-                    WrapperIframe.startMoving(e);
-                    return;
-                }
+
                 if (e.clientX) {
                     target.oldX = e.clientX;
                     target.oldY = e.clientY;
@@ -3604,5 +4935,3 @@ import { WrapperIframe } from './src/WrapperIframe.js'
         document.querySelector("#videoTogetherLoading").remove()
     } catch { }
 })()
-
-//delete-this-begin//delete-this-end})()

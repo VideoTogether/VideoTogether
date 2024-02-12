@@ -16,32 +16,43 @@
 // @connect      api.2gether.video
 // @connect      api.chizhou.in
 // @connect      api.panghair.com
-// @connect      vt.panghair.com
+// @connect      vt.v2.panghair.com
 // @connect      raw.githubusercontent.com
 // @connect      videotogether.oss-cn-hangzhou.aliyuncs.com
 // ==/UserScript==
 
+//delete-this-begin//delete-this-end(function () {
+
+const isDevelopment = true;
+const version = '{{timestamp}}'
+const type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
+const isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
+const isWebsite = (type == "website" || type == "website_debug");
+const isUserscript = (type == "userscript");
+const isTopFrame = (window.self == window.top);
+
+function getBrowser() {
+    switch (type) {
+        case 'Safari':
+            return browser;
+        case 'Chrome':
+        case 'Firefox':
+            return chrome;
+    }
+}
+
+if(isExtension){
+    window.VideoTogetherWrapperIframeUrl = getBrowser().runtime.getURL('/videotogether_wrapper.html');
+}
+import { WrapperIframeUrl } from './src/Constants.js';
+import { isWrapperFrame } from './src/Utils.js';
+
+console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeUrl);
+
 (async function () {
 
-    let isDevelopment = false;
-
-    let version = '{{timestamp}}'
-    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
-    function getBrowser() {
-        switch (type) {
-            case 'Safari':
-                return browser;
-            case 'Chrome':
-            case 'Firefox':
-                return chrome;
-        }
-    }
-    const isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
-    const isWebsite = (type == "website" || type == "website_debug");
-    const isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
-    const isVtFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
 
     function getGM() {
         if (type == "website" || type == "website_debug") {
@@ -201,7 +212,7 @@
             type: 35,
             data: {
                 pageUUID: pageUUID,
-                isVtFrame: isVtFrame
+                isWrapperFrame: isWrapperFrame
             }
         }, "*");
         // if (isVtFrame) {
@@ -237,7 +248,10 @@
         }
     }
 
-    let vtRefreshVersion = version + language;
+    const isWrapperFrameEnabled = await getGM().getValue('WrapperFrame') != false;
+    const isVtFrame = isWrapperFrameEnabled ? isWrapperFrame : isTopFrame;
+
+    let vtRefreshVersion = version + language + isWrapperFrameEnabled;
     try {
         let publicVtVersion = await getGM().getValue("PublicVtVersion")
         if (publicVtVersion != null) {
@@ -258,14 +272,14 @@
             cachedVt = privateCachedVt['data'];
         } else {
             console.log("Refresh VT");
-            fetch(`https://2gether.video/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
+            fetch(`https://2gether.video/release/vt.v2${isWrapperFrameEnabled ? ".frame" : ""}.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                 .then(r => r.text())
                 .then(data => getGM().setValue('PrivateCachedVt', {
                     'version': vtRefreshVersion,
                     'data': data
                 }))
                 .catch(() => {
-                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
+                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.v2.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                         .then(r => r.text())
                         .then(data => getGM().setValue('PrivateCachedVt', {
                             'version': vtRefreshVersion,
@@ -347,9 +361,9 @@
 
     let isTrustPageCache = undefined;
     function isTrustPage() {
-        if (isDevelopment) {
-            return true;
-        }
+        // if (isDevelopment) {
+        //     return true;
+        // }
         if (window.location.protocol != 'https:') {
             return false
         }
@@ -460,7 +474,7 @@
                     console.log("pageUUID", pageUUID, e.data.data.pageUUID);
                     console.log(e);
                     pageIdMap[e.data.data.pageUUID] = e.source;
-                    if (e.data.data.isVtFrame) {
+                    if (e.data.data.isWrapperFrame) {
                         pageIdMap['vtFrame'] = e.source;
                     }
                     break;
@@ -576,9 +590,10 @@
         }
     });
 
-    let isMain = window.self == window.top;
-
     async function PostStorage() {
+        if (!isVtFrame && !isTrustPage()) {
+            return;
+        }
         try {
             let keys = await GetKeys();
             let data = {}
@@ -626,7 +641,7 @@
     script.type = 'text/javascript';
     switch (type) {
         case "userscript":
-            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + version;
+            script.src = `https://2gether.video/release/vt.v2.${language}.user.js?timestamp=` + version;
             break;
         case "Chrome":
         case "Safari":
@@ -644,29 +659,24 @@
                 }
                 if (urlDisabled) {
                     console.log("hot update is not successful")
-                    insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
+                    insertJs(getBrowser().runtime.getURL(`vt.v2${isWrapperFrameEnabled ? ".frame" : ""}.${language}.user.js`));
                     hotUpdated = true;
                 }
             });
-            if (isDevelopment) {
-                const isWrapperFrame = await getGM().getValue('WrapperFrame') != false;
-                script.src = getBrowser().runtime.getURL(`vt${isWrapperFrame ? ".frame" : ""}.${language}.user.js`);
-            } else {
-                script.src = getBrowser().runtime.getURL(`load.${language}.js`);
-            }
+            script.src = getBrowser().runtime.getURL(`load${isDevelopment ? ".dev" : ""}${isWrapperFrameEnabled ? ".frame" : ""}.${language}.js`);
             script.setAttribute("cachedVt", cachedVt);
             break;
         case "userscript_debug":
-            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
+            script.src = `http://127.0.0.1:7000/release/vt.v2.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "userscript_beta":
-            script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
+            script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.v2.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "website":
-            script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + version;
+            script.src = `https://2gether.video/release/vt.v2.${language}.website.js?timestamp=` + version;
             break;
         case "website_debug":
-            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
+            script.src = `http://127.0.0.1:7000/release/vt.v2.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
             break;
     }
 
@@ -704,7 +714,7 @@
         if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js`;
+            script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.v2.${language}.user.js`;
             (document.body || document.documentElement).appendChild(script);
             try {
                 if (isWebsite) {
@@ -766,3 +776,5 @@
     document.onmousedown = filter;
     document.ontouchstart = filter;
 })();
+
+//delete-this-begin//delete-this-end})()

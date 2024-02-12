@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1707552489
+// @version      1706416707
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -22,10 +22,9 @@
 // ==/UserScript==
 
 (async function () {
-
     let isDevelopment = false;
 
-    let version = '1707552489'
+    let version = '1706416707'
     let type = 'Safari'
     function getBrowser() {
         switch (type) {
@@ -36,18 +35,17 @@
                 return chrome;
         }
     }
-    const isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
-    const isWebsite = (type == "website" || type == "website_debug");
-    const isUserscript = (type == "userscript");
+    let isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
+    let isWebsite = (type == "website" || type == "website_debug");
+    let isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
-    const isVtFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
 
     function getGM() {
         if (type == "website" || type == "website_debug") {
             return websiteGM;
         }
-        if (isExtension) {
+        if (type == "Chrome" || type == "Safari" || type == "Firefox") {
             return extensionGM;
         }
         return GM;
@@ -111,7 +109,7 @@
             }
         }
     }
-    if (isExtension) {
+    if (type == "Chrome" || type == "Safari" || type == "Firefox") {
         getGM().setValue = async (key, value) => {
             return await new Promise((resolve, reject) => {
                 try {
@@ -182,32 +180,6 @@
         } else {
             getBrowser().runtime.sendMessage(JSON.stringify({ type: 4, enabled: true }));
         }
-    }
-
-    function generateUUID() {
-        if (crypto.randomUUID != undefined) {
-            return crypto.randomUUID();
-        }
-        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-        );
-    }
-    const pageUUID = generateUUID();
-    const pagePrivateKey = generateUUID();
-    const pageIdMap = {}
-    if (isExtension) {
-        window.top.postMessage({
-            source: "VideoTogether",
-            type: 35,
-            data: {
-                pageUUID: pageUUID,
-                isVtFrame: isVtFrame
-            }
-        }, "*");
-        // if (isVtFrame) {
-        //     getGM().setValue("vtFramePageId", pageUUID);
-        // }
-
     }
 
 
@@ -437,34 +409,6 @@
                     await SetTabStorage(e.data.data);
                     break;
                 }
-                case 34: {
-                    if (window.top != window.self) {
-                        window.top.postMessage(e.data, "*");
-                        return;
-                    }
-
-                    e.data.data.from = pageUUID;
-                    let target = e.data.data.target
-                    // if (target == 'vtFrame') {
-                    //     target = await getGM().getValue("vtFramePageId")
-                    // }
-                    if (pageIdMap[target] == undefined) {
-                        console.log("pageIdMap", pageIdMap);
-                        console.log("target not found", target);
-                    }
-                    // console.log(e.data, pageIdMap[e.data.data.target]);
-                    pageIdMap[target].postMessage(e.data.data, "*");
-                    break;
-                }
-                case 35: {
-                    console.log("pageUUID", pageUUID, e.data.data.pageUUID);
-                    console.log(e);
-                    pageIdMap[e.data.data.pageUUID] = e.source;
-                    if (e.data.data.isVtFrame) {
-                        pageIdMap['vtFrame'] = e.source;
-                    }
-                    break;
-                }
                 case 2001: {
                     getBrowser().runtime.sendMessage(JSON.stringify(e.data), response => {
                         const realTableName = getRealTableName(e.data.data.table)
@@ -692,8 +636,7 @@
                 }
             });
             if (isDevelopment) {
-                const isWrapperFrame = await getGM().getValue('WrapperFrame') != false;
-                script.src = getBrowser().runtime.getURL(`vt${isWrapperFrame ? ".frame" : ""}.${language}.user.js`);
+                script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             } else {
                 script.src = getBrowser().runtime.getURL(`load.${language}.js`);
             }

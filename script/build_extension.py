@@ -6,6 +6,7 @@ import json
 import pathlib
 import shutil
 from time import time
+import re
 
 current_path = os.path.dirname(__file__)
 
@@ -52,6 +53,7 @@ def processImportContent(content):
         start = content.index(DELETE_BEGIN)
         end = content.index(DELETE_END)+len(DELETE_END)
         content = content[0:start] + content[end:]
+    content = re.sub(r'^export ', '', content, flags=re.MULTILINE)
     return content
 
 def compileImport(sourceSubDir, extension, rawFilename, subNameList: list, content):
@@ -71,6 +73,7 @@ def compileImport(sourceSubDir, extension, rawFilename, subNameList: list, conte
 
 def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
     content = processImportContent(content)
+    content = compileImport(sourceSubDir, extension, rawFilename, subNameList, content)
     global rootPath
     global releasePath
     if r"{{{" not in content:
@@ -84,8 +87,6 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
                     for key in strings:
                         newContent = newContent.replace(
                             '{$'+key+'$}', strings[key])
-                newContent = compileImport(sourceSubDir, extension,
-                        rawFilename, newSubNameList, newContent)
                 compile(sourceSubDir, extension,
                         rawFilename, newSubNameList, newContent)
             return
@@ -168,10 +169,14 @@ if __name__ == '__main__':
     remove("release/local_video_player.html")
     remove("release/local_videos.html")
     remove("release/local_page.js")
-    shutil.copyfile(rootPath.joinpath("release/load.en-us.js"),
-                    rootPath.joinpath("source/chrome/load.en-us.js"))
-    shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
-                    rootPath.joinpath("source/chrome/load.zh-cn.js"))
+    cp("release/load.en-us.js","source/chrome/load.en-us.js")
+    cp("release/load.zh-cn.js", "source/chrome/load.zh-cn.js")
+    cp("release/load.frame.en-us.js", "source/chrome/load.frame.en-us.js")
+    cp("release/load.frame.zh-cn.js", "source/chrome/load.frame.zh-cn.js")
+    cp("release/load.dev.en-us.js","source/chrome/load.dev.en-us.js")
+    cp("release/load.dev.zh-cn.js", "source/chrome/load.dev.zh-cn.js")
+    cp("release/load.dev.frame.en-us.js", "source/chrome/load.dev.frame.en-us.js")
+    cp("release/load.dev.frame.zh-cn.js", "source/chrome/load.dev.frame.zh-cn.js")
     shutil.copyfile(rootPath.joinpath("release/load.en-us.js"),
                     rootPath.joinpath("source/firefox/load.en-us.js"))
     shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
@@ -181,24 +186,24 @@ if __name__ == '__main__':
     shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/load.zh-cn.js"))
 
-    shutil.copyfile(rootPath.joinpath("release/vt.en-us.user.js"),
-                    rootPath.joinpath("source/chrome/vt.en-us.user.js"))
-    shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
-                    rootPath.joinpath("source/chrome/vt.zh-cn.user.js"))
-    cp("release/vt.frame.en-us.user.js", "source/chrome/vt.frame.en-us.user.js")
-    cp("release/vt.frame.zh-cn.user.js", "source/chrome/vt.frame.zh-cn.user.js")
-    # shutil.copyfile(rootPath.joinpath("release/vt.debug.en-us.user.js"),
-    #                 rootPath.joinpath("source/chrome/vt.debug.en-us.user.js"))
-    # shutil.copyfile(rootPath.joinpath("release/vt.debug.zh-cn.user.js"),
-    #                 rootPath.joinpath("source/chrome/vt.debug.zh-cn.user.js"))
-    shutil.copyfile(rootPath.joinpath("release/vt.en-us.user.js"),
-                    rootPath.joinpath("source/firefox/vt.en-us.user.js"))
-    shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
-                    rootPath.joinpath("source/firefox/vt.zh-cn.user.js"))
-    shutil.copyfile(rootPath.joinpath("release/vt.en-us.user.js"),
-                    rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/vt.en-us.user.js"))
-    shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
-                    rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/vt.zh-cn.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.v2.en-us.user.js"),
+                    rootPath.joinpath("source/chrome/vt.v2.en-us.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.v2.zh-cn.user.js"),
+                    rootPath.joinpath("source/chrome/vt.v2.zh-cn.user.js"))
+    cp("release/vt.v2.frame.en-us.user.js", "source/chrome/vt.v2.frame.en-us.user.js")
+    cp("release/vt.v2.frame.zh-cn.user.js", "source/chrome/vt.v2.frame.zh-cn.user.js")
+    # shutil.copyfile(rootPath.joinpath("release/vt.v2.debug.en-us.user.js"),
+    #                 rootPath.joinpath("source/chrome/vt.v2.debug.en-us.user.js"))
+    # shutil.copyfile(rootPath.joinpath("release/vt.v2.debug.zh-cn.user.js"),
+    #                 rootPath.joinpath("source/chrome/vt.v2.debug.zh-cn.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.v2.en-us.user.js"),
+                    rootPath.joinpath("source/firefox/vt.v2.en-us.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.v2.zh-cn.user.js"),
+                    rootPath.joinpath("source/firefox/vt.v2.zh-cn.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.v2.en-us.user.js"),
+                    rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/vt.v2.en-us.user.js"))
+    shutil.copyfile(rootPath.joinpath("release/vt.v2.zh-cn.user.js"),
+                    rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/vt.v2.zh-cn.user.js"))
 
     shutil.copyfile(rootPath.joinpath("release/extension.chrome.user.js"),
                     rootPath.joinpath("source/chrome/extension.chrome.user.js"))

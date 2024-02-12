@@ -1,4 +1,4 @@
-const MessageType = {
+export const MessageType = {
     ActivatedVideo: 1,
     ReportVideo: 2,
     SyncMemberVideo: 3,
@@ -38,7 +38,7 @@ const MessageType = {
     ExtMessageTo: 34,
     InitMsgChan: 35,
     TopFrameState: 36,
-    RequestTopFrameState: 37,
+    OpenLinkInSelf: 37,
 
     UpdateM3u8Files: 1001,
 
@@ -68,7 +68,3 @@ const MessageType = {
     IosStorageDeletePrefix: 3010,
     IosStorageDeletePrefixResult: 3011,
 }
-
-//delete-this-begin
-module.exports = { MessageType };
-//delete-this-end

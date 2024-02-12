@@ -1,3 +1,10 @@
+//delete-this-begin
+import { Base64 } from './Base64.js';
+import { WrapperIframeUrl } from './Constants.js';
+import { PostMessage } from './PostMessage.js';
+import { TopFrameState } from './TopFrameState.js';
+//delete-this-end
+
 const mouseMoveEvent = ['mousemove', 'touchmove', 'pointermove'];
 const mouseUpEvent = ['mouseup', 'touchend', 'pointerup'];
 
@@ -10,10 +17,13 @@ const SelfWrapperState = {
     movingOffsetY: 0,
 }
 const WrapperIframeSource = 'VT_WrapperIframe';
-class WrapperIframe {
+
+export class WrapperIframe {
     constructor() {
         this.frame = document.createElement('iframe');
-        this.frame.src = 'https://2gether.video/videotogether_wrapper.html';
+        const selfSate = JSON.stringify(TopFrameState.getSelfObj());
+        const selfSateBase64 = Base64.encode(selfSate);
+        this.frame.src = `${WrapperIframeUrl}#${selfSateBase64}`;
         this.frame.allow = 'microphone;';
         this.frame.style = 'position: absolute; right: 0px; bottom: 0px; width: 262px; height: 212px; background: transparent; border: none; z-index: 2147483647; position:fixed;';
         (document.body || document.documentElement).appendChild(this.frame);
@@ -121,7 +131,3 @@ class WrapperIframe {
         })
     }
 }
-
-//delete-this-begin
-module.exports = { WrapperIframe };
-//delete-this-end

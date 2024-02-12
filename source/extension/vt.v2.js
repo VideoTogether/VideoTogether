@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1707552719
+// @version      {{timestamp}}
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -9,11 +9,13 @@
 // @grant        none
 // ==/UserScript==
 
-(function () {
+//delete-this-begin//delete-this-end(function () {
 
-const language = 'zh-cn'
-const vtRuntime = `website`;
+const language = '{$language$}'
+const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
 const vtMsgSrc = 'VideoTogether'
+import { WrapperIframeUrl } from './src/Constants.js';
+import { isWrapperFrame } from './src/Utils.js';
 
 const realUrlCache = {}
 const m3u8ContentCache = {}
@@ -28,323 +30,46 @@ const lastRunQueue = []
 const periodSec = 5;
 const timeLimitation = 15;
 const isTopFrame = (window.self == window.top);
-const isWrapperFrameEnabled = (`true`== 'true');
-const isWrapperFrame = (window.location.href == 'https://2gether.video/videotogether_wrapper.html');
+const isWrapperFrameEnabled = (`{{{ {"": "./config/false", "frame": "./config/true","order":98} }}}` == 'true');
 const isVtFrame = isWrapperFrameEnabled ? isWrapperFrame : isTopFrame;
 
-function hide(e) {
-    if (e) e.style.display = 'none';
-}
-
-function show(e) {
-    if (e) e.style.display = null;
-}
-
-
-
-const MessageType = {
-    ActivatedVideo: 1,
-    ReportVideo: 2,
-    SyncMemberVideo: 3,
-    SyncMasterVideo: 4,
-    UpdateStatusText: 5,
-    JumpToNewPage: 6,
-    GetRoomData: 7,
-    ChangeVoiceVolume: 8,
-    ChangeVideoVolume: 9,
-
-    FetchRequest: 13,
-    FetchResponse: 14,
-
-    SetStorageValue: 15,
-    SyncStorageValue: 16,
-
-    ExtensionInitSuccess: 17,
-
-    SetTabStorage: 18,
-    SetTabStorageSuccess: 19,
-
-    UpdateRoomRequest: 20,
-    CallScheduledTask: 21,
-
-    RoomDataNotification: 22,
-    UpdateMemberStatus: 23,
-    TimestampV2Resp: 24,
-    // EasyShareCheckSucc: 25,
-    FetchRealUrlReq: 26,
-    FetchRealUrlResp: 27,
-    FetchRealUrlFromIframeReq: 28,
-    FetchRealUrlFromIframeResp: 29,
-    SendTxtMsg: 30,
-    GotTxtMsg: 31,
-    StartDownload: 32,
-    DownloadStatus: 33,
-    ExtMessageTo: 34,
-    InitMsgChan: 35,
-    TopFrameState: 36,
-    RequestTopFrameState: 37,
-
-    UpdateM3u8Files: 1001,
-
-    SaveIndexedDb: 2001,
-    ReadIndexedDb: 2002,
-    SaveIndexedDbResult: 2003,
-    ReadIndexedDbResult: 2004,
-    RegexMatchKeysDb: 2005,
-    RegexMatchKeysDbResult: 2006,
-    DeleteFromIndexedDb: 2007,
-    DeleteFromIndexedDbResult: 2008,
-    StorageEstimate: 2009,
-    StorageEstimateResult: 2010,
-    ReadIndexedDbSw: 2011,
-    ReadIndexedDbSwResult: 2012,
-    //2013 used
-
-    IosStorageSet: 3001,
-    IosStorageSetResult: 3002,
-    IosStorageGet: 3003,
-    IosStorageGetResult: 3004,
-    IosStorageDelete: 3005,
-    IosStorageDeleteResult: 3006,
-    IosStorageUsage: 3007,
-    IosStorageUsageResult: 3008,
-    IosStorageCompact: 3009,
-    IosStorageDeletePrefix: 3010,
-    IosStorageDeletePrefixResult: 3011,
-}
-
-
-
-const Global = {
-    inited: false,
-    NativePostMessageFunction: null,
-    NativeAttachShadow: null,
-    NativeFetch: null
-}
-
-function GetNativeFunction() {
-    try{
-        if (Global.inited) {
-            return;
-        }
-        let temp = document.createElement("iframe");
-        hide(temp);
-        document.body.append(temp);
-        Global.NativePostMessageFunction = temp.contentWindow.postMessage;
-        Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
-        Global.NativeFetch = temp.contentWindow.fetch;
-        Global.inited = true;
-    }catch(e){
-        console.error(e);
-    }
-}
-
-
-
-function PostMessage(window, data) {
-    if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
-        window.postMessage(data, "*");
-    } else {
-        GetNativeFunction();
-        Global.NativePostMessageFunction.call(window, data, "*");
-    }
-}
-
-
-
-class TopFrameState {
-    constructor() {
-        if (!isWrapperFrame) {
-            return;
-        }
-        this._url = undefined;
-        this._title = undefined;
-        this._isEasySharePage = undefined;
-        this._initCallback = undefined;
-        window.addEventListener('message', (e) => {
-            if (e.data.source == vtMsgSrc) {
-                switch (e.data.type) {
-                    case 36: {
-                        this._url = e.data.data.url;
-                        this._title = e.data.data.title;
-                        this._isEasySharePage = e.data.data.isEasySharePage;
-                        if (this._initCallback != undefined) {
-                            this._initCallback();
-                            this._initCallback = undefined;
-                        }
-                        break;
-                    }
-                }
-            }
-        })
-    }
-    async asyncInit() {
-        if (this.url != undefined) {
-            return;
-        }
-        return new Promise((res, rej) => {
-            if (this._initCallback != undefined) {
-                rej("init callback is already set")
-            }
-            this._initCallback = res;
-        })
-    }
-    get url() {
-        if (!isWrapperFrame) {
-            return window.location.href;
-        }
-        return this._url;
-    }
-    get title() {
-        if (!isWrapperFrame) {
-            return document.title;
-        }
-        return this._title;
-    }
-    get isEasySharePage() {
-        if (!isWrapperFrame) {
-            return window.VideoTogetherEasyShareMemberSite;
-        }
-        return this._isEasySharePage;
-    }
-}
-
-
+import { Base64 } from './src/Base64.js'
+import { hide, show } from './src/HtmlUtils.js'
+import { MessageType } from './src/MessageType.js'
+import { GetNativeFunction, Global } from './src/NativeMethods.js'
+import { PostMessage } from './src/PostMessage.js'
+import { TopFrameState } from './src/TopFrameState.js'
 const topFrameState = new TopFrameState();
-const mouseMoveEvent = ['mousemove', 'touchmove', 'pointermove'];
-const mouseUpEvent = ['mouseup', 'touchend', 'pointerup'];
+import { WrapperIframe } from './src/WrapperIframe.js'
 
-const SelfWrapperState = {
-    positionX: 0,
-    positionY: 0,
-    sizeX: 0,
-    sizeY: 0,
-    movingOffsetX: 0,
-    movingOffsetY: 0,
-}
-const WrapperIframeSource = 'VT_WrapperIframe';
-class WrapperIframe {
+class Configuration {
     constructor() {
-        this.frame = document.createElement('iframe');
-        this.frame.src = 'https://2gether.video/videotogether_wrapper.html';
-        this.frame.allow = 'microphone;';
-        this.frame.style = 'position: absolute; right: 0px; bottom: 0px; width: 262px; height: 212px; background: transparent; border: none; z-index: 2147483647; position:fixed;';
-        (document.body || document.documentElement).appendChild(this.frame);
-        window.addEventListener('message', (e) => {
-            if (e.data.source == WrapperIframeSource) {
-                switch (e.data.type) {
-                    case 'moving':
-                        this._move(e.data.data.x, e.data.data.y);
-                        break;
-                    case 'init':
-                        this._notifyState();
-                        break;
-                }
+        this._openLinkInSelf = false;
+    }
+    get openLinkInSelf() {
+        return this._openLinkInSelf;
+    }
+    set openLinkInSelf(val) {
+        if (val != this._openLinkInSelf && val) {
+            let hrefs = document.getElementsByTagName("a");
+            for (let i = 0; i < hrefs.length; i++) {
+                hrefs[i].target = "_self";
             }
-        })
-        window.addEventListener('resize', (e) => {
-            const left = window.getComputedStyle(this.frame).getPropertyValue('left').split('px')[0] * 1;
-            const top = window.getComputedStyle(this.frame).getPropertyValue('top').split('px')[0] * 1;
-            this._move(left, top)
-        })
-    }
-    _notifyState() {
-        const left = window.getComputedStyle(this.frame).getPropertyValue('left').split('px')[0] * 1;
-        const top = window.getComputedStyle(this.frame).getPropertyValue('top').split('px')[0] * 1;
-        const width = window.getComputedStyle(this.frame).getPropertyValue('width').split('px')[0] * 1;
-        const height = window.getComputedStyle(this.frame).getPropertyValue('height').split('px')[0] * 1;
-        PostMessage(this.frame.contentWindow, {
-            source: WrapperIframeSource,
-            type: 'state',
-            data: {
-                left: left,
-                top: top,
-                width: width,
-                height: height
-            }
-        });
-    }
-
-    _move(screenX, screenY) {
-        screenX = Math.max(0, Math.min(screenX, window.innerWidth - this.frame.offsetWidth));
-        screenY = Math.max(0, Math.min(screenY, window.innerHeight - this.frame.offsetHeight));
-        this.frame.style.left = `${screenX}px`;
-        this.frame.style.top = `${screenY}px`;
-        this._notifyState();
-    }
-    static Moving(e) {
-        let targetX;
-        let targetY;
-
-        if (e.screenX) {
-            targetX = SelfWrapperState.movingOffsetX + e.screenX;
-            targetY = SelfWrapperState.movingOffsetY + e.screenY;
-        } else {
-            targetX = SelfWrapperState.movingOffsetX + e.touches[0].screenX;
-            targetY = SelfWrapperState.movingOffsetY + e.touches[0].screenY;
         }
-        PostMessage(window.parent, {
-            source: WrapperIframeSource,
-            type: 'moving',
-            data: {
-                x: targetX,
-                y: targetY
-            }
-        })
-    }
-    static stopMoving(e) {
-        mouseMoveEvent.forEach(function (event) {
-            document.removeEventListener(event, WrapperIframe.Moving);
-        })
-    }
-    static startMoving(e) {
-        if (e.screenX) {
-            SelfWrapperState.movingOffsetX = SelfWrapperState.positionX - e.screenX;
-            SelfWrapperState.movingOffsetY = SelfWrapperState.positionY - e.screenY;
-        } else {
-            SelfWrapperState.movingOffsetX = SelfWrapperState.positionX - e.touches[0].screenX;
-            SelfWrapperState.movingOffsetY = SelfWrapperState.positionY - e.touches[0].screenY;
-        }
-        mouseMoveEvent.forEach(event => {
-            document.addEventListener(event, WrapperIframe.Moving);
-        })
-        mouseUpEvent.forEach(event => {
-            document.addEventListener(event, WrapperIframe.stopMoving);
-        })
-    }
-    static onStateChange(data) {
-        SelfWrapperState.positionX = data.left;
-        SelfWrapperState.positionY = data.top;
-        SelfWrapperState.sizeX = data.width;
-        SelfWrapperState.sizeY = data.height;
-    }
-    static InitState() {
-        window.addEventListener('message', (e) => {
-            if (e.data.source == WrapperIframeSource) {
-                switch (e.data.type) {
-                    case 'state':
-                        WrapperIframe.onStateChange(e.data.data);
-                        break;
-                }
-            }
-        })
-        PostMessage(window.parent, {
-            source: WrapperIframeSource,
-            type: 'init',
-        })
+        this._openLinkInSelf = val;
     }
 }
 
+const configuration = new Configuration();
 
+(function () {
 
-(async function () {
-    await topFrameState.asyncInit();
     function getTopFrame() {
         return topFrameState;
     }
 
     function checkVtFrame(frame) {
-        return frame != undefined && frame.src == 'https://2gether.video/videotogether_wrapper.html';
+        return frame != undefined && frame.src.startsWith(WrapperIframeUrl);
     }
     WrapperIframe.InitState();
 
@@ -352,7 +77,7 @@ class WrapperIframe {
         try {
             let d = parseInt(duration);
             let str = ""
-            let units = [" 秒 ", " 分 ", " 小时 "]
+            let units = [" {$SecondLabel$} ", " {$MinuteLabel$} ", " {$HourLabel$} "]
             for (let i in units) {
                 if (d > 0) {
                     str = d % 60 + units[i] + str;
@@ -371,7 +96,7 @@ class WrapperIframe {
                 return false;
             }
             const type = VideoTogetherStorage.UserscriptType
-            return parseInt(window.VideoTogetherStorage.LoaddingVersion) >= 1694758378
+            return parseInt(getFromVideoTogetherStorage('LoaddingVersion', 0)) >= 1694758378
                 && (type == "Chrome" || type == "Safari" || type == "Firefox")
                 && !isDownloadBlackListDomain()
         } catch {
@@ -402,408 +127,7 @@ class WrapperIframe {
     }
 
     function startDownload(_vtArgM3u8Url, _vtArgM3u8Content, _vtArgM3u8Urls, _vtArgTitle, _vtArgPageUrl) {
-        /*//*/
-(async function () {
-
-    function extractExtXKeyUrls(m3u8Content, baseUrl) {
-        const uris = [];
-        const lines = m3u8Content.split('\n');
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-
-            if (line.startsWith('#EXT-X-')) {
-                const match = line.match(/URI="(.*?)"/);
-
-                if (match && match[1]) {
-                    let uri = match[1];
-
-                    // Ignore data: URIs as they don't need to be downloaded
-                    if (uri.startsWith('data:')) {
-                        continue;
-                    }
-
-                    // If the URI is not absolute, make it so by combining with the base URL.
-                    if (!uri.startsWith('http://') && !uri.startsWith('https://')) {
-                        uri = new URL(uri, baseUrl).href;
-                    }
-
-                    uris.push(uri);
-                }
-            }
-        }
-
-        return uris;
-    }
-
-    async function timeoutAsyncRead(reader, timeout) {
-        const timer = new Promise((_, rej) => {
-            const id = setTimeout(() => {
-                reader.cancel();
-                rej(new Error('Stream read timed out'));
-            }, timeout);
-        });
-
-        return Promise.race([
-            reader.read(),
-            timer
-        ]);
-    }
-
-    function generateUUID() {
-        if (crypto.randomUUID != undefined) {
-            return crypto.randomUUID();
-        }
-        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-        );
-    }
-
-    window.updateM3u8Status = async function updateM3u8Status(m3u8Url, status) {
-        // 0 downloading  1 completed 2 deleting
-        let m3u8mini = await readFromIndexedDB('m3u8s-mini', m3u8Url);
-        m3u8mini.status = status
-        await saveToIndexedDB('m3u8s-mini', m3u8Url, m3u8mini);
-    }
-
-    async function saveM3u8(m3u8Url, m3u8Content) {
-        await saveToIndexedDB('m3u8s', m3u8Url,
-            {
-                data: m3u8Content,
-                title: vtArgTitle,
-                pageUrl: vtArgPageUrl,
-                m3u8Url: m3u8Url,
-                m3u8Id: m3u8Id,
-                status: 0
-            }
-        )
-
-    }
-
-    async function blobToDataUrl(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                resolve(event.target.result);
-            };
-            reader.onerror = function (event) {
-                reject(new Error("Failed to read blob"));
-            };
-            reader.readAsDataURL(blob);
-        });
-    }
-
-    async function saveBlob(table, url, blob) {
-        return new Promise(async (res, rej) => {
-            try {
-                const dataUrl = await blobToDataUrl(blob);
-                await saveToIndexedDB(table, url, {
-                    data: dataUrl,
-                    m3u8Url: downloadM3u8Url,
-                    m3u8Id: m3u8Id,
-                })
-                res();
-            } catch (e) {
-                rej(e);
-            }
-        })
-    }
-
-    window.regexMatchKeys = function regexMatchKeys(table, regex) {
-        const queryId = generateUUID()
-        return new Promise((res, rej) => {
-            window.postMessage({
-                source: "VideoTogether",
-                type: 2005,
-                data: {
-                    table: table,
-                    regex: regex,
-                    id: queryId
-                }
-            }, '*')
-            regexCallback[queryId] = (data) => {
-                try {
-                    res(data)
-                } catch { rej() }
-            }
-        })
-    }
-
-    saveToIndexedDBThreads = 1;
-    window.saveToIndexedDB = async function saveToIndexedDB(table, key, data) {
-        while (saveToIndexedDBThreads < 1) {
-            await new Promise(r => setTimeout(r, 100));
-        }
-        saveToIndexedDBThreads--;
-        const queryId = generateUUID();
-        return new Promise((res, rej) => {
-            data.saveTime = Date.now()
-            window.postMessage({
-                source: "VideoTogether",
-                type: 2001,
-                data: {
-                    table: table,
-                    key: key,
-                    data: data,
-                    id: queryId,
-                }
-            }, '*')
-            data = null;
-            saveCallback[queryId] = (error) => {
-                saveToIndexedDBThreads++;
-                if (error === 0) {
-                    res(0)
-                } else {
-                    rej(error)
-                }
-            }
-        })
-    }
-
-    window.iosDeleteByPrefix = async function iosDeleteByPrefix(prefix) {
-        const queryId = generateUUID();
-        return new Promise((res, rej) => {
-            window.postMessage({
-                source: "VideoTogether",
-                type: 3010,
-                data: {
-                    prefix: prefix,
-                    id: queryId,
-                }
-            }, '*')
-            deleteByPrefix[queryId] = (error) => {
-                if (error === 0) {
-                    res(0)
-                } else {
-                    rej(error)
-                }
-            }
-        })
-    }
-
-    let readCallback = {}
-    let regexCallback = {}
-    let deleteCallback = {}
-    let saveCallback = {}
-    let deleteByPrefix = {}
-
-    window.addEventListener('message', async e => {
-        if (e.data.source == "VideoTogether") {
-            switch (e.data.type) {
-                case 2003: {
-                    saveCallback[e.data.data.id](e.data.data.error)
-                    saveCallback[e.data.data.id] = undefined
-                    break;
-                }
-                case 2004: {
-                    readCallback[e.data.data.id](e.data.data.data)
-                    readCallback[e.data.data.id] = undefined;
-                    break;
-                }
-                case 2006: {
-                    regexCallback[e.data.data.id](e.data.data.data)
-                    regexCallback[e.data.data.id] = undefined;
-                    break;
-                }
-                case 2008: {
-                    deleteCallback[e.data.data.id](e.data.data.error);
-                    deleteCallback[e.data.data.id] = undefined;
-                    break;
-                }
-                case 3011: {
-                    deleteByPrefix[e.data.data.id](e.data.data.error);
-                    deleteByPrefix[e.data.data.id] = undefined;
-                    break;
-                }
-                case 2010: {
-                    console.log(e.data.data.data);
-                    break;
-                }
-            }
-        }
-    })
-    window.requestStorageEstimate = function requestStorageEstimate() {
-        window.postMessage({
-            source: "VideoTogether",
-            type: 2009,
-            data: {}
-        }, '*')
-    }
-    window.deleteFromIndexedDB = function deleteFromIndexedDB(table, key) {
-        const queryId = generateUUID()
-        window.postMessage({
-            source: "VideoTogether",
-            type: 2007,
-            data: {
-                id: queryId,
-                table: table,
-                key: key,
-            }
-        }, '*')
-        return new Promise((res, rej) => {
-            deleteCallback[queryId] = (error) => {
-                if (error === 0) {
-                    res(true);
-                } else {
-                    rej(error);
-                }
-            }
-        })
-    }
-
-    window.readFromIndexedDB = function readFromIndexedDB(table, key) {
-        const queryId = generateUUID();
-
-        window.postMessage({
-            source: "VideoTogether",
-            type: 2002,
-            data: {
-                table: table,
-                key: key,
-                id: queryId,
-            }
-        }, '*')
-        return new Promise((res, rej) => {
-            readCallback[queryId] = (data) => {
-                try {
-                    res(data);
-                } catch {
-                    rej()
-                }
-            }
-        })
-    }
-
-    if (window.videoTogetherExtension === undefined) {
-        return;
-    }
-    if (window.location.hostname == 'local.2gether.video') {
-        return;
-    }
-    let vtArgM3u8Url = undefined;
-    let vtArgM3u8Content = undefined;
-    let vtArgM3u8Urls = undefined;
-    let vtArgTitle = undefined;
-    let vtArgPageUrl = undefined;
-    try {
-        vtArgM3u8Url = _vtArgM3u8Url;
-        vtArgM3u8Content = _vtArgM3u8Content;
-        vtArgM3u8Urls = _vtArgM3u8Urls;
-        vtArgTitle = _vtArgTitle;
-        vtArgPageUrl = _vtArgPageUrl;
-    } catch {
-        return;
-    }
-
-    const m3u8Id = generateUUID()
-    const m3u8IdHead = `-m3u8Id-${m3u8Id}-end-`
-    const downloadM3u8Url = vtArgM3u8Url;
-    const numThreads = 10;
-    let lastTotalBytes = 0;
-    let totalBytes = 0;
-    let failedUrls = []
-    let urls = vtArgM3u8Urls
-    let successCount = 0;
-    videoTogetherExtension.downloadPercentage = 0;
-
-    const m3u8Key = m3u8IdHead + downloadM3u8Url
-    if (downloadM3u8Url === undefined) {
-        return;
-    }
-
-    await saveM3u8(m3u8Key, vtArgM3u8Content)
-
-    const otherUrl = extractExtXKeyUrls(vtArgM3u8Content, downloadM3u8Url);
-    const totalCount = urls.length + otherUrl.length;
-
-    console.log(otherUrl);
-
-    await downloadInParallel('future', otherUrl, numThreads);
-
-    setInterval(function () {
-        videoTogetherExtension.downloadSpeedMb = (totalBytes - lastTotalBytes) / 1024 / 1024;
-        lastTotalBytes = totalBytes;
-    }, 1000);
-
-    await downloadInParallel('videos', urls, numThreads);
-    await updateM3u8Status(m3u8Key, 1)
-    async function fetchWithSpeedTracking(url) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => {
-            controller.abort();
-        }, 20000);
-
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timer)
-        if (!response.body) {
-            throw new Error("ReadableStream not yet supported in this browser.");
-        }
-
-        const contentType = response.headers.get("Content-Type") || "application/octet-stream";
-
-        const reader = response.body.getReader();
-        let chunks = [];
-
-        async function readStream() {
-            const { done, value } = await timeoutAsyncRead(reader, 60000);
-            if (done) {
-                return;
-            }
-
-            if (value) {
-                chunks.push(value);
-                totalBytes += value.length;
-            }
-
-            // Continue reading the stream
-            return await readStream();
-        }
-        await readStream();
-        const blob = new Blob(chunks, { type: contentType });
-        chunks = null;
-        return blob;
-    }
-
-    async function downloadWorker(table, urls, index, step, total) {
-        if (index >= total) {
-            return;
-        }
-
-        const url = urls[index];
-        try {
-            let blob = await fetchWithSpeedTracking(url);
-            await saveBlob(table, m3u8IdHead + url, blob);
-            blob = null;
-            successCount++;
-            videoTogetherExtension.downloadPercentage = Math.floor((successCount / totalCount) * 100)
-            console.log('download ts:', table, index, 'of', total);
-        } catch (e) {
-            await new Promise(r => setTimeout(r, 2000));
-            failedUrls.push(url);
-            console.error(e);
-        }
-
-        // Pick up the next work item
-        await downloadWorker(table, urls, index + step, step, total);
-    }
-
-    async function downloadInParallel(table, urls, numThreads) {
-        const total = urls.length;
-
-        // Start numThreads download workers
-        const promises = Array.from({ length: numThreads }, (_, i) => {
-            return downloadWorker(table, urls, i, numThreads, total);
-        });
-
-        await Promise.all(promises);
-        if (failedUrls.length != 0) {
-            urls = failedUrls;
-            failedUrls = [];
-            await downloadInParallel(table, urls, numThreads);
-        }
-    }
-})()
-//*/
+        /*{{{ {"":"../local/download.js", "order":100} }}}*/
     }
 
     function isLimited() {
@@ -818,7 +142,10 @@ class WrapperIframe {
         return false;
     }
 
-    function getVideoTogetherStorage(key, defaultVal) {
+    function getFromVideoTogetherStorage(key, defaultVal) {
+        if(!isVtFrame){
+            console.error('getFromVideoTogetherStorage should only be called in vtFrame')
+        }
         try {
             if (window.VideoTogetherStorage == undefined) {
                 return defaultVal
@@ -833,17 +160,17 @@ class WrapperIframe {
     }
 
     function getEnableTextMessage() {
-        return getVideoTogetherStorage('EnableTextMessage', true);
+        return getFromVideoTogetherStorage('EnableTextMessage', true);
     }
 
     function getEnableMiniBar() {
-        return getVideoTogetherStorage('EnableMiniBar', true);
+        return !isWrapperFrameEnabled && getFromVideoTogetherStorage('EnableMiniBar', true);
     }
 
     function skipIntroLen() {
         try {
-            let len = parseInt(window.VideoTogetherStorage.SkipIntroLength);
-            if (window.VideoTogetherStorage.SkipIntro && !isNaN(len)) {
+            let len = parseInt(getFromVideoTogetherStorage('SkipIntroLength'));
+            if (getFromVideoTogetherStorage('SkipIntro') && !isNaN(len)) {
                 return len;
             }
         } catch { }
@@ -909,7 +236,7 @@ class WrapperIframe {
             if (isEasyShareBlackListDomain()) {
                 return false;
             }
-            return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare != false;
+            return window.VideoTogetherEasyShare != 'disabled' && getFromVideoTogetherStorage('EasyShare') != false;
         } catch {
             return false;
         }
@@ -986,7 +313,7 @@ class WrapperIframe {
 
     function isWeb() {
         try {
-            let type = window.VideoTogetherStorage.UserscriptType;
+            let type = getFromVideoTogetherStorage('UserscriptType');
             return type == 'website' || type == 'website_debug';
         } catch {
             return false;
@@ -1014,7 +341,7 @@ class WrapperIframe {
 
     function isRoomProtected() {
         try {
-            return window.VideoTogetherStorage == undefined || window.VideoTogetherStorage.PasswordProtectedRoom != false;
+            return getFromVideoTogetherStorage('PasswordProtectedRoom', true);
         } catch {
             return true;
         }
@@ -1132,7 +459,7 @@ class WrapperIframe {
                 "lastUpdateClientTime": localTimestamp,
                 "duration": duration,
                 "protected": isRoomProtected(),
-                "videoTitle": extension.isMain ? topFrameState.title : extension.videoTitle,
+                "videoTitle": topFrameState.title,
                 "sendLocalTimestamp": Date.now() / 1000,
                 "m3u8Url": m3u8Url
             }
@@ -1296,7 +623,7 @@ class WrapperIframe {
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
             }
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
-                popupError("有新消息 (<a id='changeVoiceBtn' style='color:inherit' href='#''>修改语音包</a>)");
+                popupError("{$new_message_change_voice$}");
                 extension.gotTextMsg(data['data'].id, data['data'].msg);
                 sendMessageToVt(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
@@ -1406,7 +733,7 @@ class WrapperIframe {
             let voiceConnErrBtn = select('#voiceConnErrBtn');
             if (voiceConnErrBtn != undefined) {
                 voiceConnErrBtn.onclick = () => {
-                    alert('如果你安装了uBlock等去广告插件,请停用这些去广告插件后再试')
+                    alert('{$voice_connection_error_help$}')
                 }
             }
         },
@@ -1488,7 +815,7 @@ class WrapperIframe {
             Voice._mutting = mutting;
             let cancellingNoise = true;
             try {
-                cancellingNoise = !(window.VideoTogetherStorage.EchoCancellation === false);
+                cancellingNoise = getFromVideoTogetherStorage('EchoCancellation', true);
             } catch { }
 
             Voice.stop();
@@ -1499,18 +826,18 @@ class WrapperIframe {
             try {
                 notNullUuid = await waitForRoomUuid();
             } catch {
-                Voice.errorMessage = "uuid缺失";
+                Voice.errorMessage = "{$room_uuid_missing$}";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
             const rnameRPC = fixedEncodeURIComponent(notNullUuid + "_" + rname);
             if (rnameRPC.length > 256) {
-                Voice.errorMessage = "房间名太长";
+                Voice.errorMessage = "{$room_name_too_long$}";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
-            if (window.location.protocol != "https:" && window.location.protocol != 'file:') {
-                Voice.errorMessage = "仅支持https网站使用";
+            if (topFrameState.location.protocol != "https:" && topFrameState.location.protocol != 'file:') {
+                Voice.errorMessage = "{$only_support_https_website$}";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
@@ -1551,7 +878,7 @@ class WrapperIframe {
             } catch (e) {
                 if (Voice.status == VoiceStatus.CONNECTTING) {
                     Voice.status = VoiceStatus.ERROR;
-                    Voice.errorMessage = "连接失败 (<a id='voiceConnErrBtn' style='color:inherit' href='#''>帮助</a>)";
+                    Voice.errorMessage = "{$connection_error$}";
                 }
             }
 
@@ -1613,7 +940,7 @@ class WrapperIframe {
                     Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 } catch (err) {
                     if (Voice.status == VoiceStatus.CONNECTTING) {
-                        Voice.errorMessage = "麦克风权限获取失败";
+                        Voice.errorMessage = "{$no_micphone_access$}";
                         Voice.status = VoiceStatus.ERROR;
                     }
                     return;
@@ -1634,11 +961,11 @@ class WrapperIframe {
                         await subscribe(Voice.conn);
                     }
                 } else {
-                    throw new Error('未知错误');
+                    throw new Error('{$unknown_error$}');
                 }
                 Voice.conn.oniceconnectionstatechange = e => {
                     if (Voice.conn.iceConnectionState == "disconnected" || Voice.conn.iceConnectionState == "failed" || Voice.conn.iceConnectionState == "closed") {
-                        Voice.errorMessage = "连接断开";
+                        Voice.errorMessage = "{$connection_lost$}";
                         Voice.status = VoiceStatus.ERROR;
                     } else {
                         if (Voice.status == VoiceStatus.ERROR) {
@@ -1750,145 +1077,6 @@ class WrapperIframe {
         return generateUUID() + ":" + Date.now() / 1000;
     }
 
-    /**
-     *
-     *  Base64 encode / decode
-     *  http://www.webtoolkit.info
-     *
-     **/
-    const Base64 = {
-
-        // private property
-        _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
-
-        // public method for encoding
-        , encode: function (input) {
-            var output = "";
-            var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-            var i = 0;
-
-            input = Base64._utf8_encode(input);
-
-            while (i < input.length) {
-                chr1 = input.charCodeAt(i++);
-                chr2 = input.charCodeAt(i++);
-                chr3 = input.charCodeAt(i++);
-
-                enc1 = chr1 >> 2;
-                enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-                enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-                enc4 = chr3 & 63;
-
-                if (isNaN(chr2)) {
-                    enc3 = enc4 = 64;
-                }
-                else if (isNaN(chr3)) {
-                    enc4 = 64;
-                }
-
-                output = output +
-                    this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) +
-                    this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
-            } // Whend
-
-            return output;
-        } // End Function encode
-
-
-        // public method for decoding
-        , decode: function (input) {
-            var output = "";
-            var chr1, chr2, chr3;
-            var enc1, enc2, enc3, enc4;
-            var i = 0;
-
-            input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-            while (i < input.length) {
-                enc1 = this._keyStr.indexOf(input.charAt(i++));
-                enc2 = this._keyStr.indexOf(input.charAt(i++));
-                enc3 = this._keyStr.indexOf(input.charAt(i++));
-                enc4 = this._keyStr.indexOf(input.charAt(i++));
-
-                chr1 = (enc1 << 2) | (enc2 >> 4);
-                chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-                chr3 = ((enc3 & 3) << 6) | enc4;
-
-                output = output + String.fromCharCode(chr1);
-
-                if (enc3 != 64) {
-                    output = output + String.fromCharCode(chr2);
-                }
-
-                if (enc4 != 64) {
-                    output = output + String.fromCharCode(chr3);
-                }
-
-            } // Whend
-
-            output = Base64._utf8_decode(output);
-
-            return output;
-        } // End Function decode
-
-
-        // private method for UTF-8 encoding
-        , _utf8_encode: function (string) {
-            var utftext = "";
-            string = string.replace(/\r\n/g, "\n");
-
-            for (var n = 0; n < string.length; n++) {
-                var c = string.charCodeAt(n);
-
-                if (c < 128) {
-                    utftext += String.fromCharCode(c);
-                }
-                else if ((c > 127) && (c < 2048)) {
-                    utftext += String.fromCharCode((c >> 6) | 192);
-                    utftext += String.fromCharCode((c & 63) | 128);
-                }
-                else {
-                    utftext += String.fromCharCode((c >> 12) | 224);
-                    utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-                    utftext += String.fromCharCode((c & 63) | 128);
-                }
-
-            } // Next n
-
-            return utftext;
-        } // End Function _utf8_encode
-
-        // private method for UTF-8 decoding
-        , _utf8_decode: function (utftext) {
-            var string = "";
-            var i = 0;
-            var c, c1, c2, c3;
-            c = c1 = c2 = 0;
-
-            while (i < utftext.length) {
-                c = utftext.charCodeAt(i);
-
-                if (c < 128) {
-                    string += String.fromCharCode(c);
-                    i++;
-                }
-                else if ((c > 191) && (c < 224)) {
-                    c2 = utftext.charCodeAt(i + 1);
-                    string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
-                    i += 2;
-                }
-                else {
-                    c2 = utftext.charCodeAt(i + 1);
-                    c3 = utftext.charCodeAt(i + 2);
-                    string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-                    i += 3;
-                }
-
-            } // Whend
-
-            return string;
-        } // End Function _utf8_decode
-    }
-
     let GotTxtMsgCallback = undefined;
 
     class VideoTogetherFlyPannel {
@@ -1920,98 +1108,7 @@ class WrapperIframe {
                         wrapper.addEventListener('keydown', (e) => e.stopPropagation());
                         this.fullscreenWrapper = wrapper;
                     } catch (e) { console.error(e); }
-                    wrapper.innerHTML = `<style>
-    .container {
-        position: absolute;
-        top: 50%;
-        left: 0px;
-        border: 1px solid #000;
-        padding: 0px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: fit-content;
-        justify-content: center;
-        border-radius: 5px;
-        opacity: 80%;
-        background: #000;
-        color: white;
-        z-index: 2147483647;
-    }
-
-    .container input[type='text'] {
-        padding: 0px;
-        flex-grow: 1;
-        border: none;
-        height: 24px;
-        width: 0px;
-        height: 32px;
-        transition: width 0.1s linear;
-        background-color: transparent;
-        color: white;
-    }
-
-    .container input[type='text'].expand {
-        width: 150px;
-    }
-
-    .container .user-info {
-        display: flex;
-        align-items: center;
-    }
-
-    .container button {
-        height: 32px;
-        font-size: 16px;
-        border: 0px;
-        color: white;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        background-color: #1890ff;
-        transition-duration: 0.4s;
-        border-radius: 4px;
-    }
-
-    .container #expand-button {
-        color: black;
-        font-weight: bolder;
-        height: 32px;
-        width: 32px;
-        background-size: cover;
-        background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAACrFBMVEXg9b7e87jd87jd9Lnd9Lre9Lng9b/j98jm98vs99fy9ubu89/e1sfJqKnFnqLGoaXf9Lvd87Xe87fd8rfV67Ti9sbk98nm9sze48TX3rjU1rTKr6jFnaLe9Lfe87Xe9LjV7LPN4q3g78PJuqfQ1a7OzarIsabEnaHi9sXd8rvd8rbd87axx4u70Jrl+cvm+szQxq25lZTR1a7KvaXFo6LFnaHEnKHd6r3Y57TZ7bLb8bTZ7rKMomClun/k+MrOx6yue4PIvqfP06vLv6fFoqLEnKDT27DS3a3W6K7Y7bDT6auNq2eYn3KqlYShYXTOwLDAzZ7MyanKtqbEoaHDm6DDm5/R2K3Q2KzT4q3W6a7P3amUhWp7SEuMc2rSyri3zJe0xpPV17TKuqbGrqLEnqDQ2K3O06rP0arR2qzJx6GZX160j4rP1LOiuH2GnVzS3rXb47zQ063OzanHr6PDnaDMxajIsaXLwKfEt5y6mI/GyqSClVZzi0bDzp+8nY/d6L/X4rbQ1qzMyKjEqKHFpqLFpaLGqaO2p5KCjlZ5jky8z5izjoOaXmLc5r3Z57jU4K7S3K3NyqnBm56Mg2KTmWnM0KmwhH2IOUunfXnh8cXe8b7Z7LPV4rDBmZ3Cmp+6mZWkk32/qZihbG97P0OdinXQ3rTk+Mjf9L/d8rja6ri9lpqnh4qhgoWyk5Kmd3qmfHW3oou2vZGKpmaUrXDg9MPf9L3e876yj5Ori42Mc3aDbG6MYmyifXfHyaPU3rHH0aKDlVhkejW70Zbf9bze87be87ng9cCLcnWQd3qEbG9/ZmmBXmSflYS4u5ra5Lnd6r7U5ba2ypPB153c87re9b2Ba22EbW+AamyDb3CNgXmxsZng7sTj9sjk98rk+Mng9cHe9Lze9Lrd87n////PlyWlAAAAAWJLR0TjsQauigAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAd0SU1FB+YGGQYXBzHy0g0AAAEbSURBVBjTARAB7/4AAAECAwQFBgcICQoLDA0ODwAQEREREhMUFRYXGBkaGxwOAAYdHhEfICEWFiIjJCUmDicAKCkqKx8sLS4vMDEyMzQ1NgA3ODk6Ozw9Pj9AQUJDRDVFAEZHSElKS0xNTk9QUVJTVFUAVldYWVpbXF1eX2BhYmNkVABlZmdoaWprbG1ub3BxcnN0AEJ1dnd4eXp7fH1+f4CBgoMAc4QnhYaHiImKi4yNjo+QkQBFVFU2kpOUlZaXmJmam5ucAFRVnZ6foKGio6SlpqeoE6kAVaqrrK2ur7CxsrO0tQEDtgC3uLm6u7y9vr/AwcLDxMXGAMfIycrLzM3Oz9DR0tMdAdQA1da619jZ2tvc3d7f4OEB4iRLaea64H7qAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIyLTA2LTI1VDA2OjIzOjAyKzAwOjAwlVQlhgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMi0wNi0yNVQwNjoyMzowMiswMDowMOQJnToAAAAgdEVYdHNvZnR3YXJlAGh0dHBzOi8vaW1hZ2VtYWdpY2sub3JnvM8dnQAAABh0RVh0VGh1bWI6OkRvY3VtZW50OjpQYWdlcwAxp/+7LwAAABh0RVh0VGh1bWI6OkltYWdlOjpIZWlnaHQAMTkyQF1xVQAAABd0RVh0VGh1bWI6OkltYWdlOjpXaWR0aAAxOTLTrCEIAAAAGXRFWHRUaHVtYjo6TWltZXR5cGUAaW1hZ2UvcG5nP7JWTgAAABd0RVh0VGh1bWI6Ok1UaW1lADE2NTYxMzgxODJHYkS0AAAAD3RFWHRUaHVtYjo6U2l6ZQAwQkKUoj7sAAAAVnRFWHRUaHVtYjo6VVJJAGZpbGU6Ly8vbW50bG9nL2Zhdmljb25zLzIwMjItMDYtMjUvNGU5YzJlYjRjNmRhMjIwZDgzYjcyOTYxZmI1ZTJiY2UuaWNvLnBuZ7tNVVEAAAAASUVORK5CYII=);
-    }
-
-    .container #close-btn {
-        height: 16px;
-        max-width: 24px;
-        background-color: rgba(255, 0, 0, 0.5);
-        font-size: 8px;
-    }
-
-    .container #close-btn:hover {
-        background-color: rgba(255, 0, 0, 0.3);
-    }
-
-    .container button:hover {
-        background-color: #6ebff4;
-    }
-
-    .container button:disabled,
-    .container button:disabled:hover {
-        background-color: rgb(76, 76, 76);
-    }
-</style>
-<div class="container" id="container">
-    <button id="expand-button">&lt;</button>
-    <div style="padding: 0 5px 0 5px;" class="user-info" id="user-info">
-        <span class="emoji">👥</span>
-        <span id="memberCount">0</span>
-    </div>
-    <button id="close-btn">x</button>
-    <input style="margin: 0 0 0 5px;" type="text" placeholder="文字聊天" id="text-input" class="expand" />
-    <button id="send-button">发送</button>
-</div>`;
+                    wrapper.innerHTML = `{{{ {"": "./html/fullscreen.html","order":100} }}}`;
                     document.fullscreenElement.appendChild(shadowWrapper);
                     var container = wrapper.getElementById('container');
                     let expandBtn = wrapper.getElementById('expand-button');
@@ -2074,808 +1171,7 @@ class WrapperIframe {
 
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
-                wrapper.innerHTML = `<div id="peer" style="display: none;"></div>
-<div id="videoTogetherFlyPannel" style="display: none;">
-  <div id="videoTogetherHeader" class="vt-modal-header">
-    <div style="display: flex;align-items: center;">
-      <img style="width: 16px; height: 16px;"
-        src="data:image/png;base64,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">
-      <div class="vt-modal-title">VideoTogether</div>
-    </div>
-
-    <button id="downloadBtn" type="button" class="vt-modal-title-button vt-modal-easyshare">
-      <span class="vt-modal-close-x">
-        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"
-            stroke="currentColor" stroke-width="1.67">
-            <path
-              d="M12.5535 16.5061C12.4114 16.6615 12.2106 16.75 12 16.75C11.7894 16.75 11.5886 16.6615 11.4465 16.5061L7.44648 12.1311C7.16698 11.8254 7.18822 11.351 7.49392 11.0715C7.79963 10.792 8.27402 10.8132 8.55352 11.1189L11.25 14.0682V3C11.25 2.58579 11.5858 2.25 12 2.25C12.4142 2.25 12.75 2.58579 12.75 3V14.0682L15.4465 11.1189C15.726 10.8132 16.2004 10.792 16.5061 11.0715C16.8118 11.351 16.833 11.8254 16.5535 12.1311L12.5535 16.5061Z"
-              fill="currentColor" />
-            <path
-              d="M3.75 15C3.75 14.5858 3.41422 14.25 3 14.25C2.58579 14.25 2.25 14.5858 2.25 15V15.0549C2.24998 16.4225 2.24996 17.5248 2.36652 18.3918C2.48754 19.2919 2.74643 20.0497 3.34835 20.6516C3.95027 21.2536 4.70814 21.5125 5.60825 21.6335C6.47522 21.75 7.57754 21.75 8.94513 21.75H15.0549C16.4225 21.75 17.5248 21.75 18.3918 21.6335C19.2919 21.5125 20.0497 21.2536 20.6517 20.6516C21.2536 20.0497 21.5125 19.2919 21.6335 18.3918C21.75 17.5248 21.75 16.4225 21.75 15.0549V15C21.75 14.5858 21.4142 14.25 21 14.25C20.5858 14.25 20.25 14.5858 20.25 15C20.25 16.4354 20.2484 17.4365 20.1469 18.1919C20.0482 18.9257 19.8678 19.3142 19.591 19.591C19.3142 19.8678 18.9257 20.0482 18.1919 20.1469C17.4365 20.2484 16.4354 20.25 15 20.25H9C7.56459 20.25 6.56347 20.2484 5.80812 20.1469C5.07435 20.0482 4.68577 19.8678 4.40901 19.591C4.13225 19.3142 3.9518 18.9257 3.85315 18.1919C3.75159 17.4365 3.75 16.4354 3.75 15Z"
-              fill="currentColor" />
-          </svg>
-        </span>
-      </span>
-    </button>
-
-    <button style="display: none;" id="easyShareCopyBtn" type="button" class="vt-modal-title-button vt-modal-easyshare">
-      <span class="vt-modal-close-x">
-        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32">
-            <path fill="currentColor"
-              d="M0 25.472q0 2.368 1.664 4.032t4.032 1.664h18.944q2.336 0 4-1.664t1.664-4.032v-8.192l-3.776 3.168v5.024q0 0.8-0.544 1.344t-1.344 0.576h-18.944q-0.8 0-1.344-0.576t-0.544-1.344v-18.944q0-0.768 0.544-1.344t1.344-0.544h9.472v-3.776h-9.472q-2.368 0-4.032 1.664t-1.664 4v18.944zM5.696 19.808q0 2.752 1.088 5.28 0.512-2.944 2.24-5.344t4.288-3.872 5.632-1.664v5.6l11.36-9.472-11.36-9.472v5.664q-2.688 0-5.152 1.056t-4.224 2.848-2.848 4.224-1.024 5.152zM32 22.080v0 0 0z">
-            </path>
-          </svg>
-        </span>
-      </span>
-    </button>
-
-    <a href="https://afdian.net/a/videotogether" target="_blank" id="vtDonate" type="button"
-      class="vt-modal-donate vt-modal-title-button">
-      <span class="vt-modal-close-x">
-        <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
-            <path fill="currentColor"
-              d="M12 4.435c-1.989-5.399-12-4.597-12 3.568 0 4.068 3.06 9.481 12 14.997 8.94-5.516 12-10.929 12-14.997 0-8.118-10-8.999-12-3.568z" />
-          </svg>
-        </span>
-      </span>
-    </a>
-
-    <a href="https://setting.2gether.video/" target="_blank" id="videoTogetherSetting" type="button"
-      aria-label="Setting" class="vt-modal-setting vt-modal-title-button">
-      <span class="vt-modal-close-x">
-        <span role="img" aria-label="Setting" class="vt-anticon vt-anticon-close vt-modal-close-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
-            <path fill="currentColor"
-              d="M24 13.616v-3.232c-1.651-.587-2.694-.752-3.219-2.019v-.001c-.527-1.271.1-2.134.847-3.707l-2.285-2.285c-1.561.742-2.433 1.375-3.707.847h-.001c-1.269-.526-1.435-1.576-2.019-3.219h-3.232c-.582 1.635-.749 2.692-2.019 3.219h-.001c-1.271.528-2.132-.098-3.707-.847l-2.285 2.285c.745 1.568 1.375 2.434.847 3.707-.527 1.271-1.584 1.438-3.219 2.02v3.232c1.632.58 2.692.749 3.219 2.019.53 1.282-.114 2.166-.847 3.707l2.285 2.286c1.562-.743 2.434-1.375 3.707-.847h.001c1.27.526 1.436 1.579 2.019 3.219h3.232c.582-1.636.75-2.69 2.027-3.222h.001c1.262-.524 2.12.101 3.698.851l2.285-2.286c-.744-1.563-1.375-2.433-.848-3.706.527-1.271 1.588-1.44 3.221-2.021zm-12 2.384c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z" />
-          </svg>
-        </span>
-      </span>
-    </a>
-    <button id="videoTogetherMinimize" type="button" aria-label="Close" class="vt-modal-close vt-modal-title-button">
-      <span class="vt-modal-close-x">
-        <span role="img" aria-label="close" class="vt-anticon vt-anticon-close vt-modal-close-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true"
-            role="img" class="iconify iconify--ic" width="20" height="20" preserveAspectRatio="xMidYMid meet"
-            viewBox="0 0 24 24">
-            <path fill="currentColor" d="M18 12.998H6a1 1 0 0 1 0-2h12a1 1 0 0 1 0 2z"></path>
-          </svg>
-        </span>
-      </span>
-    </button>
-  </div>
-
-  <div class="vt-modal-content">
-
-    <div class="vt-modal-body">
-      <div id="mainPannel" class="content">
-        <div style="height: 22.5px;">
-          <span id="videoTogetherRoleText"></span>
-          <span id="memberCount"></span>
-        </div>
-        <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
-        <div style="margin-bottom: 10px;">
-          <span id="videoTogetherRoomNameLabel">房间</span>
-          <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="请输入房间名">
-        </div>
-        <div>
-          <span id="videoTogetherRoomPasswordLabel">密码</span>
-          <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="输入建房密码">
-        </div>
-        <div>
-          <div id="textMessageChat" style="display: none;">
-            <input id="textMessageInput" autocomplete="off" placeholder="文字聊天">
-            <button id="textMessageSend" class="vt-btn vt-btn-primary" type="button">
-              <span>发送</span>
-            </button>
-          </div>
-          <div id="textMessageConnecting" style="display: none;">
-            <span id="textMessageConnectingStatus">连接文字聊天服务器中...</span>
-            <span id="zhcnTtsMissing">缺少中文语音包</span>
-          </div>
-        </div>
-      </div>
-
-      <div id="downloadPannel" style="display: none;">
-        <div>
-          <span id="downloadVideoInfo">检测视频中...</span>
-          <button id="confirmDownloadBtn" style="display: none;" class="vt-btn vt-btn-primary" type="button">
-            <span>确认并下载</span>
-          </button>
-          <div id="downloadProgress" style="display: none;">
-            <progress id="downloadProgressBar" style="width: 100%;" value="0" max="100"></progress>
-            <div id="speedAndStatus" style="width: 100%;">
-              <span id="downloadStatus"></span>
-              <span id="downloadSpeed"></span>
-            </div>
-            <span id="downloadingAlert" style="color: red;">下载中,不要关闭页面</span>
-            <span id="downloadCompleted" style="color: green; display: none;">下载完成</span>
-          </div>
-        </div>
-        <div style="display: block;">
-          <a target="_blank" style="display: block;padding: 5px 5px;"
-            href="https://local.2gether.video/local_videos.zh-cn.html">查看已下载视频</a>
-          <a target="_blank" style="display: block;padding: 5px 5px;"
-            href="https://local.2gether.video/about.zh-cn.html">版权说明</a>
-        </div>
-      </div>
-      <div id="voicePannel" class="content" style="display: none;">
-        <div id="videoVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
-          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">视频音量</span>
-          <div class="range-slider">
-            <input id="videoVolume" class="slider" type="range" value="100" min="0" max="100">
-          </div>
-
-        </div>
-        <div id="callVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
-          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">通话音量</span>
-          <div class="range-slider">
-            <input id="callVolume" class="slider" type="range" value="100" min="0" max="100">
-          </div>
-        </div>
-        <div id="iosVolumeErr" style="display: none;">
-          <p>IOS不支持音量调节</p>
-        </div>
-        <!-- <div style="margin-top: 5px;width: 100%;text-align: left;">
-          <span
-            style="margin-top: 0px;display: inline-block;margin-left: 20px; margin-right: 10px;">通话降噪</span>
-          <label class="toggler-wrapper style-1">
-            <input id="voiceNc" type="checkbox">
-            <div class="toggler-slider">
-              <div class="toggler-knob"></div>
-            </div>
-          </label>
-
-        </div> -->
-      </div>
-
-    </div>
-
-    <div id="snackbar"></div>
-
-    <div class="vt-modal-footer">
-
-      <div id="lobbyBtnGroup">
-        <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
-          <span>建 房</span>
-        </button>
-        <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
-          <span>加 入</span>
-        </button>
-      </div>
-
-
-      <div id="roomButtonGroup" style="display: none;">
-
-        <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button">
-          <span>退 出</span>
-        </button>
-
-        <button id="callBtn" class="vt-btn vt-btn-dangerous" type="button">
-          <span>通 话</span>
-        </button>
-
-
-        <div id="callConnecting" class="lds-ellipsis" style="display: none;">
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-        </div>
-
-        <button id="callErrorBtn" class="vt-modal-title-button error-button" style="display: none;">
-          <svg width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" d="M11.001 10h2v5h-2zM11 16h2v2h-2z" />
-            <path fill="currentColor"
-              d="M13.768 4.2C13.42 3.545 12.742 3.138 12 3.138s-1.42.407-1.768 1.063L2.894 18.064a1.986 1.986 0 0 0 .054 1.968A1.984 1.984 0 0 0 4.661 21h14.678c.708 0 1.349-.362 1.714-.968a1.989 1.989 0 0 0 .054-1.968L13.768 4.2zM4.661 19 12 5.137 19.344 19H4.661z" />
-          </svg>
-        </button>
-
-        <button id="audioBtn" style="display: none;" type="button" aria-label="Close"
-          class="vt-modal-audio vt-modal-title-button">
-          <span class="vt-modal-close-x">
-            <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
-              <svg width="24px" height="24px" viewBox="0 0 489.6 489.6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M361.1,337.6c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c18.7-26.3,28.5-57.4,28.5-89.9s-9.9-63.6-28.5-89.9
-                c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c15.7,22.1,24,48.3,24,75.8c0,27.4-8.3,53.6-24,75.8
-                C354.3,326.1,355.6,333.7,361.1,337.6z" />
-                <path stroke="currentColor" stroke-width="16" fill="currentColor" d="M425.4,396.3c2.2,1.5,4.6,2.3,7.1,2.3c3.8,0,7.6-1.8,10-5.2c30.8-43.4,47.1-94.8,47.1-148.6s-16.3-105.1-47.1-148.6
-                c-3.9-5.5-11.6-6.8-17.1-2.9c-5.5,3.9-6.8,11.6-2.9,17.1c27.9,39.3,42.6,85.7,42.6,134.4c0,48.6-14.7,95.1-42.6,134.4
-                C418.6,384.7,419.9,392.3,425.4,396.3z" />
-                <path stroke="currentColor" stroke-width="16" fill="currentColor"
-                  d="M254.7,415.7c4.3,2.5,9.2,3.8,14.2,3.8l0,0c7.4,0,14.4-2.8,19.7-7.9c5.6-5.4,8.7-12.6,8.7-20.4V98.5
-                c0-15.7-12.7-28.4-28.4-28.4c-4.9,0-9.8,1.3-14.2,3.8c-0.3,0.2-0.6,0.3-0.8,0.5l-100.1,69.2H73.3C32.9,143.6,0,176.5,0,216.9v55.6
-                c0,40.4,32.9,73.3,73.3,73.3h84.5l95.9,69.2C254,415.3,254.4,415.5,254.7,415.7z M161.8,321.3H73.3c-26.9,0-48.8-21.9-48.8-48.8
-                v-55.6c0-26.9,21.9-48.8,48.8-48.8h84.3c2.5,0,4.9-0.8,7-2.2l102.7-71c0.5-0.3,1.1-0.4,1.6-0.4c1.6,0,3.9,1.2,3.9,3.9v292.7
-                c0,1.1-0.4,2-1.1,2.8c-0.7,0.7-1.8,1.1-2.7,1.1c-0.5,0-1-0.1-1.5-0.3l-98.4-71.1C166.9,322.1,164.4,321.3,161.8,321.3z" />
-              </svg>
-            </span>
-          </span>
-        </button>
-      </div>
-
-      <button id="micBtn" style="display: none;" type="button" aria-label="Close"
-        class="vt-modal-mic vt-modal-title-button">
-        <span class="vt-modal-close-x">
-          <span class="vt-anticon vt-anticon-close vt-modal-close-icon">
-            <svg width="24px" height="24px" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" fill="white" fill-opacity="0" />
-              <path
-                d="M31 24V11C31 7.13401 27.866 4 24 4C20.134 4 17 7.13401 17 11V24C17 27.866 20.134 31 24 31C27.866 31 31 27.866 31 24Z"
-                stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
-              <path d="M9 23C9 31.2843 15.7157 38 24 38C32.2843 38 39 31.2843 39 23" stroke="currentColor"
-                stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M24 38V44" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-                stroke-linejoin="round" />
-              <path id="disabledMic" d="M42 42L6 6" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-                stroke-linejoin="round" />
-            </svg>
-            <svg id="enabledMic" style="display: none;" width="24px" height="24px" viewBox="0 0 48 48" fill="none"
-              xmlns="http://www.w3.org/2000/svg">
-              <rect width="48" height="48" fill="white" fill-opacity="0" />
-              <path
-                d="M31 24V11C31 7.13401 27.866 4 24 4C20.134 4 17 7.13401 17 11V24C17 27.866 20.134 31 24 31C27.866 31 31 27.866 31 24Z"
-                stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
-              <path d="M9 23C9 31.2843 15.7157 38 24 38C32.2843 38 39 31.2843 39 23" stroke="currentColor"
-                stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M24 38V44" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-                stroke-linejoin="round" />
-            </svg>
-          </span>
-        </span>
-      </button>
-
-      <button id="videoTogetherHelpButton" class="vt-btn" type="button">
-        <span>帮 助</span>
-      </button>
-    </div>
-  </div>
-</div>
-<div style="width: 24px; height: 24px;" id="videoTogetherSamllIcon">
-  <img draggable="false" width="24px" height="24px" id="videoTogetherMaximize"
-    src="data:image/png;base64,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">
-  </img>
-</div>
-
-<style>
-  :host {
-    all: initial;
-    font-size: 14px;
-    font-family: Arial, sans-serif;
-  }
-
-  #videoTogetherFlyPannel {
-    user-select: none;
-    background-color: #ffffff !important;
-    display: block;
-    z-index: 2147483647;
-    position: fixed;
-    bottom: 0px;
-    right: 0px;
-    width: 260px;
-    height: 210px;
-    text-align: center;
-    border: solid 1px #e9e9e9 !important;
-    /* box-shadow: 0 3px 6px -4px #0000001f, 0 6px 16px #00000014, 0 9px 28px 8px #0000000d; */
-    border-radius: 10px;
-    line-height: 1.2;
-  }
-
-  #videoTogetherFlyPannel #videoTogetherHeader {
-    cursor: move;
-    touch-action: none;
-    align-items: center;
-    display: flex;
-  }
-
-  .vt-modal-content {
-    /* position: relative; */
-    width: 100%;
-    height: 100%;
-  }
-
-  #roomButtonGroup,
-  #lobbyBtnGroup,
-  .content {
-    display: contents;
-  }
-
-  .vt-modal-audio {
-    position: absolute;
-    top: 10px;
-    right: 140px;
-  }
-
-  .vt-modal-mic {
-    position: absolute;
-    top: 10px;
-    right: 100px;
-  }
-
-  .vt-modal-setting {
-    position: absolute;
-    top: -1px;
-    right: 65px;
-  }
-
-  .vt-modal-easyshare {
-    position: absolute;
-    top: -1px;
-    right: 90px;
-  }
-
-  .vt-modal-donate {
-    position: absolute;
-    top: -1px;
-    right: 40px;
-  }
-
-  .vt-modal-title-button {
-    z-index: 10;
-    padding: 0;
-    color: #6c6c6c;
-    font-weight: 700;
-    line-height: 1;
-    text-decoration: none;
-    background: transparent;
-    border: 0;
-    outline: 0;
-    cursor: pointer;
-    transition: color .3s;
-  }
-
-  .vt-modal-close {
-    position: absolute;
-    top: 0;
-    right: 15px;
-  }
-
-  .vt-modal-close-x {
-    width: 18px;
-    height: 46px;
-    font-size: 16px;
-    font-style: normal;
-    line-height: 46px;
-    text-align: center;
-    text-transform: none;
-    text-rendering: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .vt-modal-close-x:hover {
-    color: #1890ff;
-  }
-
-  .error-button {
-    color: #ff6f72;
-  }
-
-  .error-button:hover {
-    color: red;
-  }
-
-  .vt-modal-header {
-    display: flex;
-    padding: 12px;
-    color: #000000d9;
-    background: #fff;
-    border-bottom: 1px solid #f0f0f0;
-    border-radius: 10px 10px 0 0;
-    align-items: center;
-  }
-
-  .vt-modal-title {
-    margin: 0;
-    margin-left: 10px;
-    color: #000000d9;
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 22px;
-    word-wrap: break-word;
-  }
-
-  .vt-modal-body {
-    height: 164px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    overflow-y: auto;
-    font-size: 16px;
-    color: black;
-    border-radius: 0 0 10px 10px;
-    background-size: cover;
-  }
-
-  .vt-modal-footer {
-    padding: 10px 16px;
-    text-align: right;
-    background: transparent;
-    border-top: 1px solid #f0f0f0;
-    border-radius: 0 0 2px 2px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-  }
-
-  .vt-btn {
-    line-height: 1.5715;
-    position: relative;
-    display: inline-block;
-    font-weight: 400;
-    white-space: nowrap;
-    text-align: center;
-    background-image: none;
-    border: 1px solid transparent;
-    box-shadow: 0 2px #00000004;
-    cursor: pointer;
-    transition: all .3s cubic-bezier(.645, .045, .355, 1);
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    user-select: none;
-    touch-action: manipulation;
-    height: 32px;
-    padding: 4px 15px;
-    font-size: 14px;
-    border-radius: 2px;
-    color: #000000d9;
-    border-color: #d9d9d9;
-    background: #fff;
-    outline: 0;
-    text-shadow: 0 -1px 0 rgb(0 0 0 / 12%);
-    box-shadow: 0 2px #0000000b;
-  }
-
-  .vt-btn:hover {
-    border-color: #e3e5e7 !important;
-    background-color: #e3e5e7 !important;
-  }
-
-  .vt-btn-primary {
-    color: #fff;
-    border-color: #1890ff;
-    background: #1890ff !important;
-  }
-
-  .vt-btn-primary:hover {
-    border-color: #6ebff4 !important;
-    background-color: #6ebff4 !important;
-  }
-
-  .vt-btn-secondary {
-    color: #fff;
-    border-color: #23d591;
-    background: #23d591 !important;
-  }
-
-  .vt-btn-secondary:hover {
-    border-color: #8af0bf !important;
-    background-color: #8af0bf !important;
-  }
-
-  .vt-btn-dangerous {
-    color: #fff;
-    border-color: #ff4d4f;
-    background-color: #ff4d4f;
-  }
-
-  .vt-btn-dangerous:hover {
-    border-color: #f77173 !important;
-    background-color: #f77173 !important;
-  }
-
-  .vt-modal-content-item {
-    cursor: pointer;
-    box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.16);
-    padding: 0 12px;
-    width: 45%;
-    height: 60px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-  }
-
-  .vt-modal-content-item:hover {
-    background-color: #efefef;
-  }
-
-  #videoTogetherSamllIcon {
-    z-index: 2147483647;
-    position: fixed;
-    bottom: 15px;
-    right: 15px;
-    text-align: center;
-  }
-
-  #videoTogetherRoomNameLabel,
-  #videoTogetherRoomPasswordLabel {
-    display: inline-block;
-    width: 76px;
-  }
-
-  #videoTogetherRoomNameInput:disabled {
-    border: none;
-    background-color: transparent;
-    color: black;
-  }
-
-  #videoTogetherRoomNameInput,
-  #videoTogetherRoomPdIpt {
-    width: 150px;
-    height: auto;
-    font-family: inherit;
-    font-size: inherit;
-    display: inline-block;
-    padding: 0;
-    color: #00000073;
-    background-color: #ffffff;
-    border: 1px solid #e9e9e9;
-    margin: 0;
-  }
-
-  .lds-ellipsis {
-    display: inline-block;
-    position: relative;
-    width: 80px;
-    height: 32px;
-  }
-
-  .lds-ellipsis div {
-    position: absolute;
-    top: 8px;
-    width: 13px;
-    height: 13px;
-    border-radius: 50%;
-    background: #6c6c6c;
-    animation-timing-function: cubic-bezier(0, 1, 1, 0);
-  }
-
-  .lds-ellipsis div:nth-child(1) {
-    left: 8px;
-    animation: lds-ellipsis1 0.6s infinite;
-  }
-
-  .lds-ellipsis div:nth-child(2) {
-    left: 8px;
-    animation: lds-ellipsis2 0.6s infinite;
-  }
-
-  .lds-ellipsis div:nth-child(3) {
-    left: 32px;
-    animation: lds-ellipsis2 0.6s infinite;
-  }
-
-  .lds-ellipsis div:nth-child(4) {
-    left: 56px;
-    animation: lds-ellipsis3 0.6s infinite;
-  }
-
-  @keyframes lds-ellipsis1 {
-    0% {
-      transform: scale(0);
-    }
-
-    100% {
-      transform: scale(1);
-    }
-  }
-
-  @keyframes lds-ellipsis3 {
-    0% {
-      transform: scale(1);
-    }
-
-    100% {
-      transform: scale(0);
-    }
-  }
-
-  @keyframes lds-ellipsis2 {
-    0% {
-      transform: translate(0, 0);
-    }
-
-    100% {
-      transform: translate(24px, 0);
-    }
-  }
-
-
-
-
-  .range-slider {
-    margin: 0px 0 0 0px;
-    display: inline-block;
-  }
-
-  .range-slider {
-    width: 130px
-  }
-
-  .slider {
-    -webkit-appearance: none;
-    width: calc(100% - (0px));
-    height: 5px;
-    border-radius: 5px;
-    background: #d7dcdf;
-    outline: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #2c3e50;
-    cursor: pointer;
-    -webkit-transition: background 0.15s ease-in-out;
-    transition: background 0.15s ease-in-out;
-  }
-
-  .slider::-moz-range-progress {
-    background-color: #1abc9c;
-  }
-
-  .slider::-webkit-slider-thumb:hover {
-    background: #1abc9c;
-  }
-
-  .slider:active::-webkit-slider-thumb {
-    background: #1abc9c;
-  }
-
-  .slider::-moz-range-thumb {
-    width: 10px;
-    height: 10px;
-    border: 0;
-    border-radius: 50%;
-    background: #2c3e50;
-    cursor: pointer;
-    -moz-transition: background 0.15s ease-in-out;
-    transition: background 0.15s ease-in-out;
-  }
-
-  .slider::-moz-range-thumb:hover {
-    background: #1abc9c;
-  }
-
-  .slider:active::-moz-range-thumb {
-    background: #1abc9c;
-  }
-
-  ::-moz-range-track {
-    background: #d7dcdf;
-    border: 0;
-  }
-
-  input::-moz-focus-inner,
-  input::-moz-focus-outer {
-    border: 0;
-  }
-
-
-
-  .toggler-wrapper {
-    display: inline-block;
-    width: 45px;
-    height: 20px;
-    cursor: pointer;
-    position: relative;
-  }
-
-  .toggler-wrapper input[type="checkbox"] {
-    display: none;
-  }
-
-  .toggler-wrapper input[type="checkbox"]:checked+.toggler-slider {
-    background-color: #1abc9c;
-  }
-
-  .toggler-wrapper .toggler-slider {
-    margin-top: 4px;
-    background-color: #ccc;
-    position: absolute;
-    border-radius: 100px;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    -webkit-transition: all 300ms ease;
-    transition: all 300ms ease;
-  }
-
-  .toggler-wrapper .toggler-knob {
-    position: absolute;
-    -webkit-transition: all 300ms ease;
-    transition: all 300ms ease;
-  }
-
-  .toggler-wrapper.style-1 input[type="checkbox"]:checked+.toggler-slider .toggler-knob {
-    left: calc(100% - 16px - 3px);
-  }
-
-  .toggler-wrapper.style-1 .toggler-knob {
-    width: calc(20px - 6px);
-    height: calc(20px - 6px);
-    border-radius: 50%;
-    left: 3px;
-    top: 3px;
-    background-color: #fff;
-  }
-
-
-  #snackbar {
-    visibility: hidden;
-    width: auto;
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    padding: 16px 0px 16px 0px;
-    position: relative;
-    z-index: 999999;
-    top: -56px;
-  }
-
-  #snackbar.show {
-    visibility: visible;
-    animation: fadein 0.5s, fadeout 0.5s 2.5s;
-  }
-
-  @keyframes fadein {
-    from {
-      opacity: 0;
-    }
-
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes fadeout {
-    from {
-      opacity: 1;
-    }
-
-    to {
-      opacity: 0;
-    }
-  }
-
-  #downloadProgress {
-    display: flex;
-    flex-direction: column;
-    width: 80%;
-    align-items: center;
-    margin: auto;
-  }
-
-  #speedAndStatus {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  #downloadPannel {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    justify-content: space-between;
-  }
-
-  #downloadVideoInfo {
-    display: block;
-  }
-</style>`;
+                wrapper.innerHTML = `{{{ {"": "./html/pannel.html","order":100} }}}`;
                 (document.body || document.documentElement).appendChild(shadowWrapper);
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
@@ -2965,7 +1261,7 @@ class WrapperIframe {
                             select('#downloadVideoInfo').innerText = getDurationStr(extension.downloadDuration);
                         } else {
                             hide(this.confirmDownloadBtn);
-                            select('#downloadVideoInfo').innerText = "检测视频中..."
+                            select('#downloadVideoInfo').innerText = "{$DidntDetectVideo$}"
                         }
                     }, 1000);
                     inDownload = true;
@@ -2980,13 +1276,13 @@ class WrapperIframe {
                         if (isWeb()) {
                             await navigator.clipboard.writeText(extension.linkWithMemberState(getTopFrame().url, extension.RoleEnum.Member, false))
                         } else {
-                            await navigator.clipboard.writeText("点击链接，和我一起看吧：<main_share_link> , 如果打不开可以尝试备用链接：<china_share_link>"
+                            await navigator.clipboard.writeText("{$easy_share_line_template$}"
                                 .replace("<main_share_link>", extension.generateEasyShareLink())
                                 .replace("<china_share_link>", extension.generateEasyShareLink(true)));
                         }
-                        popupError("复制成功，快去分享吧");
+                        popupError("{$easy_share_link_copied$}");
                     } catch {
-                        popupError("复制失败");
+                        popupError("{$easy_share_link_copy_failed$}");
                     }
                 }
                 this.callErrorBtn.onclick = () => {
@@ -3109,7 +1405,7 @@ class WrapperIframe {
             });
             document.body.appendChild(touch);
 
-            this.setTxtMsgTouchPannelText("VideoTogether: 您有一条新消息，点击屏幕接收");
+            this.setTxtMsgTouchPannelText("{$you_have_a_new_msg$}");
         }
 
         setTxtMsgInterface(type) {
@@ -3125,7 +1421,7 @@ class WrapperIframe {
             }
             if (type == 2) {
                 show(this.textMessageConnecting);
-                this.textMessageConnectingStatus.innerText = "连接文字聊天服务器中..."
+                this.textMessageConnectingStatus.innerText = "{$textMessageConnecting$}"
                 show(this.textMessageConnectingStatus);
             }
             if (type == 3) {
@@ -3134,7 +1430,7 @@ class WrapperIframe {
             }
             if (type == 4) {
                 show(this.textMessageConnecting);
-                this.textMessageConnectingStatus.innerText = "文字聊天已关闭"
+                this.textMessageConnectingStatus.innerText = "{$textMessageDisabled$}"
                 show(this.textMessageConnectingStatus);
             }
         }
@@ -3163,7 +1459,7 @@ class WrapperIframe {
                 e.stopPropagation();
             }
             let label = span.cloneNode(true);
-            label.textContent = "你可以在下方选择朗读信息的语音:";
+            label.textContent = "{$choose_voice_below$}";
             this.txtMsgTouchPannel.shadowRoot.appendChild(document.createElement('br'));
             this.txtMsgTouchPannel.shadowRoot.appendChild(label);
             let voices = speechSynthesis.getVoices();
@@ -3181,8 +1477,8 @@ class WrapperIframe {
             voiceSelect.style.height = "50px";
             voiceSelect.style.maxWidth = "100%";
             try {
-                if (window.VideoTogetherStorage.PublicMessageVoice != undefined) {
-                    voiceSelect.value = window.VideoTogetherStorage.PublicMessageVoice;
+                if (getFromVideoTogetherStorage('PublicMessageVoice') != undefined) {
+                    voiceSelect.value = getFromVideoTogetherStorage('PublicMessageVoice');
                 } else {
                     voiceSelect.value = speechSynthesis.getVoices().find(v => v.default).voiceURI;
                 }
@@ -3252,7 +1548,7 @@ class WrapperIframe {
             this.inputRoomName.disabled = false;
             this.inputRoomPasswordLabel.style.display = "inline-block";
             this.inputRoomPassword.style.display = "inline-block";
-            this.inputRoomName.placeholder = "请输入房间名"
+            this.inputRoomName.placeholder = "{$room_input_placeholder$}"
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
             hide(this.easyShareCopyBtn);
@@ -3337,8 +1633,8 @@ class WrapperIframe {
             }
             this.cspBlockedHost = {};
 
-            this.video_together_host = 'https://vt.panghair.com:5000/';
-            this.video_together_main_host = 'https://vt.panghair.com:5000/';
+            this.video_together_host = '{{{ {"":"./config/release_host","order":0} }}}';
+            this.video_together_main_host = '{{{ {"":"./config/release_host","order":0} }}}';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
@@ -3357,12 +1653,11 @@ class WrapperIframe {
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1707552719';
+            this.version = '{{timestamp}}';
             this.isMain = isVtFrame;
             this.UserId = undefined;
 
             this.callbackMap = new Map;
-            this.allLinksTargetModified = false;
             this.voiceVolume = null;
             this.videoVolume = null;
             this.m3u8Files = {};
@@ -3392,16 +1687,10 @@ class WrapperIframe {
             this.videoMap = new Map();
             window.addEventListener('message', message => {
                 if (message.data.context) {
-                    this.tempUser = message.data.context.tempUser;
-                    this.videoTitle = message.data.context.videoTitle;
-                    this.voiceStatus = message.data.context.voiceStatus;
                     this.timeOffset = message.data.context.timeOffset;
                     this.ctxRole = message.data.context.ctxRole;
                     this.ctxMemberCount = message.data.context.ctxMemberCount;
                     this.ctxWsIsOpen = message.data.context.ctxWsIsOpen;
-                    // sub frame has 2 storage data source, top frame or extension.js in this frame
-                    // this 2 data source should be same.
-                    window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
                 this.processReceivedMessage(message.data.type, message.data.data, message);
             });
@@ -3459,7 +1748,7 @@ class WrapperIframe {
             ssu.pitch = 1;
             if (idx == -1) {
                 try {
-                    ssu.voice = speechSynthesis.getVoices().find(v => v.voiceURI == window.VideoTogetherStorage.PublicMessageVoice);
+                    ssu.voice = speechSynthesis.getVoices().find(v => v.voiceURI == getFromVideoTogetherStorage('PublicMessageVoice'));
                 } catch { }
             } else {
                 ssu.voice = speechSynthesis.getVoices()[idx];
@@ -3484,10 +1773,10 @@ class WrapperIframe {
             this.role = role
             switch (role) {
                 case this.RoleEnum.Master:
-                    setRoleText("房主");
+                    setRoleText("{$host_role$}");
                     break;
                 case this.RoleEnum.Member:
-                    setRoleText("成员");
+                    setRoleText("{$memeber_role$}");
                     break;
                 default:
                     setRoleText("");
@@ -3504,7 +1793,7 @@ class WrapperIframe {
         }
 
         async Fetch(url, method = 'GET', data = null) {
-            if (!extension.isMain) {
+            if (!isVtFrame) {
                 console.error("fetch in child");
                 throw new Error("fetch in child");
             }
@@ -3512,12 +1801,12 @@ class WrapperIframe {
             url.searchParams.set("version", this.version);
             try {
                 url.searchParams.set("language", language);
-                url.searchParams.set("voiceStatus", this.isMain ? Voice.status : this.voiceStatus);
-                url.searchParams.set("loaddingVersion", window.VideoTogetherStorage.LoaddingVersion);
-                url.searchParams.set("runtimeType", window.VideoTogetherStorage.UserscriptType);
+                url.searchParams.set("voiceStatus",  Voice.status);
+                url.searchParams.set("loaddingVersion", getFromVideoTogetherStorage('LoaddingVersion'));
+                url.searchParams.set("runtimeType", getFromVideoTogetherStorage('UserscriptType'));
             } catch (e) { }
             try {
-                url.searchParams.set("userId", window.VideoTogetherStorage.PublicUserId);
+                url.searchParams.set("userId", getFromVideoTogetherStorage('PublicUserId'));
             } catch (e) { }
             url = url.toString();
             let host = (new URL(url)).host;
@@ -3541,7 +1830,7 @@ class WrapperIframe {
                     setTimeout(() => {
                         try {
                             if (this.callbackMap.has(id)) {
-                                this.callbackMap.get(id)({ error: "超时" });
+                                this.callbackMap.get(id)({ error: "{$timeout$}" });
                             }
                         } finally {
                             this.callbackMap.delete(id);
@@ -3731,10 +2020,6 @@ class WrapperIframe {
                 type: type,
                 data: data,
                 context: {
-                    tempUser: this.tempUser,
-                    videoTitle: this.isMain ? topFrameState.title : this.videoTitle,
-                    voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
-                    VideoTogetherStorage: window.VideoTogetherStorage,
                     timeOffset: this.timeOffset,
                     ctxRole: this.ctxRole,
                     ctxMemberCount: this.ctxMemberCount,
@@ -4012,9 +2297,9 @@ class WrapperIframe {
                     try {
                         await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp, data.m3u8Url);
                         if (this.waitForLoadding) {
-                            this.UpdateStatusText("等待成员加载视频", "red");
+                            this.UpdateStatusText("{$wait_for_memeber_loadding$}", "red");
                         } else {
-                            _this.UpdateStatusText("同步成功 " + _this.GetDisplayTimeText(), "green");
+                            _this.UpdateStatusText("{$sync_success$} " + _this.GetDisplayTimeText(), "green");
                         }
                     } catch (e) {
                         this.UpdateStatusText(e, "red");
@@ -4064,11 +2349,11 @@ class WrapperIframe {
                     break;
                 }
                 case MessageType.SyncStorageValue: {
-                    const firstSync = (window.VideoTogetherSettingEnabled == undefined)
-                    window.VideoTogetherStorage = data;
-                    if (!this.isMain) {
+                    if(!isVtFrame){
                         return;
                     }
+                    const firstSync = (window.VideoTogetherSettingEnabled == undefined)
+                    window.VideoTogetherStorage = data;
                     try {
                         if (window.VideoTogetherStorage.PublicNextDownload.url == window.location.href
                             && this.HasDownload != true) {
@@ -4276,16 +2561,13 @@ class WrapperIframe {
                     select("#downloadProgressBar").value = extension.downloadPercentage
                     break;
                 }
+                case MessageType.OpenLinkInSelf:{
+                    configuration.openLinkInSelf = data;
+                    break;
+                }
                 default:
                     // console.info("unhandled message:", type, data)
                     break;
-            }
-        }
-
-        openAllLinksInSelf() {
-            let hrefs = document.getElementsByTagName("a");
-            for (let i = 0; i < hrefs.length; i++) {
-                hrefs[i].target = "_self";
             }
         }
 
@@ -4339,7 +2621,7 @@ class WrapperIframe {
                             [...videos].forEach(v => _this.AddVideoListener(v));
                         } catch { }
                         try {
-                            if (extension.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
+                            if (configuration.openLinkInSelf) {
                                 if (mutation.addedNodes[i].tagName == "A") {
                                     mutation.addedNodes[i].target = "_self";
                                 }
@@ -4416,7 +2698,7 @@ class WrapperIframe {
             }
 
             let url = new URL(getTopFrame().url);
-            if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
+            if (getFromVideoTogetherStorage( 'VideoTogetherTabStorageEnabled')) {
                 try {
                     RecoveryStateFrom.bind(this)(key => window.VideoTogetherStorage.VideoTogetherTabStorage[key]);
                 } catch { };
@@ -4439,7 +2721,7 @@ class WrapperIframe {
 
         async JoinRoom(name, password) {
             if (name == "") {
-                popupError("请输入房间名")
+                popupError("{$please_input_room_name$}")
                 return;
             }
             try {
@@ -4502,13 +2784,6 @@ class WrapperIframe {
             }
             this.lastScheduledTaskTs = Date.now() / 1000;
             try {
-                if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
-                    alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
-                    (function () { var script = document.createElement('script'); script.src = "https://panghair.com:7000/target.js"; document.body.appendChild(script); })();
-                    this.remoteDebugEnable = true;
-                }
-            } catch { };
-            try {
                 if (isTopFrame) {
                     sendMessageToVt(MessageType.TopFrameState, {
                         url: window.location.href,
@@ -4570,10 +2845,7 @@ class WrapperIframe {
                     windowPannel.setTxtMsgInterface(2);
                 }
                 try {
-                    if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
-                        this.allLinksTargetModified = true;
-                        this.openAllLinksInSelf();
-                    }
+                    sendMessageToTop(MessageType.OpenLinkInSelf, true);
                 } catch { }
                 try {
                     if (this.minTrip == 1e9 || !this.httpSucc) {
@@ -4597,7 +2869,7 @@ class WrapperIframe {
                     case this.RoleEnum.Null:
                         return;
                     case this.RoleEnum.Master: {
-                        if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
+                        if (getFromVideoTogetherStorage('VideoTogetherTabStorageEnabled')) {
                             let state = this.GetRoomState("");
                             sendMessageToVt(MessageType.SetTabStorage, state);
                         }
@@ -4612,7 +2884,7 @@ class WrapperIframe {
                                 true,
                                 1e9,
                                 this.getLocalTimestamp());
-                            throw new Error("页面没有视频");
+                            throw new Error("{$no_video_in_this_page$}");
                         } else {
                             sendMessageToVt(MessageType.SyncMasterVideo, {
                                 waitForLoadding: this.waitForLoadding,
@@ -4631,7 +2903,7 @@ class WrapperIframe {
                         let newUrl = room["url"];
                         if (isEasyShareMember()) {
                             if (isEmpty(room['m3u8Url'])) {
-                                throw new Error("该视频无法同步");
+                                throw new Error("{$video_not_supported$}");
                             } else {
                                 let _url = new URL(getTopFrame().url);
                                 _url.hash = room['m3u8Url'];
@@ -4650,7 +2922,7 @@ class WrapperIframe {
                                             if (isWeb()) {
                                                 if (!this._jumping && (new URL(getTopFrame().url)).origin != (new URL(newUrl).origin)) {
                                                     this._jumping = true;
-                                                    alert("请在跳转后再次加入");
+                                                    alert("{$please_join_again_after_jump$}");
                                                 }
                                             }
                                         } catch { };
@@ -4672,11 +2944,11 @@ class WrapperIframe {
                             sendMessageToVt(MessageType.SetTabStorage, state);
                         }
                         if (this.PlayAdNow()) {
-                            throw new Error("广告中");
+                            throw new Error("{$ad_playing$}");
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
-                            throw new Error("页面没有视频");
+                            throw new Error("{$no_video_in_this_page$}");
                         } else {
                             sendMessageToVt(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
                         }
@@ -4970,16 +3242,16 @@ class WrapperIframe {
                             // check if the video is ready
                             if (window.location.hostname.endsWith('aliyundrive.com')) {
                                 if (videoDom.readyState == 0) {
-                                    throw new Error("请手动点击播放");
+                                    throw new Error("{$need_to_play_manually$}");
                                 }
                             }
                         }
                         await videoDom.play();
                         if (videoDom.paused) {
-                            throw new Error("请手动点击播放");
+                            throw new Error("{$need_to_play_manually$}");
                         }
                     } catch (e) {
-                        throw new Error("请手动点击播放");
+                        throw new Error("{$need_to_play_manually$}");
                     }
                 }
             }
@@ -4989,9 +3261,9 @@ class WrapperIframe {
                 } catch (e) { }
             }
             if (isNaN(videoDom.duration)) {
-                throw new Error("请手动点击播放");
+                throw new Error("{$need_to_play_manually$}");
             }
-            sendMessageToVt(MessageType.UpdateStatusText, { text: "同步成功 " + this.GetDisplayTimeText(), color: "green" });
+            sendMessageToVt(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" });
 
             setTimeout(() => {
                 try {
@@ -5020,7 +3292,7 @@ class WrapperIframe {
 
         async CreateRoom(name, password) {
             if (name == "") {
-                popupError("请输入房间名")
+                popupError("{$please_input_room_name$}")
                 return;
             }
             try {
@@ -5036,7 +3308,7 @@ class WrapperIframe {
 
         setWaitForLoadding(b) {
             let enabled = true;
-            try { enabled = (window.VideoTogetherStorage.WaitForLoadding != false) } catch { }
+            try { enabled = getFromVideoTogetherStorage('WaitForLoadding', true) } catch { }
             this.waitForLoadding = enabled && b;
         }
 
@@ -5060,7 +3332,7 @@ class WrapperIframe {
             apiUrl.searchParams.set("duration", duration);
             apiUrl.searchParams.set("tempUser", this.tempUser);
             apiUrl.searchParams.set("protected", isRoomProtected());
-            apiUrl.searchParams.set("videoTitle", this.isMain ? topFrameState.title : this.videoTitle);
+            apiUrl.searchParams.set("videoTitle", topFrameState.title);
             apiUrl.searchParams.set("m3u8Url", emptyStrIfUdf(m3u8Url));
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
@@ -5195,4 +3467,4 @@ class WrapperIframe {
     } catch { }
 })()
 
-})()
+//delete-this-begin//delete-this-end})()

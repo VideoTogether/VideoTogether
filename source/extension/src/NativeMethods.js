@@ -1,11 +1,12 @@
-const Global = {
+
+export const Global = {
     inited: false,
     NativePostMessageFunction: null,
     NativeAttachShadow: null,
     NativeFetch: null
 }
 
-function GetNativeFunction() {
+export function GetNativeFunction() {
     try{
         if (Global.inited) {
             return;
@@ -21,7 +22,3 @@ function GetNativeFunction() {
         console.error(e);
     }
 }
-
-//delete-this-begin
-module.exports = { Global, GetNativeFunction};
-//delete-this-end
