@@ -41,12 +41,16 @@ function getBrowser() {
     }
 }
 
-if(isExtension){
+if (isExtension) {
     window.VideoTogetherWrapperIframeUrl = getBrowser().runtime.getURL('/videotogether_wrapper.html');
 }
 import { WrapperIframeUrl } from './src/Constants.js';
 import { isWrapperFrame } from './src/Utils.js';
-
+import { SecureFrame } from './src/SecureFrame.js'
+import { Base64 } from './src/Base64.js';
+import { TopFrameState } from './src/TopFrameState.js';
+import { PostMessage } from './src/PostMessage.js';
+import { WrapperIframe } from './src/WrapperIframe.js';
 console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeUrl);
 
 (async function () {
@@ -260,24 +264,29 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
     } catch (e) { };
     console.log(vtRefreshVersion)
 
+    let vtType = isWebsite ? "website" : "user";
     let cachedVt = null;
+    const mainVtSrc = isDevelopment ? getBrowser().runtime.getURL(`vt.v2.${language}.${vtType}.js`)
+        : `https://2gether.video/release/vt.v2.${language}.${vtType}.js`;
+
     try {
-        let vtType = isWebsite ? "website" : "user";
         let privateCachedVt = await getGM().getValue("PrivateCachedVt");
         let cachedVersion = null;
         try {
             cachedVersion = privateCachedVt['version'];
         } catch { };
-        if (cachedVersion == vtRefreshVersion) {
+        if (cachedVersion == vtRefreshVersion && !isDevelopment) {
             cachedVt = privateCachedVt['data'];
         } else {
             console.log("Refresh VT");
-            fetch(`https://2gether.video/release/vt.v2${isWrapperFrameEnabled ? ".frame" : ""}.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
+            const fetchPromise = fetch(`${mainVtSrc}?vtRefreshVersion=` + vtRefreshVersion)
                 .then(r => r.text())
-                .then(data => getGM().setValue('PrivateCachedVt', {
-                    'version': vtRefreshVersion,
-                    'data': data
-                }))
+                .then(data => {
+                    getGM().setValue('PrivateCachedVt', { 'version': vtRefreshVersion, 'data': data })
+                    if (isDevelopment) {
+                        cachedVt = data;
+                    }
+                })
                 .catch(() => {
                     fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.v2.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                         .then(r => r.text())
@@ -286,6 +295,9 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
                             'data': data
                         }))
                 })
+            if (isDevelopment) {
+                await fetchPromise;
+            }
         }
     } catch (e) { };
 
@@ -659,11 +671,11 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
                 }
                 if (urlDisabled) {
                     console.log("hot update is not successful")
-                    insertJs(getBrowser().runtime.getURL(`vt.v2${isWrapperFrameEnabled ? ".frame" : ""}.${language}.user.js`));
+                    insertJs(getBrowser().runtime.getURL(`vt.v2.${language}.user.js`));
                     hotUpdated = true;
                 }
             });
-            script.src = getBrowser().runtime.getURL(`load${isDevelopment ? ".dev" : ""}${isWrapperFrameEnabled ? ".frame" : ""}.${language}.js`);
+            script.src = getBrowser().runtime.getURL(`load.${language}.js`);
             script.setAttribute("cachedVt", cachedVt);
             break;
         case "userscript_debug":

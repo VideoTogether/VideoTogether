@@ -30,7 +30,7 @@ const lastRunQueue = []
 const periodSec = 5;
 const timeLimitation = 15;
 const isTopFrame = (window.self == window.top);
-const isWrapperFrameEnabled = (`{{{ {"": "./config/false", "frame": "./config/true","order":98} }}}` == 'true');
+const isWrapperFrameEnabled = true;
 const isVtFrame = isWrapperFrameEnabled ? isWrapperFrame : isTopFrame;
 
 import { Base64 } from './src/Base64.js'
@@ -41,6 +41,7 @@ import { PostMessage } from './src/PostMessage.js'
 import { TopFrameState } from './src/TopFrameState.js'
 const topFrameState = new TopFrameState();
 import { WrapperIframe } from './src/WrapperIframe.js'
+import { RoleEnum } from './src/Role.js';
 
 class Configuration {
     constructor() {
@@ -1626,11 +1627,7 @@ const configuration = new Configuration();
     class VideoTogetherExtension {
 
         constructor() {
-            this.RoleEnum = {
-                Null: 1,
-                Master: 2,
-                Member: 3,
-            }
+            this.RoleEnum = RoleEnum
             this.cspBlockedHost = {};
 
             this.video_together_host = '{{{ {"":"./config/release_host","order":0} }}}';
@@ -1672,7 +1669,6 @@ const configuration = new Configuration();
             this.downloadPercentage = 0;
             this.currentSendingMsgId = null;
 
-            this.isIos = undefined;
             this.speechSynthesisEnabled = false;
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
@@ -2832,9 +2828,6 @@ const configuration = new Configuration();
 
 
             if (this.role != this.RoleEnum.Null) {
-                if (this.isIos == null) {
-                    this.isIos = await isAudioVolumeRO();
-                }
                 WS.connect();
                 this.ctxWsIsOpen = WS.isOpen();
                 if (!getEnableTextMessage()) {
@@ -3373,66 +3366,7 @@ const configuration = new Configuration();
 
         EnableDraggable() {
             function filter(e) {
-                let target = undefined;
-                if (window.videoTogetherFlyPannel.videoTogetherHeader.contains(e.target)) {
-                    target = window.videoTogetherFlyPannel.videoTogetherFlyPannel;
-                } else {
-                    return;
-                }
-
-
-                target.videoTogetherMoving = true;
-                if (isWrapperFrame) {
-                    WrapperIframe.startMoving(e);
-                    return;
-                }
-                if (e.clientX) {
-                    target.oldX = e.clientX;
-                    target.oldY = e.clientY;
-                } else {
-                    target.oldX = e.touches[0].clientX;
-                    target.oldY = e.touches[0].clientY;
-                }
-
-                target.oldLeft = window.getComputedStyle(target).getPropertyValue('left').split('px')[0] * 1;
-                target.oldTop = window.getComputedStyle(target).getPropertyValue('top').split('px')[0] * 1;
-
-                document.onmousemove = dr;
-                document.ontouchmove = dr;
-                document.onpointermove = dr;
-
-                function dr(event) {
-
-                    if (!target.videoTogetherMoving) {
-                        return;
-                    }
-                    event.preventDefault();
-                    event.stopPropagation();
-                    if (event.clientX) {
-                        target.distX = event.clientX - target.oldX;
-                        target.distY = event.clientY - target.oldY;
-                    } else {
-                        target.distX = event.touches[0].clientX - target.oldX;
-                        target.distY = event.touches[0].clientY - target.oldY;
-                    }
-
-                    target.style.left = Math.min(document.documentElement.clientWidth - target.clientWidth, Math.max(0, target.oldLeft + target.distX)) + "px";
-                    target.style.top = Math.min(document.documentElement.clientHeight - target.clientHeight, Math.max(0, target.oldTop + target.distY)) + "px";
-
-                    window.addEventListener('resize', function (event) {
-                        target.oldLeft = window.getComputedStyle(target).getPropertyValue('left').split('px')[0] * 1;
-                        target.oldTop = window.getComputedStyle(target).getPropertyValue('top').split('px')[0] * 1;
-                        target.style.left = Math.min(document.documentElement.clientWidth - target.clientWidth, Math.max(0, target.oldLeft)) + "px";
-                        target.style.top = Math.min(document.documentElement.clientHeight - target.clientHeight, Math.max(0, target.oldTop)) + "px";
-                    });
-                }
-
-                function endDrag() {
-                    target.videoTogetherMoving = false;
-                }
-                target.onmouseup = endDrag;
-                target.ontouchend = endDrag;
-                target.onpointerup = endDrag;
+                WrapperIframe.startMoving(e);
             }
             window.videoTogetherFlyPannel.videoTogetherHeader.onmousedown = filter;
             window.videoTogetherFlyPannel.videoTogetherHeader.ontouchstart = filter;

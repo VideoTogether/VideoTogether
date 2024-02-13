@@ -207,6 +207,7 @@ if __name__ == '__main__':
 
     shutil.copyfile(rootPath.joinpath("release/extension.chrome.user.js"),
                     rootPath.joinpath("source/chrome/extension.chrome.user.js"))
+    cp("release/extension.v2.chrome.user.js", "source/chrome/extension.v2.chrome.user.js")
     shutil.copyfile(rootPath.joinpath("release/extension.safari.user.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/extension.safari.user.js"))
     shutil.copyfile(rootPath.joinpath("release/extension.firefox.user.js"),

@@ -1,1 +1,1 @@
-export const WrapperIframeUrl = window.VideoTogetherWrapperIframeUrl;
+export const WrapperIframeUrl =  'https://2gether.video/videotogether_wrapper.html'

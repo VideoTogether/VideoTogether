@@ -25,7 +25,7 @@ export class WrapperIframe {
         const selfSateBase64 = Base64.encode(selfSate);
         this.frame.src = `${WrapperIframeUrl}#${selfSateBase64}`;
         this.frame.allow = 'microphone;';
-        this.frame.style = 'position: absolute; right: 0px; bottom: 0px; width: 262px; height: 212px; background: transparent; border: none; z-index: 2147483647; position:fixed;';
+        this.frame.style = 'position: absolute; right: 15px; bottom: 15px; width: 262px; height: 212px; background: transparent; border: none; z-index: 2147483647; position:fixed;';
         (document.body || document.documentElement).appendChild(this.frame);
         window.addEventListener('message', (e) => {
             if (e.data.source == WrapperIframeSource) {
@@ -88,6 +88,7 @@ export class WrapperIframe {
                 y: targetY
             }
         })
+        // todo
     }
     static stopMoving(e) {
         mouseMoveEvent.forEach(function (event) {
