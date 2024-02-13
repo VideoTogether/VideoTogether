@@ -1,6 +1,6 @@
 
 (function () {
-    let version = '{{timestamp}}'
+    let version = '1694442998'
 
     try {
         eval(document.currentScript.getAttribute("cachedvt"));
@@ -15,7 +15,7 @@
     } catch (e) { console.error(e) }
 
 
-    let language = "{$locale$}";
+    let language = "zh-cn";
 
     if (window.videoTogetherExtension == undefined) {
         let script = document.createElement('script');

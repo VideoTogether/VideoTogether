@@ -16,41 +16,28 @@
 // @connect      api.2gether.video
 // @connect      api.chizhou.in
 // @connect      api.panghair.com
-// @connect      vt.v2.panghair.com
+// @connect      vt.panghair.com
 // @connect      raw.githubusercontent.com
 // @connect      videotogether.oss-cn-hangzhou.aliyuncs.com
 // ==/UserScript==
 
-//delete-this-begin//delete-this-end(function () {
-
-const isDevelopment = true;
-const version = '{{timestamp}}'
-const type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
-const isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
-const isWebsite = (type == "website" || type == "website_debug");
-const isUserscript = (type == "userscript");
-const isTopFrame = (window.self == window.top);
-
-function getBrowser() {
-    switch (type) {
-        case 'Safari':
-            return browser;
-        case 'Chrome':
-        case 'Firefox':
-            return chrome;
-    }
-}
-
-if(isExtension){
-    window.VideoTogetherWrapperIframeUrl = getBrowser().runtime.getURL('/videotogether_wrapper.html');
-}
-import { WrapperIframeUrl } from './src/Constants.js';
-import { isWrapperFrame } from './src/Utils.js';
-
-console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeUrl);
-
 (async function () {
+    let isDevelopment = false;
 
+    let version = '{{timestamp}}'
+    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
+    function getBrowser() {
+        switch (type) {
+            case 'Safari':
+                return browser;
+            case 'Chrome':
+            case 'Firefox':
+                return chrome;
+        }
+    }
+    let isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
+    let isWebsite = (type == "website" || type == "website_debug");
+    let isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
 
@@ -58,7 +45,7 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
         if (type == "website" || type == "website_debug") {
             return websiteGM;
         }
-        if (isExtension) {
+        if (type == "Chrome" || type == "Safari" || type == "Firefox") {
             return extensionGM;
         }
         return GM;
@@ -122,7 +109,7 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
             }
         }
     }
-    if (isExtension) {
+    if (type == "Chrome" || type == "Safari" || type == "Firefox") {
         getGM().setValue = async (key, value) => {
             return await new Promise((resolve, reject) => {
                 try {
@@ -195,32 +182,6 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
         }
     }
 
-    function generateUUID() {
-        if (crypto.randomUUID != undefined) {
-            return crypto.randomUUID();
-        }
-        return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-        );
-    }
-    const pageUUID = generateUUID();
-    const pagePrivateKey = generateUUID();
-    const pageIdMap = {}
-    if (isExtension) {
-        window.top.postMessage({
-            source: "VideoTogether",
-            type: 35,
-            data: {
-                pageUUID: pageUUID,
-                isWrapperFrame: isWrapperFrame
-            }
-        }, "*");
-        // if (isVtFrame) {
-        //     getGM().setValue("vtFramePageId", pageUUID);
-        // }
-
-    }
-
 
     let languages = ['en-us', 'zh-cn'];
     let language = 'en-us';
@@ -248,10 +209,7 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
         }
     }
 
-    const isWrapperFrameEnabled = await getGM().getValue('WrapperFrame') != false;
-    const isVtFrame = isWrapperFrameEnabled ? isWrapperFrame : isTopFrame;
-
-    let vtRefreshVersion = version + language + isWrapperFrameEnabled;
+    let vtRefreshVersion = version + language;
     try {
         let publicVtVersion = await getGM().getValue("PublicVtVersion")
         if (publicVtVersion != null) {
@@ -272,14 +230,14 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
             cachedVt = privateCachedVt['data'];
         } else {
             console.log("Refresh VT");
-            fetch(`https://2gether.video/release/vt.v2${isWrapperFrameEnabled ? ".frame" : ""}.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
+            fetch(`https://2gether.video/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                 .then(r => r.text())
                 .then(data => getGM().setValue('PrivateCachedVt', {
                     'version': vtRefreshVersion,
                     'data': data
                 }))
                 .catch(() => {
-                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.v2.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
+                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                         .then(r => r.text())
                         .then(data => getGM().setValue('PrivateCachedVt', {
                             'version': vtRefreshVersion,
@@ -361,9 +319,9 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
 
     let isTrustPageCache = undefined;
     function isTrustPage() {
-        // if (isDevelopment) {
-        //     return true;
-        // }
+        if (isDevelopment) {
+            return true;
+        }
         if (window.location.protocol != 'https:') {
             return false
         }
@@ -449,34 +407,6 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
                 }
                 case 18: {
                     await SetTabStorage(e.data.data);
-                    break;
-                }
-                case 34: {
-                    if (window.top != window.self) {
-                        window.top.postMessage(e.data, "*");
-                        return;
-                    }
-
-                    e.data.data.from = pageUUID;
-                    let target = e.data.data.target
-                    // if (target == 'vtFrame') {
-                    //     target = await getGM().getValue("vtFramePageId")
-                    // }
-                    if (pageIdMap[target] == undefined) {
-                        console.log("pageIdMap", pageIdMap);
-                        console.log("target not found", target);
-                    }
-                    // console.log(e.data, pageIdMap[e.data.data.target]);
-                    pageIdMap[target].postMessage(e.data.data, "*");
-                    break;
-                }
-                case 35: {
-                    console.log("pageUUID", pageUUID, e.data.data.pageUUID);
-                    console.log(e);
-                    pageIdMap[e.data.data.pageUUID] = e.source;
-                    if (e.data.data.isWrapperFrame) {
-                        pageIdMap['vtFrame'] = e.source;
-                    }
                     break;
                 }
                 case 2001: {
@@ -590,10 +520,9 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
         }
     });
 
+    let isMain = window.self == window.top;
+
     async function PostStorage() {
-        if (!isVtFrame && !isTrustPage()) {
-            return;
-        }
         try {
             let keys = await GetKeys();
             let data = {}
@@ -641,7 +570,7 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
     script.type = 'text/javascript';
     switch (type) {
         case "userscript":
-            script.src = `https://2gether.video/release/vt.v2.${language}.user.js?timestamp=` + version;
+            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + version;
             break;
         case "Chrome":
         case "Safari":
@@ -659,24 +588,28 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
                 }
                 if (urlDisabled) {
                     console.log("hot update is not successful")
-                    insertJs(getBrowser().runtime.getURL(`vt.v2${isWrapperFrameEnabled ? ".frame" : ""}.${language}.user.js`));
+                    insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
                     hotUpdated = true;
                 }
             });
-            script.src = getBrowser().runtime.getURL(`load${isDevelopment ? ".dev" : ""}${isWrapperFrameEnabled ? ".frame" : ""}.${language}.js`);
+            if (isDevelopment) {
+                script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
+            } else {
+                script.src = getBrowser().runtime.getURL(`load.${language}.js`);
+            }
             script.setAttribute("cachedVt", cachedVt);
             break;
         case "userscript_debug":
-            script.src = `http://127.0.0.1:7000/release/vt.v2.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
+            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "userscript_beta":
-            script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.v2.${language}.user.js?timestamp=` + parseInt(Date.now());
+            script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "website":
-            script.src = `https://2gether.video/release/vt.v2.${language}.website.js?timestamp=` + version;
+            script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + version;
             break;
         case "website_debug":
-            script.src = `http://127.0.0.1:7000/release/vt.v2.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
+            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
             break;
     }
 
@@ -714,7 +647,7 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
         if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.v2.${language}.user.js`;
+            script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js`;
             (document.body || document.documentElement).appendChild(script);
             try {
                 if (isWebsite) {
@@ -776,5 +709,3 @@ console.log("isWrapperFrame", isWrapperFrame, window.VideoTogetherWrapperIframeU
     document.onmousedown = filter;
     document.ontouchstart = filter;
 })();
-
-//delete-this-begin//delete-this-end})()

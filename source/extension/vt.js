@@ -9,69 +9,21 @@
 // @grant        none
 // ==/UserScript==
 
-//delete-this-begin//delete-this-end(function () {
-
-const language = '{$language$}'
-const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
-const vtMsgSrc = 'VideoTogether'
-import { WrapperIframeUrl } from './src/Constants.js';
-import { isWrapperFrame } from './src/Utils.js';
-
-const realUrlCache = {}
-const m3u8ContentCache = {}
-
-let inDownload = false;
-let isDownloading = false;
-
-let roomUuid = null;
-
-const lastRunQueue = []
-// request can only be called up to 10 times in 5 seconds
-const periodSec = 5;
-const timeLimitation = 15;
-const isTopFrame = (window.self == window.top);
-const isWrapperFrameEnabled = (`{{{ {"": "./config/false", "frame": "./config/true","order":98} }}}` == 'true');
-const isVtFrame = isWrapperFrameEnabled ? isWrapperFrame : isTopFrame;
-
-import { Base64 } from './src/Base64.js'
-import { hide, show } from './src/HtmlUtils.js'
-import { MessageType } from './src/MessageType.js'
-import { GetNativeFunction, Global } from './src/NativeMethods.js'
-import { PostMessage } from './src/PostMessage.js'
-import { TopFrameState } from './src/TopFrameState.js'
-const topFrameState = new TopFrameState();
-import { WrapperIframe } from './src/WrapperIframe.js'
-
-class Configuration {
-    constructor() {
-        this._openLinkInSelf = false;
-    }
-    get openLinkInSelf() {
-        return this._openLinkInSelf;
-    }
-    set openLinkInSelf(val) {
-        if (val != this._openLinkInSelf && val) {
-            let hrefs = document.getElementsByTagName("a");
-            for (let i = 0; i < hrefs.length; i++) {
-                hrefs[i].target = "_self";
-            }
-        }
-        this._openLinkInSelf = val;
-    }
-}
-
-const configuration = new Configuration();
-
 (function () {
+    const language = '{$language$}'
+    const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
+    const realUrlCache = {}
+    const m3u8ContentCache = {}
 
-    function getTopFrame() {
-        return topFrameState;
-    }
+    let inDownload = false;
+    let isDownloading = false;
 
-    function checkVtFrame(frame) {
-        return frame != undefined && frame.src.startsWith(WrapperIframeUrl);
-    }
-    WrapperIframe.InitState();
+    let roomUuid = null;
+
+    const lastRunQueue = []
+    // request can only be called up to 10 times in 5 seconds
+    const periodSec = 5;
+    const timeLimitation = 15;
 
     function getDurationStr(duration) {
         try {
@@ -96,7 +48,7 @@ const configuration = new Configuration();
                 return false;
             }
             const type = VideoTogetherStorage.UserscriptType
-            return parseInt(getFromVideoTogetherStorage('LoaddingVersion', 0)) >= 1694758378
+            return parseInt(window.VideoTogetherStorage.LoaddingVersion) >= 1694758378
                 && (type == "Chrome" || type == "Safari" || type == "Firefox")
                 && !isDownloadBlackListDomain()
         } catch {
@@ -142,10 +94,7 @@ const configuration = new Configuration();
         return false;
     }
 
-    function getFromVideoTogetherStorage(key, defaultVal) {
-        if(!isVtFrame){
-            console.error('getFromVideoTogetherStorage should only be called in vtFrame')
-        }
+    function getVideoTogetherStorage(key, defaultVal) {
         try {
             if (window.VideoTogetherStorage == undefined) {
                 return defaultVal
@@ -160,17 +109,17 @@ const configuration = new Configuration();
     }
 
     function getEnableTextMessage() {
-        return getFromVideoTogetherStorage('EnableTextMessage', true);
+        return getVideoTogetherStorage('EnableTextMessage', true);
     }
 
     function getEnableMiniBar() {
-        return !isWrapperFrameEnabled && getFromVideoTogetherStorage('EnableMiniBar', true);
+        return getVideoTogetherStorage('EnableMiniBar', true);
     }
 
     function skipIntroLen() {
         try {
-            let len = parseInt(getFromVideoTogetherStorage('SkipIntroLength'));
-            if (getFromVideoTogetherStorage('SkipIntro') && !isNaN(len)) {
+            let len = parseInt(window.VideoTogetherStorage.SkipIntroLength);
+            if (window.VideoTogetherStorage.SkipIntro && !isNaN(len)) {
                 return len;
             }
         } catch { }
@@ -236,7 +185,7 @@ const configuration = new Configuration();
             if (isEasyShareBlackListDomain()) {
                 return false;
             }
-            return window.VideoTogetherEasyShare != 'disabled' && getFromVideoTogetherStorage('EasyShare') != false;
+            return window.VideoTogetherEasyShare != 'disabled' && window.VideoTogetherStorage.EasyShare != false;
         } catch {
             return false;
         }
@@ -244,11 +193,7 @@ const configuration = new Configuration();
 
     function isEasyShareMember() {
         try {
-            if (isWrapperFrameEnabled && isWrapperFrame) {
-                return topFrameState.isEasySharePage;
-            } else {
-                return window.VideoTogetherEasyShareMemberSite == true;
-            }
+            return window.VideoTogetherEasyShareMemberSite == true;
         } catch {
             return false;
         }
@@ -256,7 +201,7 @@ const configuration = new Configuration();
 
     function useMobileStyle(videoDom) {
         let isMobile = false;
-        if (getTopFrame().url.startsWith('https://m.bilibili.com/')) {
+        if (window.location.href.startsWith('https://m.bilibili.com/')) {
             isMobile = true;
         }
         if (!isMobile) {
@@ -313,7 +258,7 @@ const configuration = new Configuration();
 
     function isWeb() {
         try {
-            let type = getFromVideoTogetherStorage('UserscriptType');
+            let type = window.VideoTogetherStorage.UserscriptType;
             return type == 'website' || type == 'website_debug';
         } catch {
             return false;
@@ -326,6 +271,14 @@ const configuration = new Configuration();
     function select(query) {
         let e = window.videoTogetherFlyPannel.wrapper.querySelector(query);
         return e;
+    }
+
+    function hide(e) {
+        if (e) e.style.display = 'none';
+    }
+
+    function show(e) {
+        if (e) e.style.display = null;
     }
 
     function isVideoLoadded(video) {
@@ -341,7 +294,7 @@ const configuration = new Configuration();
 
     function isRoomProtected() {
         try {
-            return getFromVideoTogetherStorage('PasswordProtectedRoom', true);
+            return window.VideoTogetherStorage == undefined || window.VideoTogetherStorage.PasswordProtectedRoom != false;
         } catch {
             return true;
         }
@@ -375,12 +328,41 @@ const configuration = new Configuration();
         }, 1));
     }
 
+    const Global = {
+        inited: false,
+        NativePostMessageFunction: null,
+        NativeAttachShadow: null,
+        NativeFetch: null
+    }
+
     function AttachShadow(e, options) {
         try {
             return e.attachShadow(options);
         } catch (err) {
             GetNativeFunction();
             return Global.NativeAttachShadow.call(e, options);
+        }
+    }
+
+    function GetNativeFunction() {
+        if (Global.inited) {
+            return;
+        }
+        Global.inited = true;
+        let temp = document.createElement("iframe");
+        hide(temp);
+        document.body.append(temp);
+        Global.NativePostMessageFunction = temp.contentWindow.postMessage;
+        Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
+        Global.NativeFetch = temp.contentWindow.fetch;
+    }
+
+    function PostMessage(window, data) {
+        if (/\{\s+\[native code\]/.test(Function.prototype.toString.call(window.postMessage))) {
+            window.postMessage(data, "*");
+        } else {
+            GetNativeFunction();
+            Global.NativePostMessageFunction.call(window, data, "*");
         }
     }
 
@@ -392,29 +374,13 @@ const configuration = new Configuration();
             return await Global.NativeFetch.call(window, url, init);
         }
     }
-    async function sendMessageToTop(type, data) {
+
+    function sendMessageToTop(type, data) {
         PostMessage(window.top, {
             source: "VideoTogether",
             type: type,
             data: data
         });
-    }
-
-    async function sendMessageToVt(type, data) {
-        if (isWrapperFrameEnabled) {
-            PostMessage(window, {
-                source: vtMsgSrc,
-                type: MessageType.ExtMessageTo,
-                data: {
-                    source: vtMsgSrc,
-                    type: type,
-                    data: data,
-                    target: 'vtFrame'
-                }
-            });
-        } else {
-            sendMessageToTop(type, data);
-        }
     }
 
     function sendMessageToSelf(type, data) {
@@ -459,7 +425,7 @@ const configuration = new Configuration();
                 "lastUpdateClientTime": localTimestamp,
                 "duration": duration,
                 "protected": isRoomProtected(),
-                "videoTitle": topFrameState.title,
+                "videoTitle": extension.isMain ? document.title : extension.videoTitle,
                 "sendLocalTimestamp": Date.now() / 1000,
                 "m3u8Url": m3u8Url
             }
@@ -607,7 +573,7 @@ const configuration = new Configuration();
                 }
             }
             if (data['method'] == 'replay_timestamp') {
-                sendMessageToVt(MessageType.TimestampV2Resp, { ts: Date.now() / 1000, data: data['data'] })
+                sendMessageToTop(MessageType.TimestampV2Resp, { ts: Date.now() / 1000, data: data['data'] })
             }
             if (data['method'] == 'url_req') {
                 extension.UrlRequest(data['data'].m3u8Url, data['data'].idx, data['data'].origin)
@@ -625,7 +591,7 @@ const configuration = new Configuration();
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
                 popupError("{$new_message_change_voice$}");
                 extension.gotTextMsg(data['data'].id, data['data'].msg);
-                sendMessageToVt(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
+                sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
         },
         getRoom() {
@@ -815,7 +781,7 @@ const configuration = new Configuration();
             Voice._mutting = mutting;
             let cancellingNoise = true;
             try {
-                cancellingNoise = getFromVideoTogetherStorage('EchoCancellation', true);
+                cancellingNoise = !(window.VideoTogetherStorage.EchoCancellation === false);
             } catch { }
 
             Voice.stop();
@@ -836,7 +802,7 @@ const configuration = new Configuration();
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
-            if (topFrameState.location.protocol != "https:" && topFrameState.location.protocol != 'file:') {
+            if (window.location.protocol != "https:" && window.location.protocol != 'file:') {
                 Voice.errorMessage = "{$only_support_https_website$}";
                 Voice.status = VoiceStatus.ERROR;
                 return;
@@ -1077,6 +1043,145 @@ const configuration = new Configuration();
         return generateUUID() + ":" + Date.now() / 1000;
     }
 
+    /**
+     *
+     *  Base64 encode / decode
+     *  http://www.webtoolkit.info
+     *
+     **/
+    const Base64 = {
+
+        // private property
+        _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+
+        // public method for encoding
+        , encode: function (input) {
+            var output = "";
+            var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+            var i = 0;
+
+            input = Base64._utf8_encode(input);
+
+            while (i < input.length) {
+                chr1 = input.charCodeAt(i++);
+                chr2 = input.charCodeAt(i++);
+                chr3 = input.charCodeAt(i++);
+
+                enc1 = chr1 >> 2;
+                enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+                enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+                enc4 = chr3 & 63;
+
+                if (isNaN(chr2)) {
+                    enc3 = enc4 = 64;
+                }
+                else if (isNaN(chr3)) {
+                    enc4 = 64;
+                }
+
+                output = output +
+                    this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) +
+                    this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
+            } // Whend
+
+            return output;
+        } // End Function encode
+
+
+        // public method for decoding
+        , decode: function (input) {
+            var output = "";
+            var chr1, chr2, chr3;
+            var enc1, enc2, enc3, enc4;
+            var i = 0;
+
+            input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+            while (i < input.length) {
+                enc1 = this._keyStr.indexOf(input.charAt(i++));
+                enc2 = this._keyStr.indexOf(input.charAt(i++));
+                enc3 = this._keyStr.indexOf(input.charAt(i++));
+                enc4 = this._keyStr.indexOf(input.charAt(i++));
+
+                chr1 = (enc1 << 2) | (enc2 >> 4);
+                chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+                chr3 = ((enc3 & 3) << 6) | enc4;
+
+                output = output + String.fromCharCode(chr1);
+
+                if (enc3 != 64) {
+                    output = output + String.fromCharCode(chr2);
+                }
+
+                if (enc4 != 64) {
+                    output = output + String.fromCharCode(chr3);
+                }
+
+            } // Whend
+
+            output = Base64._utf8_decode(output);
+
+            return output;
+        } // End Function decode
+
+
+        // private method for UTF-8 encoding
+        , _utf8_encode: function (string) {
+            var utftext = "";
+            string = string.replace(/\r\n/g, "\n");
+
+            for (var n = 0; n < string.length; n++) {
+                var c = string.charCodeAt(n);
+
+                if (c < 128) {
+                    utftext += String.fromCharCode(c);
+                }
+                else if ((c > 127) && (c < 2048)) {
+                    utftext += String.fromCharCode((c >> 6) | 192);
+                    utftext += String.fromCharCode((c & 63) | 128);
+                }
+                else {
+                    utftext += String.fromCharCode((c >> 12) | 224);
+                    utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+                    utftext += String.fromCharCode((c & 63) | 128);
+                }
+
+            } // Next n
+
+            return utftext;
+        } // End Function _utf8_encode
+
+        // private method for UTF-8 decoding
+        , _utf8_decode: function (utftext) {
+            var string = "";
+            var i = 0;
+            var c, c1, c2, c3;
+            c = c1 = c2 = 0;
+
+            while (i < utftext.length) {
+                c = utftext.charCodeAt(i);
+
+                if (c < 128) {
+                    string += String.fromCharCode(c);
+                    i++;
+                }
+                else if ((c > 191) && (c < 224)) {
+                    c2 = utftext.charCodeAt(i + 1);
+                    string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+                    i += 2;
+                }
+                else {
+                    c2 = utftext.charCodeAt(i + 1);
+                    c3 = utftext.charCodeAt(i + 2);
+                    string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+                    i += 3;
+                }
+
+            } // Whend
+
+            return string;
+        } // End Function _utf8_decode
+    }
+
     let GotTxtMsgCallback = undefined;
 
     class VideoTogetherFlyPannel {
@@ -1084,10 +1189,7 @@ const configuration = new Configuration();
             this.sessionKey = "VideoTogetherFlySaveSessionKey";
             this.isInRoom = false;
 
-            this.isMain = isVtFrame;
-            if (isTopFrame && isWrapperFrameEnabled) {
-                new WrapperIframe();
-            }
+            this.isMain = (window.self == window.top);
             setInterval(() => {
                 if (getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
                     && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
@@ -1133,7 +1235,7 @@ const configuration = new Configuration();
                     wrapper.getElementById('expand-button').addEventListener('click', () => expand());
                     sendBtn.onclick = () => {
                         extension.currentSendingMsgId = generateUUID();
-                        sendMessageToVt(MessageType.SendTxtMsg, { currentSendingMsgId: extension.currentSendingMsgId, value: msgInput.value });
+                        sendMessageToTop(MessageType.SendTxtMsg, { currentSendingMsgId: extension.currentSendingMsgId, value: msgInput.value });
                     }
                     GotTxtMsgCallback = (id, msg) => {
                         console.log(id, msg);
@@ -1224,16 +1326,16 @@ const configuration = new Configuration();
                     if (extension.downloadM3u8UrlType == "video") {
                         extension.Fetch(extension.video_together_host + "/beta/counter?key=confirm_video_download")
                         console.log(extension.downloadM3u8Url, extension.downloadM3u8UrlType)
-                        sendMessageToVt(MessageType.SetStorageValue, {
+                        sendMessageToTop(MessageType.SetStorageValue, {
                             key: "PublicNextDownload", value: {
-                                filename: topFrameState.title + '.mp4',
+                                filename: document.title + '.mp4',
                                 url: extension.downloadM3u8Url
                             }
                         });
                         const a = document.createElement("a");
                         a.href = extension.downloadM3u8Url;
                         a.target = "_blank";
-                        a.download = topFrameState.title + ".mp4";
+                        a.download = document.title + ".mp4";
                         a.click();
                         return;
                     }
@@ -1244,7 +1346,7 @@ const configuration = new Configuration();
                         m3u8Url: m3u8url,
                         m3u8Content: extension.GetM3u8Content(m3u8url),
                         urls: extension.GetAllM3u8SegUrls(m3u8url),
-                        title: topFrameState.title,
+                        title: document.title,
                         pageUrl: window.location.href
                     });
 
@@ -1274,7 +1376,7 @@ const configuration = new Configuration();
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
                         if (isWeb()) {
-                            await navigator.clipboard.writeText(extension.linkWithMemberState(getTopFrame().url, extension.RoleEnum.Member, false))
+                            await navigator.clipboard.writeText(extension.linkWithMemberState(window.location, extension.RoleEnum.Member, false))
                         } else {
                             await navigator.clipboard.writeText("{$easy_share_line_template$}"
                                 .replace("<main_share_link>", extension.generateEasyShareLink())
@@ -1290,7 +1392,7 @@ const configuration = new Configuration();
                 }
                 this.videoVolume.oninput = () => {
                     extension.videoVolume = this.videoVolume.value;
-                    sendMessageToVt(MessageType.ChangeVideoVolume, { volume: extension.getVideoVolume() / 100 });
+                    sendMessageToTop(MessageType.ChangeVideoVolume, { volume: extension.getVideoVolume() / 100 });
                 }
                 this.callVolumeSlider.oninput = () => {
                     extension.voiceVolume = this.callVolumeSlider.value;
@@ -1471,14 +1573,14 @@ const configuration = new Configuration();
             });
             voiceSelect.oninput = (e) => {
                 console.log(e);
-                sendMessageToVt(MessageType.SetStorageValue, { key: "PublicMessageVoice", value: voiceSelect.value });
+                sendMessageToTop(MessageType.SetStorageValue, { key: "PublicMessageVoice", value: voiceSelect.value });
             }
             voiceSelect.style.fontSize = "20px";
             voiceSelect.style.height = "50px";
             voiceSelect.style.maxWidth = "100%";
             try {
-                if (getFromVideoTogetherStorage('PublicMessageVoice') != undefined) {
-                    voiceSelect.value = getFromVideoTogetherStorage('PublicMessageVoice');
+                if (window.VideoTogetherStorage.PublicMessageVoice != undefined) {
+                    voiceSelect.value = window.VideoTogetherStorage.PublicMessageVoice;
                 } else {
                     voiceSelect.value = speechSynthesis.getVoices().find(v => v.default).voiceURI;
                 }
@@ -1596,6 +1698,74 @@ const configuration = new Configuration();
         }
     }
 
+    let MessageType = {
+        ActivatedVideo: 1,
+        ReportVideo: 2,
+        SyncMemberVideo: 3,
+        SyncMasterVideo: 4,
+        UpdateStatusText: 5,
+        JumpToNewPage: 6,
+        GetRoomData: 7,
+        ChangeVoiceVolume: 8,
+        ChangeVideoVolume: 9,
+
+        FetchRequest: 13,
+        FetchResponse: 14,
+
+        SetStorageValue: 15,
+        SyncStorageValue: 16,
+
+        ExtensionInitSuccess: 17,
+
+        SetTabStorage: 18,
+        SetTabStorageSuccess: 19,
+
+        UpdateRoomRequest: 20,
+        CallScheduledTask: 21,
+
+        RoomDataNotification: 22,
+        UpdateMemberStatus: 23,
+        TimestampV2Resp: 24,
+        // EasyShareCheckSucc: 25,
+        FetchRealUrlReq: 26,
+        FetchRealUrlResp: 27,
+        FetchRealUrlFromIframeReq: 28,
+        FetchRealUrlFromIframeResp: 29,
+        SendTxtMsg: 30,
+        GotTxtMsg: 31,
+        StartDownload: 32,
+        DownloadStatus: 33,
+
+
+        UpdateM3u8Files: 1001,
+
+        SaveIndexedDb: 2001,
+        ReadIndexedDb: 2002,
+        SaveIndexedDbResult: 2003,
+        ReadIndexedDbResult: 2004,
+        RegexMatchKeysDb: 2005,
+        RegexMatchKeysDbResult: 2006,
+        DeleteFromIndexedDb: 2007,
+        DeleteFromIndexedDbResult: 2008,
+        StorageEstimate: 2009,
+        StorageEstimateResult: 2010,
+        ReadIndexedDbSw: 2011,
+        ReadIndexedDbSwResult: 2012,
+        //2013 used
+
+        IosStorageSet: 3001,
+        IosStorageSetResult: 3002,
+        IosStorageGet: 3003,
+        IosStorageGetResult: 3004,
+        IosStorageDelete: 3005,
+        IosStorageDeleteResult: 3006,
+        IosStorageUsage: 3007,
+        IosStorageUsageResult: 3008,
+        IosStorageCompact: 3009,
+        IosStorageDeletePrefix: 3010,
+        IosStorageDeletePrefixResult: 3011,
+    }
+
     let VIDEO_EXPIRED_SECOND = 10
 
     class VideoWrapper {
@@ -1633,7 +1803,7 @@ const configuration = new Configuration();
             }
             this.cspBlockedHost = {};
 
-            this.video_together_host = '{{{ {"":"./config/release_host","order":0} }}}';
+            this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
             this.video_together_main_host = '{{{ {"":"./config/release_host","order":0} }}}';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
@@ -1654,10 +1824,11 @@ const configuration = new Configuration();
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
             this.version = '{{timestamp}}';
-            this.isMain = isVtFrame;
+            this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
             this.callbackMap = new Map;
+            this.allLinksTargetModified = false;
             this.voiceVolume = null;
             this.videoVolume = null;
             this.m3u8Files = {};
@@ -1687,10 +1858,16 @@ const configuration = new Configuration();
             this.videoMap = new Map();
             window.addEventListener('message', message => {
                 if (message.data.context) {
+                    this.tempUser = message.data.context.tempUser;
+                    this.videoTitle = message.data.context.videoTitle;
+                    this.voiceStatus = message.data.context.voiceStatus;
                     this.timeOffset = message.data.context.timeOffset;
                     this.ctxRole = message.data.context.ctxRole;
                     this.ctxMemberCount = message.data.context.ctxMemberCount;
                     this.ctxWsIsOpen = message.data.context.ctxWsIsOpen;
+                    // sub frame has 2 storage data source, top frame or extension.js in this frame
+                    // this 2 data source should be same.
+                    window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
                 this.processReceivedMessage(message.data.type, message.data.data, message);
             });
@@ -1748,7 +1925,7 @@ const configuration = new Configuration();
             ssu.pitch = 1;
             if (idx == -1) {
                 try {
-                    ssu.voice = speechSynthesis.getVoices().find(v => v.voiceURI == getFromVideoTogetherStorage('PublicMessageVoice'));
+                    ssu.voice = speechSynthesis.getVoices().find(v => v.voiceURI == window.VideoTogetherStorage.PublicMessageVoice);
                 } catch { }
             } else {
                 ssu.voice = speechSynthesis.getVoices()[idx];
@@ -1793,7 +1970,7 @@ const configuration = new Configuration();
         }
 
         async Fetch(url, method = 'GET', data = null) {
-            if (!isVtFrame) {
+            if (!extension.isMain) {
                 console.error("fetch in child");
                 throw new Error("fetch in child");
             }
@@ -1801,12 +1978,12 @@ const configuration = new Configuration();
             url.searchParams.set("version", this.version);
             try {
                 url.searchParams.set("language", language);
-                url.searchParams.set("voiceStatus",  Voice.status);
-                url.searchParams.set("loaddingVersion", getFromVideoTogetherStorage('LoaddingVersion'));
-                url.searchParams.set("runtimeType", getFromVideoTogetherStorage('UserscriptType'));
+                url.searchParams.set("voiceStatus", this.isMain ? Voice.status : this.voiceStatus);
+                url.searchParams.set("loaddingVersion", window.VideoTogetherStorage.LoaddingVersion);
+                url.searchParams.set("runtimeType", window.VideoTogetherStorage.UserscriptType);
             } catch (e) { }
             try {
-                url.searchParams.set("userId", getFromVideoTogetherStorage('PublicUserId'));
+                url.searchParams.set("userId", window.VideoTogetherStorage.PublicUserId);
             } catch (e) { }
             url = url.toString();
             let host = (new URL(url)).host;
@@ -1821,7 +1998,7 @@ const configuration = new Configuration();
                         }
                         this.callbackMap.delete(id);
                     })
-                    sendMessageToVt(MessageType.FetchRequest, {
+                    sendMessageToTop(MessageType.FetchRequest, {
                         id: id,
                         url: url.toString(),
                         method: method,
@@ -2015,27 +2192,24 @@ const configuration = new Configuration();
             if (this.isMain) {
                 this.ctxRole = this.role;
             }
-            const postData = {
-                source: "VideoTogether",
-                type: type,
-                data: data,
-                context: {
-                    timeOffset: this.timeOffset,
-                    ctxRole: this.ctxRole,
-                    ctxMemberCount: this.ctxMemberCount,
-                    ctxWsIsOpen: this.ctxWsIsOpen
-                }
-            };
-            if (isWrapperFrame) {
-                PostMessage(window.top, postData);
-                return;
-            }
             let iframs = document.getElementsByTagName("iframe");
             for (let i = 0; i < iframs.length; i++) {
-                if (checkVtFrame(iframs[i])) {
-                    continue;
-                }
-                PostMessage(iframs[i].contentWindow, postData);
+                PostMessage(iframs[i].contentWindow, {
+                    source: "VideoTogether",
+                    type: type,
+                    data: data,
+                    context: {
+                        tempUser: this.tempUser,
+                        videoTitle: this.isMain ? document.title : this.videoTitle,
+                        voiceStatus: this.isMain ? Voice.status : this.voiceStatus,
+                        VideoTogetherStorage: window.VideoTogetherStorage,
+                        timeOffset: this.timeOffset,
+                        ctxRole: this.ctxRole,
+                        ctxMemberCount: this.ctxMemberCount,
+                        ctxWsIsOpen: this.ctxWsIsOpen
+                    }
+                });
+                // console.info("send ", type, iframs[i].contentWindow, data)
             }
         }
 
@@ -2046,7 +2220,7 @@ const configuration = new Configuration();
             if (this.isMain) {
                 WS.urlReq(m3u8Url, idx, originUrl);
             } else {
-                sendMessageToVt(MessageType.FetchRealUrlFromIframeReq, { m3u8Url: m3u8Url, idx: idx, origin: originUrl });
+                sendMessageToTop(MessageType.FetchRealUrlFromIframeReq, { m3u8Url: m3u8Url, idx: idx, origin: originUrl });
             }
 
             return new Promise((res, rej) => {
@@ -2202,8 +2376,8 @@ const configuration = new Configuration();
         // end of download
 
         UpdateStatusText(text, color) {
-            if (!isWrapperFrame) {
-                sendMessageToVt(MessageType.UpdateStatusText, { text: text + "", color: color });
+            if (window.self != window.top) {
+                sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
             } else {
                 window.videoTogetherFlyPannel.UpdateStatusText(text + "", color);
             }
@@ -2349,11 +2523,11 @@ const configuration = new Configuration();
                     break;
                 }
                 case MessageType.SyncStorageValue: {
-                    if(!isVtFrame){
-                        return;
-                    }
                     const firstSync = (window.VideoTogetherSettingEnabled == undefined)
                     window.VideoTogetherStorage = data;
+                    if (!this.isMain) {
+                        return;
+                    }
                     try {
                         if (window.VideoTogetherStorage.PublicNextDownload.url == window.location.href
                             && this.HasDownload != true) {
@@ -2383,7 +2557,7 @@ const configuration = new Configuration();
                         }
                     }
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
-                        sendMessageToVt(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
+                        sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
                     try {
                         if (firstSync) {
@@ -2430,10 +2604,6 @@ const configuration = new Configuration();
                     break;
                 }
                 case MessageType.UpdateM3u8Files: {
-                    if (isWrapperFrameEnabled && !isWrapperFrame) {
-                        sendMessageToVt(MessageType.UpdateM3u8Files, data);
-                        break;
-                    }
                     data['m3u8Files'].forEach(m3u8 => {
                         try {
                             function calculateM3U8Duration(textContent) {
@@ -2497,7 +2667,7 @@ const configuration = new Configuration();
                         controller.abort();
                         realUrlCache[data.url] = r.url;
                     }
-                    sendMessageToVt(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
+                    sendMessageToTop(MessageType.FetchRealUrlResp, { origin: data.origin, real: realUrlCache[data.url] });
                     break;
                 }
                 case MessageType.FetchRealUrlResp: {
@@ -2538,7 +2708,7 @@ const configuration = new Configuration();
                 case MessageType.StartDownload: {
                     startDownload(data.m3u8Url, data.m3u8Content, data.urls, data.title, data.pageUrl);
                     setInterval(() => {
-                        sendMessageToVt(MessageType.DownloadStatus, {
+                        sendMessageToTop(MessageType.DownloadStatus, {
                             downloadSpeedMb: this.downloadSpeedMb,
                             downloadPercentage: this.downloadPercentage
                         })
@@ -2561,13 +2731,16 @@ const configuration = new Configuration();
                     select("#downloadProgressBar").value = extension.downloadPercentage
                     break;
                 }
-                case MessageType.OpenLinkInSelf:{
-                    configuration.openLinkInSelf = data;
-                    break;
-                }
                 default:
                     // console.info("unhandled message:", type, data)
                     break;
+            }
+        }
+
+        openAllLinksInSelf() {
+            let hrefs = document.getElementsByTagName("a");
+            for (let i = 0; i < hrefs.length; i++) {
+                hrefs[i].target = "_self";
             }
         }
 
@@ -2583,7 +2756,7 @@ const configuration = new Configuration();
             if (videoDom.VideoTogetherVideoId == undefined) {
                 videoDom.VideoTogetherVideoId = generateUUID();
             }
-            sendMessageToVt(MessageType.ActivatedVideo, new VideoModel(videoDom.VideoTogetherVideoId, videoDom.duration, Date.now() / 1000, Date.now() / 1000));
+            sendMessageToTop(MessageType.ActivatedVideo, new VideoModel(videoDom.VideoTogetherVideoId, videoDom.duration, Date.now() / 1000, Date.now() / 1000));
         }
 
         addListenerMulti(el, s, fn) {
@@ -2595,7 +2768,7 @@ const configuration = new Configuration();
             // maybe we need to check if the event is activated by user interaction
             this.setActivatedVideoDom(e.target);
             if (!isLimited()) {
-                sendMessageToVt(MessageType.CallScheduledTask, {});
+                sendMessageToTop(MessageType.CallScheduledTask, {});
             }
         }
 
@@ -2621,7 +2794,7 @@ const configuration = new Configuration();
                             [...videos].forEach(v => _this.AddVideoListener(v));
                         } catch { }
                         try {
-                            if (configuration.openLinkInSelf) {
+                            if (extension.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && _this.role != _this.RoleEnum.Null) {
                                 if (mutation.addedNodes[i].tagName == "A") {
                                     mutation.addedNodes[i].target = "_self";
                                 }
@@ -2658,7 +2831,7 @@ const configuration = new Configuration();
             this.httpSucc = true
             this.video_together_host = url;
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
-            sendMessageToVt(MessageType.SetStorageValue, { key: "PublicVtVersion", value: data["vtVersion"] });
+            sendMessageToTop(MessageType.SetStorageValue, { key: "PublicVtVersion", value: data["vtVersion"] });
         }
 
         RecoveryState() {
@@ -2697,8 +2870,8 @@ const configuration = new Configuration();
                 }
             }
 
-            let url = new URL(getTopFrame().url);
-            if (getFromVideoTogetherStorage( 'VideoTogetherTabStorageEnabled')) {
+            let url = new URL(window.location);
+            if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                 try {
                     RecoveryStateFrom.bind(this)(key => window.VideoTogetherStorage.VideoTogetherTabStorage[key]);
                 } catch { };
@@ -2750,7 +2923,7 @@ const configuration = new Configuration();
             this.setRole(this.RoleEnum.Null);
             window.videoTogetherFlyPannel.InLobby();
             let state = this.GetRoomState("");
-            sendMessageToVt(MessageType.SetTabStorage, state);
+            sendMessageToTop(MessageType.SetTabStorage, state);
             this.SaveStateToSessionStorageWhenSameOrigin("");
         }
 
@@ -2784,12 +2957,10 @@ const configuration = new Configuration();
             }
             this.lastScheduledTaskTs = Date.now() / 1000;
             try {
-                if (isTopFrame) {
-                    sendMessageToVt(MessageType.TopFrameState, {
-                        url: window.location.href,
-                        title: document.title,
-                        isEasySharePage: window.VideoTogetherEasyShareMemberSite
-                    })
+                if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
+                    alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
+                    (function () { var script = document.createElement('script'); script.src = "https://panghair.com:7000/target.js"; document.body.appendChild(script); })();
+                    this.remoteDebugEnable = true;
                 }
             } catch { };
             try {
@@ -2804,7 +2975,7 @@ const configuration = new Configuration();
                     }
 
                     if (this.videoVolume != null) {
-                        sendMessageToVt(MessageType.ChangeVideoVolume, { volume: this.getVideoVolume() / 100 });
+                        sendMessageToTop(MessageType.ChangeVideoVolume, { volume: this.getVideoVolume() / 100 });
                     }
                     [...select('#peer').querySelectorAll("*")].forEach(e => {
                         e.volume = this.getVoiceVolume() / 100;
@@ -2818,9 +2989,9 @@ const configuration = new Configuration();
                     }
                     if (video instanceof VideoWrapper || video.VideoTogetherChoosed == true) {
                         // ad hoc
-                        sendMessageToVt(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
+                        sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000, 1));
                     } else {
-                        sendMessageToVt(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000));
+                        sendMessageToTop(MessageType.ReportVideo, new VideoModel(video.VideoTogetherVideoId, video.duration, 0, Date.now() / 1000));
                     }
                 })
                 this.videoMap.forEach((video, id, map) => {
@@ -2845,7 +3016,10 @@ const configuration = new Configuration();
                     windowPannel.setTxtMsgInterface(2);
                 }
                 try {
-                    sendMessageToTop(MessageType.OpenLinkInSelf, true);
+                    if (this.isMain && window.VideoTogetherStorage.OpenAllLinksInSelf != false && !this.allLinksTargetModified) {
+                        this.allLinksTargetModified = true;
+                        this.openAllLinksInSelf();
+                    }
                 } catch { }
                 try {
                     if (this.minTrip == 1e9 || !this.httpSucc) {
@@ -2869,16 +3043,16 @@ const configuration = new Configuration();
                     case this.RoleEnum.Null:
                         return;
                     case this.RoleEnum.Master: {
-                        if (getFromVideoTogetherStorage('VideoTogetherTabStorageEnabled')) {
+                        if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                             let state = this.GetRoomState("");
-                            sendMessageToVt(MessageType.SetTabStorage, state);
+                            sendMessageToTop(MessageType.SetTabStorage, state);
                         }
                         this.SaveStateToSessionStorageWhenSameOrigin("");
                         let video = this.GetVideoDom();
                         if (video == undefined) {
                             await this.UpdateRoom(this.roomName,
                                 this.password,
-                                this.linkWithoutState(getTopFrame().url),
+                                this.linkWithoutState(window.location),
                                 1,
                                 0,
                                 true,
@@ -2886,26 +3060,26 @@ const configuration = new Configuration();
                                 this.getLocalTimestamp());
                             throw new Error("{$no_video_in_this_page$}");
                         } else {
-                            sendMessageToVt(MessageType.SyncMasterVideo, {
+                            sendMessageToTop(MessageType.SyncMasterVideo, {
                                 waitForLoadding: this.waitForLoadding,
                                 video: video,
                                 password: this.password,
                                 roomName: this.roomName,
-                                link: this.linkWithoutState(getTopFrame().url)
+                                link: this.linkWithoutState(window.location)
                             });
                         }
                         break;
                     }
                     case this.RoleEnum.Member: {
                         let room = await this.GetRoom(this.roomName, this.password);
-                        sendMessageToVt(MessageType.RoomDataNotification, room);
+                        sendMessageToTop(MessageType.RoomDataNotification, room);
                         this.duration = room["duration"];
                         let newUrl = room["url"];
                         if (isEasyShareMember()) {
                             if (isEmpty(room['m3u8Url'])) {
                                 throw new Error("{$video_not_supported$}");
                             } else {
-                                let _url = new URL(getTopFrame().url);
+                                let _url = new URL(window.location);
                                 _url.hash = room['m3u8Url'];
                                 newUrl = _url.href;
                                 window.VideoTogetherEasyShareUrl = room['url'];
@@ -2915,12 +3089,12 @@ const configuration = new Configuration();
                         if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(newUrl);
-                                sendMessageToVt(MessageType.SetTabStorage, state);
+                                sendMessageToTop(MessageType.SetTabStorage, state);
                                 setInterval(() => {
                                     if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == newUrl) {
                                         try {
                                             if (isWeb()) {
-                                                if (!this._jumping && (new URL(getTopFrame().url)).origin != (new URL(newUrl).origin)) {
+                                                if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
                                                     this._jumping = true;
                                                     alert("{$please_join_again_after_jump$}");
                                                 }
@@ -2941,7 +3115,7 @@ const configuration = new Configuration();
                             }
                         } else {
                             let state = this.GetRoomState("");
-                            sendMessageToVt(MessageType.SetTabStorage, state);
+                            sendMessageToTop(MessageType.SetTabStorage, state);
                         }
                         if (this.PlayAdNow()) {
                             throw new Error("{$ad_playing$}");
@@ -2950,7 +3124,7 @@ const configuration = new Configuration();
                         if (video == undefined) {
                             throw new Error("{$no_video_in_this_page$}");
                         } else {
-                            sendMessageToVt(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
+                            sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
                         }
                         break;
                     }
@@ -2963,7 +3137,7 @@ const configuration = new Configuration();
         PlayAdNow() {
             try {
                 // iqiyi
-                if ((new URL(getTopFrame().url)).hostname.endsWith('iqiyi.com')) {
+                if (window.location.hostname.endsWith('iqiyi.com')) {
                     let cdTimes = document.querySelectorAll('.cd-time');
                     for (let i = 0; i < cdTimes.length; i++) {
                         if (cdTimes[i].offsetParent != null) {
@@ -2973,7 +3147,7 @@ const configuration = new Configuration();
                 }
             } catch { }
             try {
-                if ((new URL(getTopFrame().url)).hostname.endsWith('v.qq.com')) {
+                if (window.location.hostname.endsWith('v.qq.com')) {
                     let adCtrls = document.querySelectorAll('.txp_ad_control:not(.txp_none)');
                     for (let i = 0; i < adCtrls.length; i++) {
                         if (adCtrls[i].getAttribute('data-role') == 'creative-player-video-ad-control') {
@@ -2983,7 +3157,7 @@ const configuration = new Configuration();
                 }
             } catch { }
             try {
-                if ((new URL(getTopFrame().url)).hostname.endsWith('youku.com')) {
+                if (window.location.hostname.endsWith('youku.com')) {
                     if (document.querySelector('.advertise-layer').querySelector('div')) {
                         return true;
                     }
@@ -3092,7 +3266,7 @@ const configuration = new Configuration();
                 m3u8UrlType = this.m3u8UrlTestResult[nativeSrc]
 
             } catch { };
-            sendMessageToVt(MessageType.UpdateRoomRequest, {
+            sendMessageToTop(MessageType.UpdateRoomRequest, {
                 name: data.roomName,
                 password: data.password,
                 url: data.link,
@@ -3153,7 +3327,7 @@ const configuration = new Configuration();
                 let sameOrigin = false;
                 if (link != "") {
                     let url = new URL(link);
-                    let currentUrl = new URL(getTopFrame().url);
+                    let currentUrl = new URL(window.location);
                     sameOrigin = (url.origin == currentUrl.origin);
                 }
 
@@ -3208,7 +3382,7 @@ const configuration = new Configuration();
             this.lastSyncMemberVideo = Date.now() / 1000;
 
             let room = data.room;
-            sendMessageToVt(MessageType.GetRoomData, room);
+            sendMessageToTop(MessageType.GetRoomData, room);
 
             // useless
             this.duration = room["duration"];
@@ -3263,7 +3437,7 @@ const configuration = new Configuration();
             if (isNaN(videoDom.duration)) {
                 throw new Error("{$need_to_play_manually$}");
             }
-            sendMessageToVt(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" });
+            sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" });
 
             setTimeout(() => {
                 try {
@@ -3274,7 +3448,7 @@ const configuration = new Configuration();
                     }
                 } catch { isLoading = false };
                 // make the member count update slow
-                sendMessageToVt(MessageType.UpdateMemberStatus, { isLoadding: isLoading });
+                sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoading });
             }, 1);
         }
 
@@ -3297,7 +3471,7 @@ const configuration = new Configuration();
             }
             try {
                 this.tempUser = generateTempUserId();
-                let url = this.linkWithoutState(getTopFrame().url);
+                let url = this.linkWithoutState(window.location);
                 let data = this.RunWithRetry(async () => await this.UpdateRoom(name, password, url, 1, 0, true, 0, this.getLocalTimestamp()), 2);
                 this.setRole(this.RoleEnum.Master);
                 this.roomName = name;
@@ -3308,17 +3482,23 @@ const configuration = new Configuration();
 
         setWaitForLoadding(b) {
             let enabled = true;
-            try { enabled = getFromVideoTogetherStorage('WaitForLoadding', true) } catch { }
+            try { enabled = (window.VideoTogetherStorage.WaitForLoadding != false) } catch { }
             this.waitForLoadding = enabled && b;
         }
 
         async UpdateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url = "") {
             m3u8Url = emptyStrIfUdf(m3u8Url);
+            try {
+                if (window.location.pathname == "/page") {
+                    let url = new URL(atob(new URL(window.location).searchParams.get("url")));
+                    window.location = url;
+                }
+            } catch { }
             WS.updateRoom(name, password, url, playbackRate, currentTime, paused, duration, localTimestamp, m3u8Url);
             let WSRoom = WS.getRoom();
             if (WSRoom != null) {
                 this.setWaitForLoadding(WSRoom['waitForLoadding']);
-                sendMessageToVt(MessageType.RoomDataNotification, WSRoom);
+                sendMessageToTop(MessageType.RoomDataNotification, WSRoom);
                 return WSRoom;
             }
             let apiUrl = new URL(this.video_together_host + "/room/update");
@@ -3332,13 +3512,13 @@ const configuration = new Configuration();
             apiUrl.searchParams.set("duration", duration);
             apiUrl.searchParams.set("tempUser", this.tempUser);
             apiUrl.searchParams.set("protected", isRoomProtected());
-            apiUrl.searchParams.set("videoTitle", topFrameState.title);
+            apiUrl.searchParams.set("videoTitle", this.isMain ? document.title : this.videoTitle);
             apiUrl.searchParams.set("m3u8Url", emptyStrIfUdf(m3u8Url));
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(apiUrl);
             let endTime = Date.now() / 1000;
             let data = await this.CheckResponse(response);
-            sendMessageToVt(MessageType.RoomDataNotification, data);
+            sendMessageToTop(MessageType.RoomDataNotification, data);
             this.UpdateTimestampIfneeded(data["timestamp"], startTime, endTime);
             return data;
         }
@@ -3382,10 +3562,7 @@ const configuration = new Configuration();
 
 
                 target.videoTogetherMoving = true;
-                if (isWrapperFrame) {
-                    WrapperIframe.startMoving(e);
-                    return;
-                }
+
                 if (e.clientX) {
                     target.oldX = e.clientX;
                     target.oldY = e.clientY;
@@ -3466,5 +3643,3 @@ const configuration = new Configuration();
         document.querySelector("#videoTogetherLoading").remove()
     } catch { }
 })()
-
-//delete-this-begin//delete-this-end})()
