@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VideoTogether/VideoTogether/internal/qps"
+	"github.com/tamakyi/VideoTogether/internal/qps"
 	"github.com/gorilla/websocket"
 )
 

@@ -4,7 +4,7 @@
 
 ## Visit http://2gether.video/ for more information
 
-[ English ] [ [中文](https://github.com/VideoTogether/VideoTogether/blob/main/README_zh.MD) ]
+[ English ] [ [中文](https://github.com/tamakyi/VideoTogether/blob/main/README_zh.MD) ]
 
 ## Installation
 

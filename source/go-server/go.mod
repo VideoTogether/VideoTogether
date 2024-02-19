@@ -1,4 +1,4 @@
-module github.com/VideoTogether/VideoTogether
+module github.com/tamakyi/VideoTogether
 
 go 1.18
 

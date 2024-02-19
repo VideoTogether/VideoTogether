@@ -9,7 +9,7 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/VideoTogether/VideoTogether/internal/qps"
+	"github.com/tamakyi/VideoTogether/internal/qps"
 	"github.com/unrolled/render"
 )
 
