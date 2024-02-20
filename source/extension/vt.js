@@ -590,7 +590,7 @@
             }
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
                 popupError("{$new_message_change_voice$}");
-                extension.gotTextMsg(data['data'].id, data['data'].msg);
+                extension.gotTextMsg(data['data'].id, data['data'].msg, false, -1, data['data'].audioUrl);
                 sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
         },
@@ -643,7 +643,8 @@
                 "method": "send_txtmsg",
                 "data": {
                     "msg": msg,
-                    "id": id
+                    "id": id,
+                    "voiceId": getVideoTogetherStorage('PublicReechoVoiceId', "")
                 }
             })
         },
@@ -1903,7 +1904,7 @@
             }
         }
 
-        async gotTextMsg(id, msg, prepare = false, idx = -1) {
+        async gotTextMsg(id, msg, prepare = false, idx = -1, audioUrl = undefined) {
             if (idx > speechSynthesis.getVoices().length) {
                 return;
             }
@@ -1918,6 +1919,13 @@
                     select("#textMessageInput").value = "";
                 }
             } catch { }
+
+            if (!isEmpty(audioUrl)) {
+                let audio = new Audio(audioUrl);
+                audio.play();
+                return;
+            }
+
             let ssu = new SpeechSynthesisUtterance();
             ssu.text = msg;
             ssu.volume = 1;

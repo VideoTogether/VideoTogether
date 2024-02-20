@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1707141762
+// @version      1708434598
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -991,7 +991,7 @@
             }
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
                 popupError("有新消息 (<a id='changeVoiceBtn' style='color:inherit' href='#''>修改语音包</a>)");
-                extension.gotTextMsg(data['data'].id, data['data'].msg);
+                extension.gotTextMsg(data['data'].id, data['data'].msg, false, -1, data['data'].audioUrl);
                 sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
         },
@@ -1044,7 +1044,8 @@
                 "method": "send_txtmsg",
                 "data": {
                     "msg": msg,
-                    "id": id
+                    "id": id,
+                    "voiceId": getVideoTogetherStorage('PublicReechoVoiceId', "")
                 }
             })
         },
@@ -3115,7 +3116,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1707141762';
+            this.version = '1708434598';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3195,7 +3196,7 @@
             }
         }
 
-        async gotTextMsg(id, msg, prepare = false, idx = -1) {
+        async gotTextMsg(id, msg, prepare = false, idx = -1, audioUrl = undefined) {
             if (idx > speechSynthesis.getVoices().length) {
                 return;
             }
@@ -3210,6 +3211,13 @@
                     select("#textMessageInput").value = "";
                 }
             } catch { }
+
+            if (!isEmpty(audioUrl)) {
+                let audio = new Audio(audioUrl);
+                audio.play();
+                return;
+            }
+
             let ssu = new SpeechSynthesisUtterance();
             ssu.text = msg;
             ssu.volume = 1;
