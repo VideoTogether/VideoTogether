@@ -383,7 +383,7 @@ func (c *Client) sendTextMessage(rawReq *WsRequestMessage) {
 		// 10 seconds timeout
 		time.AfterFunc(10*time.Second, sendBroadcast)
 
-		if data.VoiceId != "" && data.Msg != "" && len(data.Msg) < 20 {
+		if data.VoiceId != "" && data.Msg != "" && len(data.Msg) < 40 {
 			data.AudioUrl = NewReechoClientWithCtx(c.hub.vtSrv.config.ReechoToken, &c.hub.vtSrv.config, ctx).GetTextAudioUrl(data.VoiceId, data.Msg)
 		}
 
