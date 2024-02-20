@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -263,8 +264,10 @@ type M3u8ContentResponse struct {
 }
 
 type SingleTextMessage struct {
-	Msg string `json:"msg"`
-	Id  string `json:"id"`
+	Msg      string `json:"msg"`
+	Id       string `json:"id"`
+	VoiceId  string `json:"voiceId"`
+	AudioUrl string `json:"audioUrl"`
 }
 
 type UpdateRoomRequest struct {
@@ -357,14 +360,35 @@ func (c *Client) sendTextMessage(rawReq *WsRequestMessage) {
 		return
 	}
 
-	c.sendBroadcast(&Broadcast{
-		RoomName: c.roomName,
-		Type:     ALL,
-		Message: WsResponse{
-			Method: rawReq.Method,
-			Data:   data,
-		},
-	})
+	ctx, cancel := context.WithCancel(context.Background())
+	var once sync.Once
+	sendBroadcast := func() {
+		once.Do(func() {
+			cancel()
+			data.VoiceId = ""
+			c.sendBroadcast(&Broadcast{
+				RoomName: c.roomName,
+				Type:     ALL,
+				Message: WsResponse{
+					Method: rawReq.Method,
+					Data:   data,
+				},
+			})
+		})
+	}
+
+	go func() {
+		defer cancel()
+
+		// 10 seconds timeout
+		time.AfterFunc(10*time.Second, sendBroadcast)
+
+		if data.VoiceId != "" && data.Msg != "" && len(data.Msg) < 20 {
+			data.AudioUrl = NewReechoClientWithCtx(c.hub.vtSrv.config.ReechoToken, &c.hub.vtSrv.config, ctx).GetTextAudioUrl(data.VoiceId, data.Msg)
+		}
+
+		sendBroadcast()
+	}()
 }
 
 // TODO need a template function to do this

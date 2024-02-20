@@ -20,9 +20,19 @@ type Sponsor struct {
 	Room          string `json:"room"`
 	BackgroundUrl string `json:"backgroundUrl"`
 }
+
+type ReechoQuotaItem struct {
+	Quota int `json:"quota"`
+	Used  int `json:"used"`
+}
+
+type ReechoQuota map[string]*ReechoQuotaItem
+
 type Configuration struct {
 	Sponsors     map[string]Sponsor `json:"sponsors"`
 	BlockDomains map[string]bool    `json:"blockDomains"`
+	ReechoToken  string             `json:"reechoToken"`
+	ReechoQuota  ReechoQuota        `json:"reechoQuota"`
 }
 
 func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService {
@@ -58,6 +68,8 @@ func (s *VideoTogetherService) LoadSponsorData() {
 	type ConfigRaw struct {
 		Sponsors     []Sponsor `json:"sponsors"`
 		BlockDomains []string
+		ReechoToken  string      `json:"reechoToken"`
+		ReechoQuota  ReechoQuota `json:"reechoQuota"`
 	}
 	var configRaw ConfigRaw
 	err = json.Unmarshal(configStr, &configRaw)
@@ -75,9 +87,12 @@ func (s *VideoTogetherService) LoadSponsorData() {
 	}
 	s.config.Sponsors = sponsorMap
 	s.config.BlockDomains = blockDomains
+	s.config.ReechoToken = configRaw.ReechoToken
+	s.config.ReechoQuota = configRaw.ReechoQuota
 	// print config
 	log.Println("Sponsors: ", sponsorMap)
 	log.Println("BlockDomains: ", blockDomains)
+	log.Println("ReechoQuota: ", configRaw.ReechoQuota)
 }
 
 func (s *VideoTogetherService) GetRoomBackgroundUrl(ctx *VtContext, room string) string {
@@ -200,6 +215,7 @@ type Statistics struct {
 	ConfirmM3u8Download         int
 	ConfirmVideoDownload        int
 	NonBlockDomainUrlCount      int
+	ReechoQuota                 ReechoQuota
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -210,6 +226,7 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	var stat Statistics
 	if pwd == adminPassword {
 		stat.EasyShareFailedUrl = &easyShareFailedList
+		stat.ReechoQuota = s.config.ReechoQuota
 	}
 	stat.DownloadCompleted = downloadCompleted
 	stat.ConfirmM3u8Download = confirmM3u8Download

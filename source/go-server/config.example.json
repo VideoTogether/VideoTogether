@@ -10,5 +10,12 @@
         "qq.com",
         "youku.com",
         "bilibili.com"
-    ]
+    ],
+    "reechoToken": "Bearer sk-e1....",
+    "reechoQuota":{
+        "a299cd13.......":{
+            "quota": 10,
+            "used": 0
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -73,6 +74,7 @@ func newSlashFix(
 	mux.HandleFunc("/qps", s.qpsHtml)
 	mux.HandleFunc("/qps_json", s.qpsJson)
 	mux.HandleFunc("/static/check_easy_share", s.handleStaticCheckEasyShare)
+	mux.HandleFunc("/reecho/new_voice", s.handleReechoNewVoice)
 
 	// don't rely on beta APIs
 	mux.HandleFunc("/beta/admin", s.handleBetaAdmin)
@@ -133,6 +135,20 @@ func (h *slashFix) newRoomResponse(room *Room) *RoomResponse {
 
 func (h *slashFix) handleStaticCheckEasyShare(res http.ResponseWriter, req *http.Request) {
 	h.Html(res, 200, "<script>let url=window.location.hash.substring(1);fetch(url).then(r => {if (r.ok) {window.top.postMessage({source: 'VideoTogether',type: 25,data: {m3u8Url: url}}, '*');}})</script>")
+}
+func (h *slashFix) handleReechoNewVoice(res http.ResponseWriter, req *http.Request) {
+	type RequestBody struct {
+		VoiceAudioBase64 string `json:"voiceAudioBase64"`
+	}
+	var body RequestBody
+	if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
+		h.handleError(res, err)
+		return
+	}
+	voiceId := NewReechoClientWithCtx(h.vtSrv.config.ReechoToken, &h.vtSrv.config, req.Context()).CreateNewVoice(body.VoiceAudioBase64)
+	h.JSON(res, 200, map[string]interface{}{
+		"voiceId": voiceId,
+	})
 }
 
 func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) {
