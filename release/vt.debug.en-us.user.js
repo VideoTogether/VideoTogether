@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1708434598
+// @version      1708514585
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -24,6 +24,7 @@
     // request can only be called up to 10 times in 5 seconds
     const periodSec = 5;
     const timeLimitation = 15;
+    const textVoiceAudio = document.createElement('audio');
 
     function getDurationStr(duration) {
         try {
@@ -2835,6 +2836,7 @@
                 try {
                     extension.gotTextMsg("", "", true);
                     extension.speechSynthesisEnabled = true;
+                    textVoiceAudio.play();
                 } catch { }
             }
         }
@@ -3116,7 +3118,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1708434598';
+            this.version = '1708514585';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3213,8 +3215,8 @@
             } catch { }
 
             if (!isEmpty(audioUrl)) {
-                let audio = new Audio(audioUrl);
-                audio.play();
+                textVoiceAudio.src = audioUrl;
+                textVoiceAudio.play();
                 return;
             }
 

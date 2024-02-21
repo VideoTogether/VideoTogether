@@ -24,6 +24,7 @@
     // request can only be called up to 10 times in 5 seconds
     const periodSec = 5;
     const timeLimitation = 15;
+    const textVoiceAudio = document.createElement('audio');
 
     function getDurationStr(duration) {
         try {
@@ -1543,6 +1544,7 @@
                 try {
                     extension.gotTextMsg("", "", true);
                     extension.speechSynthesisEnabled = true;
+                    textVoiceAudio.play();
                 } catch { }
             }
         }
@@ -1921,8 +1923,8 @@
             } catch { }
 
             if (!isEmpty(audioUrl)) {
-                let audio = new Audio(audioUrl);
-                audio.play();
+                textVoiceAudio.src = audioUrl;
+                textVoiceAudio.play();
                 return;
             }
 
