@@ -1922,7 +1922,8 @@
                 }
             } catch { }
 
-            if (!isEmpty(audioUrl)) {
+            // iOS cannot play audio in background
+            if (!isEmpty(audioUrl) && !this.isIos) {
                 textVoiceAudio.src = audioUrl;
                 textVoiceAudio.play();
                 return;
