@@ -216,6 +216,9 @@ type Statistics struct {
 	ConfirmVideoDownload        int
 	NonBlockDomainUrlCount      int
 	ReechoQuota                 ReechoQuota
+	ReechoVoiceUserMapSize      int
+	ReechoVoiceCacheHits        int
+	ReechoVoiceCacheMisses      int
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -241,6 +244,9 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	stat.EasyshareSucc = easyshareSucc
 	stat.EasyshareErr = easyshareErr
 	stat.NonBlockDomainUrlCount = 0
+	stat.ReechoVoiceCacheHits = ReechoVoiceCacheHits
+	stat.ReechoVoiceCacheMisses = ReechoVoiceCacheMisses
+	stat.ReechoVoiceUserMapSize = ReechoVoiceUserMapSize
 
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {

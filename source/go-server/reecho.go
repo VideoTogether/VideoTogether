@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/google/uuid"
 )
@@ -14,6 +15,18 @@ type ReechoClient struct {
 	token  string
 	config *Configuration
 	ctx    context.Context
+}
+
+var ReechoVoiceUserMap = sync.Map{}
+var ReechoVoiceUserMapSize = 0
+
+// cache the audio generated from same voiceId and text
+var ReechoVoiceCache = sync.Map{}
+var ReechoVoiceCacheHits = 0
+var ReechoVoiceCacheMisses = 0
+
+func getCacheKey(voiceId string, text string) string {
+	return voiceId + text
 }
 
 func NewReechoClientWithCtx(token string, config *Configuration, ctx context.Context) *ReechoClient {
@@ -40,6 +53,8 @@ func (reecho *ReechoClient) post(url string, headers map[string]string, data map
 	return result
 }
 
+var commonVoiceQuotaId = "*"
+
 func (reecho *ReechoClient) CheckAndUseQuota(voiceId string, credit int) bool {
 	if quotaItem, ok := reecho.config.ReechoQuota[voiceId]; ok {
 		if quotaItem.Quota-quotaItem.Used >= credit {
@@ -48,6 +63,9 @@ func (reecho *ReechoClient) CheckAndUseQuota(voiceId string, credit int) bool {
 		} else {
 			return false
 		}
+	}
+	if voiceId != commonVoiceQuotaId {
+		return reecho.CheckAndUseQuota(commonVoiceQuotaId, credit)
 	}
 	return false
 }
@@ -87,9 +105,20 @@ func (reecho *ReechoClient) GetTextAudioUrl(voiceId string, text string) (audioU
 		}
 	}()
 
+	if cache, ok := ReechoVoiceCache.Load(getCacheKey(voiceId, text)); ok {
+		ReechoVoiceCacheHits++
+		return cache.(string)
+	}
+
+	if _, ok := ReechoVoiceUserMap.Load(voiceId); !ok {
+		ReechoVoiceUserMap.Store(voiceId, 0)
+		ReechoVoiceUserMapSize++
+	}
+
 	if !reecho.CheckAndUseQuota(voiceId, len(text)) {
 		return ""
 	}
+	ReechoVoiceCacheMisses++
 
 	url := "https://v1.reecho.cn/api/tts/simple-generate"
 	headers := map[string]string{
@@ -106,5 +135,9 @@ func (reecho *ReechoClient) GetTextAudioUrl(voiceId string, text string) (audioU
 	result := reecho.post(url, headers, data)
 
 	dataMap := result["data"].(map[string]interface{})
-	return dataMap["audio"].(string)
+	audioUrl = dataMap["audio"].(string)
+	if audioUrl != "" {
+		ReechoVoiceCache.Store(getCacheKey(voiceId, text), audioUrl)
+	}
+	return audioUrl
 }
