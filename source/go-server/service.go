@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net"
 	"net/url"
 	"os"
 	"sort"
@@ -29,10 +30,11 @@ type ReechoQuotaItem struct {
 type ReechoQuota map[string]*ReechoQuotaItem
 
 type Configuration struct {
-	Sponsors     map[string]Sponsor `json:"sponsors"`
-	BlockDomains map[string]bool    `json:"blockDomains"`
-	ReechoToken  string             `json:"reechoToken"`
-	ReechoQuota  ReechoQuota        `json:"reechoQuota"`
+	Sponsors      map[string]Sponsor `json:"sponsors"`
+	BlockDomains  map[string]bool    `json:"blockDomains"`
+	ReechoToken   string             `json:"reechoToken"`
+	ReechoQuota   ReechoQuota        `json:"reechoQuota"`
+	ChinaIPRanges IPRanges           `json:"chinaIPRanges"`
 }
 
 func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService {
@@ -41,7 +43,7 @@ func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService
 		rooms:          sync.Map{},
 		roomExpireTime: roomExpireTime,
 	}
-	s.LoadSponsorData()
+	s.LoadConfiguration()
 	return s
 }
 
@@ -59,7 +61,7 @@ func (s *VideoTogetherService) Timestamp() float64 {
 	return float64(time.Now().UnixMilli()) / 1000
 }
 
-func (s *VideoTogetherService) LoadSponsorData() {
+func (s *VideoTogetherService) LoadConfiguration() {
 	configStr, err := os.ReadFile("./config.json")
 	if err != nil {
 		log.Panic("Error when opening file: ", err)
@@ -70,6 +72,7 @@ func (s *VideoTogetherService) LoadSponsorData() {
 		BlockDomains []string
 		ReechoToken  string      `json:"reechoToken"`
 		ReechoQuota  ReechoQuota `json:"reechoQuota"`
+		ChinaIpList  string      `json:"chinaIpList"`
 	}
 	var configRaw ConfigRaw
 	err = json.Unmarshal(configStr, &configRaw)
@@ -89,6 +92,15 @@ func (s *VideoTogetherService) LoadSponsorData() {
 	s.config.BlockDomains = blockDomains
 	s.config.ReechoToken = configRaw.ReechoToken
 	s.config.ReechoQuota = configRaw.ReechoQuota
+	if configRaw.ChinaIpList != "" {
+		ipRanges, err := loadChinaIPRanges(configRaw.ChinaIpList)
+		if err != nil {
+			log.Println("Error loading China IP ranges: ", err)
+		} else {
+			log.Println("Loaded China IP ranges: ", ipRanges.Len())
+			s.config.ChinaIPRanges = ipRanges
+		}
+	}
 	// print config
 	log.Println("Sponsors: ", sponsorMap)
 	log.Println("BlockDomains: ", blockDomains)
@@ -149,6 +161,8 @@ func (s *VideoTogetherService) CreateRoom(ctx *VtContext, name, password string,
 	room.Uuid = uuid.New().String()
 	room.members = sync.Map{}
 	room.userIds = sync.Map{}
+	room.isChinaRoom = s.config.ChinaIPRanges.search(net.ParseIP(ctx.GetRemoteIp()))
+
 	s.rooms.Store(name, room)
 	return room
 }
@@ -219,6 +233,7 @@ type Statistics struct {
 	ReechoVoiceUserMapSize      int
 	ReechoVoiceCacheHits        int
 	ReechoVoiceCacheMisses      int
+	ChinaRoomCount              int
 }
 
 func (s *VideoTogetherService) Statistics() Statistics {
@@ -247,6 +262,7 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	stat.ReechoVoiceCacheHits = ReechoVoiceCacheHits
 	stat.ReechoVoiceCacheMisses = ReechoVoiceCacheMisses
 	stat.ReechoVoiceUserMapSize = ReechoVoiceUserMapSize
+	stat.ChinaRoomCount = 0
 
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
@@ -255,6 +271,9 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 		} else {
 			if room.isEasyShare {
 				stat.EasyShareRoomCount++
+			}
+			if room.isChinaRoom {
+				stat.ChinaRoomCount++
 			}
 			u, err := url.Parse(room.Url)
 			if err == nil {
@@ -315,6 +334,7 @@ type Room struct {
 	hostId      string
 	password    string
 	isEasyShare bool
+	isChinaRoom bool
 }
 
 type Member struct {

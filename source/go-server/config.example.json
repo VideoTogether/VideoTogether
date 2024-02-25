@@ -12,10 +12,11 @@
         "bilibili.com"
     ],
     "reechoToken": "Bearer sk-e1....",
-    "reechoQuota":{
-        "a299cd13.......":{
+    "reechoQuota": {
+        "a299cd13.......": {
             "quota": 10,
             "used": 0
         }
-    }
+    },
+    "chinaIpList": "./chn_ip.txt"
 }

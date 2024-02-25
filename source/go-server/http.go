@@ -157,7 +157,7 @@ func (h *slashFix) handleRoomUpdate(res http.ResponseWriter, req *http.Request) 
 	password := GetMD5Hash(req.URL.Query().Get("password"))
 	language := req.URL.Query().Get("language")
 
-	room, err := h.vtSrv.GetAndCheckUpdatePermissionsOfRoom(&VtContext{Language: language}, name, password, userId)
+	room, err := h.vtSrv.GetAndCheckUpdatePermissionsOfRoom(NewVtContext(language, req.RemoteAddr), name, password, userId)
 	if err != nil {
 		h.respondError(res, err.Error())
 		return
@@ -183,7 +183,7 @@ func (h *slashFix) handleBetaAdmin(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	h.vtSrv.LoadSponsorData()
+	h.vtSrv.LoadConfiguration()
 	reqVtVersion := int(floatParam(req, "vtVersion", nil))
 	vtVersion = reqVtVersion
 }

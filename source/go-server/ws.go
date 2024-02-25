@@ -28,7 +28,7 @@ func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 		}
 		language := r.URL.Query().Get("language")
 
-		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), isHost: false, ctx: &VtContext{Language: language}}
+		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), isHost: false, vtContext: NewVtContext(language, r.RemoteAddr)}
 		client.hub.register <- client
 
 		// Allow collection of memory referenced by the caller by doing all work in
@@ -218,7 +218,7 @@ type Client struct {
 	roomName       string
 	lastTempUserId string
 	isHost         bool
-	ctx            *VtContext
+	vtContext      *VtContext
 }
 
 type WsRequestMessage struct {
@@ -466,11 +466,11 @@ func (c *Client) joinRoom(rawReq *WsRequestMessage) {
 
 	room := c.hub.vtSrv.QueryRoom(req.RoomName)
 	if room == nil {
-		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).RoomNotExist))
+		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.vtContext.Language).RoomNotExist))
 		return
 	}
 	if !room.HasAccess(roomPw) {
-		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).WrongPassword))
+		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.vtContext.Language).WrongPassword))
 		return
 	}
 
@@ -501,11 +501,11 @@ func (c *Client) updateMember(rawReq *WsRequestMessage) {
 	roomPw := GetMD5Hash(req.RoomPassword)
 	room := c.hub.vtSrv.QueryRoom(req.RoomName)
 	if room == nil {
-		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).RoomNotExist))
+		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.vtContext.Language).RoomNotExist))
 		return
 	}
 	if !room.HasAccess(roomPw) {
-		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.ctx.Language).WrongPassword))
+		c.reply(rawReq.Method, nil, errors.New(GetErrorMessage(c.vtContext.Language).WrongPassword))
 		return
 	}
 	needNotification := room.UpdateMember(*req.Member)
@@ -546,7 +546,7 @@ func (c *Client) updateRoom(rawReq *WsRequestMessage) {
 
 	c.roomName = req.Room.Name
 
-	room, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(c.ctx, req.Name, roomPw, req.TempUser)
+	room, err := c.hub.vtSrv.GetAndCheckUpdatePermissionsOfRoom(c.vtContext, req.Name, roomPw, req.TempUser)
 	if err != nil {
 		c.reply(rawReq.Method, nil, err)
 		return
