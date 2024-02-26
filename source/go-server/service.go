@@ -30,11 +30,13 @@ type ReechoQuotaItem struct {
 type ReechoQuota map[string]*ReechoQuotaItem
 
 type Configuration struct {
-	Sponsors      map[string]Sponsor `json:"sponsors"`
-	BlockDomains  map[string]bool    `json:"blockDomains"`
-	ReechoToken   string             `json:"reechoToken"`
-	ReechoQuota   ReechoQuota        `json:"reechoQuota"`
-	ChinaIPRanges IPRanges           `json:"chinaIPRanges"`
+	Sponsors             map[string]Sponsor `json:"sponsors"`
+	BlockDomains         map[string]bool    `json:"blockDomains"`
+	ReechoToken          string             `json:"reechoToken"`
+	ReechoQuota          ReechoQuota        `json:"reechoQuota"`
+	ChinaIPRanges        IPRanges           `json:"chinaIPRanges"`
+	KrakenChinaEndpoint  string             `json:"krakenChinaEndpoint"`
+	KrakenGlobalEndpoint string             `json:"krakenGlobalEndpoint"`
 }
 
 func NewVideoTogetherService(roomExpireTime time.Duration) *VideoTogetherService {
@@ -68,11 +70,13 @@ func (s *VideoTogetherService) LoadConfiguration() {
 		return
 	}
 	type ConfigRaw struct {
-		Sponsors     []Sponsor `json:"sponsors"`
-		BlockDomains []string
-		ReechoToken  string      `json:"reechoToken"`
-		ReechoQuota  ReechoQuota `json:"reechoQuota"`
-		ChinaIpList  string      `json:"chinaIpList"`
+		Sponsors             []Sponsor `json:"sponsors"`
+		BlockDomains         []string
+		ReechoToken          string      `json:"reechoToken"`
+		ReechoQuota          ReechoQuota `json:"reechoQuota"`
+		ChinaIpList          string      `json:"chinaIpList"`
+		KrakenChinaEndpoint  string      `json:"krakenChinaEndpoint"`
+		KrakenGlobalEndpoint string      `json:"krakenGlobalEndpoint"`
 	}
 	var configRaw ConfigRaw
 	err = json.Unmarshal(configStr, &configRaw)
@@ -92,6 +96,8 @@ func (s *VideoTogetherService) LoadConfiguration() {
 	s.config.BlockDomains = blockDomains
 	s.config.ReechoToken = configRaw.ReechoToken
 	s.config.ReechoQuota = configRaw.ReechoQuota
+	s.config.KrakenChinaEndpoint = configRaw.KrakenChinaEndpoint
+	s.config.KrakenGlobalEndpoint = configRaw.KrakenGlobalEndpoint
 	if configRaw.ChinaIpList != "" {
 		ipRanges, err := loadChinaIPRanges(configRaw.ChinaIpList)
 		if err != nil {
@@ -162,6 +168,13 @@ func (s *VideoTogetherService) CreateRoom(ctx *VtContext, name, password string,
 	room.members = sync.Map{}
 	room.userIds = sync.Map{}
 	room.isChinaRoom = s.config.ChinaIPRanges.search(net.ParseIP(ctx.GetRemoteIp()))
+	room.krakenRoomName = url.QueryEscape(room.Uuid + "_" + room.Name)
+
+	room.krakenEndpoint = s.config.KrakenGlobalEndpoint
+	if room.isChinaRoom {
+		room.krakenEndpoint = s.config.KrakenChinaEndpoint
+	}
+	NewKrakenRoom(room.krakenRoomName, room.krakenEndpoint)
 
 	s.rooms.Store(name, room)
 	return room
@@ -267,6 +280,7 @@ func (s *VideoTogetherService) StatisticsN(pwd string) Statistics {
 	var expireTime = float64(time.Now().Add(-s.roomExpireTime).UnixMilli()) / 1000
 	s.rooms.Range(func(key, value any) bool {
 		if room := s.QueryRoom(key.(string)); room == nil || room.LastUpdateClientTime < expireTime {
+			DeleteKrakenRoom(room.krakenRoomName)
 			s.rooms.Delete(key)
 		} else {
 			if room.isEasyShare {
@@ -329,12 +343,14 @@ type Room struct {
 	BeginLoaddingTimestamp float64 `json:"beginLoaddingTimestamp"`
 	MemberCount            int     `json:"memberCount"`
 
-	userIds     sync.Map
-	members     sync.Map
-	hostId      string
-	password    string
-	isEasyShare bool
-	isChinaRoom bool
+	userIds        sync.Map
+	members        sync.Map
+	hostId         string
+	password       string
+	isEasyShare    bool
+	isChinaRoom    bool
+	krakenRoomName string
+	krakenEndpoint string
 }
 
 type Member struct {

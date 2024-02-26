@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,23 +47,20 @@ type slashFix struct {
 	vtSrv  *VideoTogetherService
 	qps    *qps.QP
 
-	krakenUrl string // https://github.com/MixinNetwork/kraken
-	rpClient  *http.Client
+	rpClient *http.Client
 }
 
 func newSlashFix(
 	render *render.Render,
 	vtSrv *VideoTogetherService,
 	qps *qps.QP,
-	krakenUrl string,
 	rpClient *http.Client,
 ) *slashFix {
 	s := &slashFix{
-		render:    render,
-		vtSrv:     vtSrv,
-		qps:       qps,
-		krakenUrl: krakenUrl,
-		rpClient:  rpClient,
+		render:   render,
+		vtSrv:    vtSrv,
+		qps:      qps,
+		rpClient: rpClient,
 	}
 
 	mux := http.NewServeMux()
@@ -218,8 +216,38 @@ func (h *slashFix) handleKraken(res http.ResponseWriter, req *http.Request) {
 	if req.Method == "OPTIONS" {
 		return
 	}
+	var krakenUrl = h.vtSrv.config.KrakenGlobalEndpoint
 
-	proxyReq, err := http.NewRequest(req.Method, h.krakenUrl, req.Body)
+	defer req.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	func() {
+		defer func() {
+			if e := recover(); e != nil {
+				log.Println("handleKraken decode json error", e)
+			}
+		}()
+
+		var body map[string]interface{}
+		if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&body); err == nil {
+			krakenMethod := body["method"].(string)
+
+			if krakenMethod == "subscribe" || krakenMethod == "answer" || krakenMethod == "trickle" || krakenMethod == "publish" {
+				krakenRoomName := body["params"].([]interface{})[0].(string)
+				krakenUrl = GetKrakenRoomEndpoint(krakenRoomName, krakenUrl)
+			} else if krakenMethod != "turn" {
+				// unknown method
+				log.Println("unknown krakenMethod", krakenMethod)
+			}
+		}
+
+	}()
+
+	proxyReq, err := http.NewRequest(req.Method, krakenUrl, bytes.NewReader(bodyBytes))
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return

@@ -26,7 +26,6 @@ func main() {
 		render.New(),
 		vtSrv,
 		qps.NewQP(time.Second, 3600),
-		"http://panghair.com:7002/",
 		&http.Client{},
 	)
 	if len(os.Args) <= 1 {

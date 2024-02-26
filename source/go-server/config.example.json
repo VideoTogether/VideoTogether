@@ -18,5 +18,7 @@
             "used": 0
         }
     },
-    "chinaIpList": "./chn_ip.txt"
+    "chinaIpList": "./chn_ip.txt",
+    "krakenGlobalEndpoint": "http://127.0.0.1:7002/",
+    "krakenChinaEndpoint": "http://127.0.0.1:7002/"
 }
