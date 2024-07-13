@@ -1678,9 +1678,9 @@
 
         HelpButtonOnClick() {
             this.Maximize();
-            let url = 'https://2gether.video/guide/qa.html';
+            let url = 'https://videotogether.github.io/guide/qa.html';
             if (vtRuntime == "website") {
-                url = "https://2gether.video/guide/website_qa.html"
+                url = "https://videotogether.github.io/guide/website_qa.html"
             }
             window.open(url, '_blank');
         }
@@ -1976,7 +1976,7 @@
             if (china) {
                 return ''
             } else {
-                return `https://2gether.video/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
+                return `https://videotogether.github.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
             }
         }
 

@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
-// @namespace    https://2gether.video/
-// @version      1706416707
+// @namespace    https://videotogether.github.io/
+// @version      1720877593
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
-// @icon         https://2gether.video/icon/favicon-32x32.png
+// @icon         https://videotogether.github.io/icon/favicon-32x32.png
 // @grant        GM.xmlHttpRequest
 // @grant        GM_addElement
 // @grant        GM.setValue
@@ -18,13 +18,14 @@
 // @connect      api.panghair.com
 // @connect      vt.panghair.com
 // @connect      raw.githubusercontent.com
+// @connect      fastly.jsdelivr.net
 // @connect      videotogether.oss-cn-hangzhou.aliyuncs.com
 // ==/UserScript==
 
 (async function () {
     let isDevelopment = false;
 
-    let version = '1706416707'
+    let version = '1720877593'
     let type = 'website'
     function getBrowser() {
         switch (type) {
@@ -65,7 +66,7 @@
                             window.location.origin === iframe.contentWindow.location.origin) {
                             console.log("inject to iframe");
                             const script = document.createElement('script');
-                            script.src = "https://2gether.video/release/extension.website.user.js";
+                            script.src = "https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest/release/extension.website.user.js";
                             iframe.contentWindow.document.body.appendChild(script);
                             iframe.contentWindow.VideoTogetherParentInject = true;
                         }
@@ -230,7 +231,7 @@
             cachedVt = privateCachedVt['data'];
         } else {
             console.log("Refresh VT");
-            fetch(`https://2gether.video/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
+            fetch(`https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
                 .then(r => r.text())
                 .then(data => getGM().setValue('PrivateCachedVt', {
                     'version': vtRefreshVersion,
@@ -351,7 +352,7 @@
                     if (!url.hostname.endsWith("2gether.video")
                         && !url.hostname.endsWith("chizhou.in")
                         && !url.hostname.endsWith("panghair.com")
-                        && !url.hostname.endsWith("rpc.kraken.fm")
+                        && !url.hostname.endsWith("videotogether.github.io")
                         && !url.hostname.endsWith("aliyuncs.com")) {
                         console.error("permission error", e.data);
                         return;
@@ -613,7 +614,7 @@
     script.type = 'text/javascript';
     switch (type) {
         case "userscript":
-            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + version;
+            script.src = `https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest/release/vt.${language}.user.js?timestamp=` + version;
             break;
         case "Chrome":
         case "Safari":
@@ -627,6 +628,9 @@
                     return;
                 }
                 if (e.blockedURI.indexOf('2gether.video') != -1) {
+                    urlDisabled = true;
+                }
+                if (e.blockedURI.indexOf('jsdelivr.net') != -1) {
                     urlDisabled = true;
                 }
                 if (urlDisabled) {
@@ -649,7 +653,7 @@
             script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "website":
-            script.src = `https://2gether.video/release/vt.${language}.website.js?timestamp=` + version;
+            script.src = `https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest/release/vt.${language}.website.js?timestamp=` + version;
             break;
         case "website_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());

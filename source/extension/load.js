@@ -21,7 +21,7 @@
         let script = document.createElement('script');
         script.type = 'text/javascript';
         try {
-            script.src = `https://2gether.video/release/vt.${language}.user.js?timestamp=` + version;
+            script.src = `https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest/release/vt.${language}.user.js?timestamp=` + version;
         } catch {
             // this is a very secure site. don't inject
             document.querySelector("#videoTogetherLoading").remove();

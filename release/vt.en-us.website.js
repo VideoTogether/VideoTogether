@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1708517473
+// @version      1720876115
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2970,9 +2970,9 @@
 
         HelpButtonOnClick() {
             this.Maximize();
-            let url = 'https://2gether.video/guide/qa.html';
+            let url = 'https://videotogether.github.io/guide/qa.html';
             if (vtRuntime == "website") {
-                url = "https://2gether.video/guide/website_qa.html"
+                url = "https://videotogether.github.io/guide/website_qa.html"
             }
             window.open(url, '_blank');
         }
@@ -3118,7 +3118,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1708517473';
+            this.version = '1720876115';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3268,7 +3268,7 @@
             if (china) {
                 return ''
             } else {
-                return `https://2gether.video/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
+                return `https://videotogether.github.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
             }
         }
 
