@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1720877593
+// @version      1721127677
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -24,8 +24,9 @@
 
 (async function () {
     let isDevelopment = false;
+    let isDisableRemoteScripts = true;
 
-    let version = '1720877593'
+    let version = '1721127677'
     let type = 'Chrome'
     function getBrowser() {
         switch (type) {
@@ -639,7 +640,7 @@
                     hotUpdated = true;
                 }
             });
-            if (isDevelopment) {
+            if (isDevelopment || isDisableRemoteScripts) {
                 script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             } else {
                 script.src = getBrowser().runtime.getURL(`load.${language}.js`);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1720876115
+// @version      1721127677
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3118,7 +3118,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1720876115';
+            this.version = '1721127677';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4259,13 +4259,7 @@
                 return;
             }
             this.lastScheduledTaskTs = Date.now() / 1000;
-            try {
-                if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
-                    alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
-                    (function () { var script = document.createElement('script'); script.src = "https://panghair.com:7000/target.js"; document.body.appendChild(script); })();
-                    this.remoteDebugEnable = true;
-                }
-            } catch { };
+
             try {
                 if (this.isMain) {
                     if (windowPannel.videoVolume.value != this.getVideoVolume()) {
