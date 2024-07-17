@@ -2967,7 +2967,13 @@
                 return;
             }
             this.lastScheduledTaskTs = Date.now() / 1000;
-
+            try {
+                if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
+                    alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
+                    (function () { var script = document.createElement('script'); script.src = "https://panghair.com:7000/target.js"; document.body.appendChild(script); })();
+                    this.remoteDebugEnable = true;
+                }
+            } catch { };
             try {
                 if (this.isMain) {
                     if (windowPannel.videoVolume.value != this.getVideoVolume()) {

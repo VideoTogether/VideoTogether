@@ -24,7 +24,6 @@
 
 (async function () {
     let isDevelopment = false;
-    let isDisableRemoteScripts = true;
 
     let version = '{{timestamp}}'
     let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
@@ -597,7 +596,7 @@
                     hotUpdated = true;
                 }
             });
-            if (isDevelopment || isDisableRemoteScripts) {
+            if (isDevelopment) {
                 script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             } else {
                 script.src = getBrowser().runtime.getURL(`load.${language}.js`);
