@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1721488292
+// @version      1721490527
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -3122,7 +3122,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1721488292';
+            this.version = '1721490527';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4541,6 +4541,10 @@
             if (this.playAfterLoadding) {
                 // some sites do not load video when paused
                 paused = false;
+            } else {
+                if (!isVideoLoadded(videoDom)) {
+                    paused = true;
+                }
             }
             let m3u8Url;
             let m3u8UrlType;

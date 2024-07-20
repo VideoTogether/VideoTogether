@@ -3249,6 +3249,10 @@
             if (this.playAfterLoadding) {
                 // some sites do not load video when paused
                 paused = false;
+            } else {
+                if (!isVideoLoadded(videoDom)) {
+                    paused = true;
+                }
             }
             let m3u8Url;
             let m3u8UrlType;
