@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1720877330
+// @version      1721488292
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -735,6 +735,10 @@
         NativePostMessageFunction: null,
         NativeAttachShadow: null,
         NativeFetch: null
+    }
+
+    const Var = {
+        isThisMemberLoading: false
     }
 
     function AttachShadow(e, options) {
@@ -3118,7 +3122,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1720877330';
+            this.version = '1721488292';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4693,9 +4697,15 @@
             if (videoDom == undefined) {
                 throw new Error("没有视频");
             }
+
+            const waitForLoadding = room['waitForLoadding'];
+            let paused = room['paused'];
+            if (waitForLoadding && !paused && !Var.isThisMemberLoading) {
+                paused = true;
+            }
             let isLoading = (Math.abs(this.memberLastSeek - videoDom.currentTime) < 0.01);
             this.memberLastSeek = -1;
-            if (room["paused"] == false) {
+            if (paused == false) {
                 videoDom.videoTogetherPaused = false;
                 if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
                     videoDom.currentTime = this.CalculateRealCurrent(room);
@@ -4708,8 +4718,8 @@
                     videoDom.currentTime = room["currentTime"];
                 }
             }
-            if (videoDom.paused != room["paused"]) {
-                if (room["paused"]) {
+            if (videoDom.paused != paused) {
+                if (paused) {
                     console.info("pause");
                     videoDom.pause();
                 } else {
@@ -4750,6 +4760,7 @@
                         isLoading = false;
                     }
                 } catch { isLoading = false };
+                Var.isThisMemberLoading = isLoading;
                 // make the member count update slow
                 sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoading });
             }, 1);
