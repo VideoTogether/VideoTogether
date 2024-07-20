@@ -26,7 +26,7 @@
     let isDevelopment = false;
 
     let version = '{{timestamp}}'
-    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug","beta":"./config/type_userscript_beta", "order":0} }}}'
+    let type = '{{{ {"": "./config/type_userscript","chrome":"./config/type_chrome_extension","firefox":"./config/type_firefox_extension","safari":"./config/type_safari_extension","debug":"./config/type_userscript_debug","website":"./config/type_website","website_debug":"./config/type_website_debug", "order":0} }}}'
     function getBrowser() {
         switch (type) {
             case 'Safari':
@@ -41,6 +41,18 @@
     let isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
+    const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
+    const encodeFastlyJsdelivrCdn = 'aHR0cHM6Ly9mYXN0bHkuanNkZWxpdnIubmV0L2doL1ZpZGVvVG9nZXRoZXIvVmlkZW9Ub2dldGhlckBsYXRlc3Q='
+    function getCdnPath(encodedCdn, path) {
+        const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
+        return `${cdn}/${path}`;
+    }
+    async function getCdnConfig(encodedCdn) {
+        return fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json())
+    }
+    async function getChinaCdnB() {
+        return getCdnConfig(encodedChinaCdnA).then(c => c.jsCdnHostChina)
+    }
 
     function getGM() {
         if (type == "website" || type == "website_debug") {
@@ -66,7 +78,7 @@
                             window.location.origin === iframe.contentWindow.location.origin) {
                             console.log("inject to iframe");
                             const script = document.createElement('script');
-                            script.src = "https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest/release/extension.website.user.js";
+                            script.src = getCdnPath(encodeFastlyJsdelivrCdn, "release/extension.website.user.js");
                             iframe.contentWindow.document.body.appendChild(script);
                             iframe.contentWindow.VideoTogetherParentInject = true;
                         }
@@ -231,14 +243,14 @@
             cachedVt = privateCachedVt['data'];
         } else {
             console.log("Refresh VT");
-            fetch(`https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
+            fetch(getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.${vtType}.js?vtRefreshVersion=${vtRefreshVersion}`))
                 .then(r => r.text())
                 .then(data => getGM().setValue('PrivateCachedVt', {
                     'version': vtRefreshVersion,
                     'data': data
                 }))
                 .catch(() => {
-                    fetch(`https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.${vtType}.js?vtRefreshVersion=` + vtRefreshVersion)
+                    getChinaCdnB().then(chinaCdnB => fetch(getCdnPath(chinaCdnB, `release/vt.${language}.${vtType}.js?vtRefreshVersion=${vtRefreshVersion}`)))
                         .then(r => r.text())
                         .then(data => getGM().setValue('PrivateCachedVt', {
                             'version': vtRefreshVersion,
@@ -571,7 +583,7 @@
     script.type = 'text/javascript';
     switch (type) {
         case "userscript":
-            script.src = `https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest/release/vt.${language}.user.js?timestamp=` + version;
+            script.src = getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.user.js?timestamp=${version}`);
             break;
         case "Chrome":
         case "Safari":
@@ -606,11 +618,8 @@
         case "userscript_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
-        case "userscript_beta":
-            script.src = `https://raw.githubusercontent.com/VideoTogether/VideoTogether/voice/release/vt.${language}.user.js?timestamp=` + parseInt(Date.now());
-            break;
         case "website":
-            script.src = `https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest/release/vt.${language}.website.js?timestamp=` + version;
+            script.src = getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.website.js?timestamp=${version}`);
             break;
         case "website_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
@@ -641,7 +650,7 @@
     }
 
     // fallback to china service
-    setTimeout(() => {
+    setTimeout(async () => {
         try {
             document.querySelector("#videoTogetherLoading").remove()
         } catch { }
@@ -651,7 +660,8 @@
         if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = `https://videotogether.oss-cn-hangzhou.aliyuncs.com/release/vt.${language}.user.js`;
+            const chinaCdnB = await getChinaCdnB();
+            script.src = getCdnPath(chinaCdnB, `release/vt.${language}.user.js`);
             (document.body || document.documentElement).appendChild(script);
             try {
                 if (isWebsite) {
