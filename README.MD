@@ -1,6 +1,6 @@
 # VideoTogether
 
-## VideoTogether is a browser extension let you watch videos in brower with friends at the same time. Chrome, Edge, Safari are supported.
+## VideoTogether is a browser extension that syncs video playback with friends in real-time on Chrome, Edge, and Safari.
 
 ## Visit http://2gether.video/ for more information
 
