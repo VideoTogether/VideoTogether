@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1695650900
+// @version      1720876115
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -24,6 +24,7 @@
     // request can only be called up to 10 times in 5 seconds
     const periodSec = 5;
     const timeLimitation = 15;
+    const textVoiceAudio = document.createElement('audio');
 
     function getDurationStr(duration) {
         try {
@@ -991,7 +992,7 @@
             }
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
                 popupError("New Messages (<a id='changeVoiceBtn' style='color:inherit' href='#''>Change Voice</a>)");
-                extension.gotTextMsg(data['data'].id, data['data'].msg);
+                extension.gotTextMsg(data['data'].id, data['data'].msg, false, -1, data['data'].audioUrl);
                 sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
         },
@@ -1044,7 +1045,8 @@
                 "method": "send_txtmsg",
                 "data": {
                     "msg": msg,
-                    "id": id
+                    "id": id,
+                    "voiceId": getVideoTogetherStorage('PublicReechoVoiceId', "")
                 }
             })
         },
@@ -1203,7 +1205,7 @@
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
-            if (window.location.protocol != "https:") {
+            if (window.location.protocol != "https:" && window.location.protocol != 'file:') {
                 Voice.errorMessage = "Only support https website";
                 Voice.status = VoiceStatus.ERROR;
                 return;
@@ -1756,6 +1758,7 @@
                 this.minimized = false;
                 let shadowWrapper = document.createElement("div");
                 shadowWrapper.id = "VideoTogetherWrapper";
+                shadowWrapper.ontouchstart = (e) => { e.stopPropagation() }
                 let wrapper;
                 try {
                     wrapper = AttachShadow(shadowWrapper, { mode: "open" });
@@ -1852,7 +1855,7 @@
         </div>
         <div>
           <span id="videoTogetherRoomPasswordLabel">Password</span>
-          <input id="videoTogetherRoomPasswordInput" autocomplete="off" placeholder="Host's password">
+          <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="Host's password">
         </div>
         <div>
           <div id="textMessageChat" style="display: none;">
@@ -2030,6 +2033,12 @@
 </div>
 
 <style>
+  :host {
+    all: initial;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+  }
+
   #videoTogetherFlyPannel {
     background-color: #ffffff !important;
     display: block;
@@ -2290,7 +2299,7 @@
   }
 
   #videoTogetherRoomNameInput,
-  #videoTogetherRoomPasswordInput {
+  #videoTogetherRoomPdIpt {
     width: 150px;
     height: auto;
     font-family: inherit;
@@ -2660,9 +2669,13 @@
                 }
                 this.easyShareCopyBtn.onclick = async () => {
                     try {
-                        await navigator.clipboard.writeText("Click the link to watch together with me: <main_share_link>"
-                            .replace("<main_share_link>", extension.generateEasyShareLink())
-                            .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                        if (isWeb()) {
+                            await navigator.clipboard.writeText(extension.linkWithMemberState(window.location, extension.RoleEnum.Member, false))
+                        } else {
+                            await navigator.clipboard.writeText("Click the link to watch together with me: <main_share_link>"
+                                .replace("<main_share_link>", extension.generateEasyShareLink())
+                                .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                        }
                         popupError("Copied");
                     } catch {
                         popupError("Copy failed");
@@ -2727,7 +2740,7 @@
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
                 hide(this.videoTogetherSetting);
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
-                this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPasswordInput");
+                this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPdIpt");
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
                 this.videoTogetherHeader = wrapper.querySelector("#videoTogetherHeader");
@@ -2823,6 +2836,7 @@
                 try {
                     extension.gotTextMsg("", "", true);
                     extension.speechSynthesisEnabled = true;
+                    textVoiceAudio.play();
                 } catch { }
             }
         }
@@ -2956,9 +2970,9 @@
 
         HelpButtonOnClick() {
             this.Maximize();
-            let url = 'https://2gether.video/guide/qa.html';
+            let url = 'https://videotogether.github.io/guide/qa.html';
             if (vtRuntime == "website") {
-                url = "https://2gether.video/guide/website_qa.html"
+                url = "https://videotogether.github.io/guide/website_qa.html"
             }
             window.open(url, '_blank');
         }
@@ -3087,7 +3101,7 @@
             this.video_together_host = 'https://vt.panghair.com:5000/';
             this.video_together_main_host = 'https://vt.panghair.com:5000/';
             this.video_together_backup_host = 'https://api.chizhou.in/';
-            this.video_tag_names = ["video", "bwp-video"]
+            this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
             this.timer = 0
             this.roomName = ""
@@ -3104,7 +3118,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1695650900';
+            this.version = '1720876115';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3113,6 +3127,7 @@
             this.voiceVolume = null;
             this.videoVolume = null;
             this.m3u8Files = {};
+            this.m3u8DurationReCal = {};
             this.m3u8UrlTestResult = {};
             this.hasCheckedM3u8Url = {};
             this.m3u8PostWindows = {};
@@ -3183,7 +3198,7 @@
             }
         }
 
-        async gotTextMsg(id, msg, prepare = false, idx = -1) {
+        async gotTextMsg(id, msg, prepare = false, idx = -1, audioUrl = undefined) {
             if (idx > speechSynthesis.getVoices().length) {
                 return;
             }
@@ -3198,6 +3213,14 @@
                     select("#textMessageInput").value = "";
                 }
             } catch { }
+
+            // iOS cannot play audio in background
+            if (!isEmpty(audioUrl) && !this.isIos) {
+                textVoiceAudio.src = audioUrl;
+                textVoiceAudio.play();
+                return;
+            }
+
             let ssu = new SpeechSynthesisUtterance();
             ssu.text = msg;
             ssu.volume = 1;
@@ -3243,9 +3266,9 @@
 
         generateEasyShareLink(china = false) {
             if (china) {
-                return `https://videotogether.gitee.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`
+                return ''
             } else {
-                return `https://2gether.video/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
+                return `https://videotogether.github.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
             }
         }
 
@@ -3707,7 +3730,7 @@
                                 return;
                             })
                         }
-                        if (d < 3) {
+                        if (d < 3 || d / data.duration < 0.03) {
                             m3u8Url = selected.m3u8Url;
                         }
                     } catch { }
@@ -3741,7 +3764,11 @@
                             show(windowPannel.easyShareCopyBtn);
                         } else {
                             this.currentM3u8Url = undefined;
-                            hide(windowPannel.easyShareCopyBtn);
+                            if (isWeb()) {
+                                show(windowPannel.easyShareCopyBtn);
+                            } else {
+                                hide(windowPannel.easyShareCopyBtn);
+                            }
                         }
                     } catch { };
                     try {
@@ -3777,12 +3804,14 @@
                     window.location = data.url;
                     let currentUrl = new URL(window.location);
                     let newUrl = new URL(data.url);
-                    currentUrl.hash = "";
-                    newUrl.hash = "";
-                    if (currentUrl.href == newUrl.href) {
-                        extension.url = data.url;
+                    if (newUrl.hash != "") {
+                        currentUrl.hash = "";
+                        newUrl.hash = "";
+                        if (currentUrl.href == newUrl.href) {
+                            extension.url = data.url;
+                            // window.location.reload();// for hash change
+                        }
                     }
-                    // window.location.reload();// for hash change
                     break;
                 case MessageType.ChangeVideoVolume:
                     this.ForEachVideo(video => {
@@ -3797,6 +3826,7 @@
                     break;
                 }
                 case MessageType.SyncStorageValue: {
+                    const firstSync = (window.VideoTogetherSettingEnabled == undefined)
                     window.VideoTogetherStorage = data;
                     if (!this.isMain) {
                         return;
@@ -3822,7 +3852,7 @@
                             windowPannel.voiceSelect.value = data.PublicMessageVoice;
                         }
                     } catch { };
-                    if (!window.videoTogetherFlyPannel.disableDefaultSize && !window.VideoTogetherSettingEnabled) {
+                    if (!window.videoTogetherFlyPannel.disableDefaultSize && firstSync) {
                         if (data.MinimiseDefault) {
                             window.videoTogetherFlyPannel.Minimize(true);
                         } else {
@@ -3833,7 +3863,7 @@
                         sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
                     try {
-                        if (window.VideoTogetherSettingEnabled == undefined) {
+                        if (firstSync) {
                             if (!isWeb()) {
                                 window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
                                 show(select('#videoTogetherSetting'));
@@ -3849,7 +3879,6 @@
                     try {
                         dsply(select('#downloadBtn'), downloadEnabled() && !windowPannel.isInRoom)
                     } catch { }
-
                     window.VideoTogetherSettingEnabled = true;
                     break;
                 }
@@ -3880,6 +3909,29 @@
                 case MessageType.UpdateM3u8Files: {
                     data['m3u8Files'].forEach(m3u8 => {
                         try {
+                            function calculateM3U8Duration(textContent) {
+                                let totalDuration = 0;
+                                const lines = textContent.split('\n');
+
+                                for (let i = 0; i < lines.length; i++) {
+                                    if (lines[i].startsWith('#EXTINF:')) {
+                                        if (i + 1 >= lines.length || lines[i + 1].startsWith('#')) {
+                                            continue;
+                                        }
+                                        let durationLine = lines[i];
+                                        let durationParts = durationLine.split(':');
+                                        if (durationParts.length > 1) {
+                                            let durationValue = durationParts[1].split(',')[0];
+                                            let duration = parseFloat(durationValue);
+                                            if (!isNaN(duration)) {
+                                                totalDuration += duration;
+                                            }
+                                        }
+                                    }
+                                }
+                                return totalDuration;
+                            }
+
                             const cyrb53 = (str, seed = 0) => {
                                 let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
                                 for (let i = 0, ch; i < str.length; i++) {
@@ -3897,6 +3949,10 @@
                             if (m3u8.m3u8Url.startsWith("data:")) {
                                 m3u8.m3u8Url = `${cyrb53(m3u8.m3u8Url)}`;
                             }
+                            if (this.m3u8DurationReCal[m3u8.m3u8Url] == undefined) {
+                                this.m3u8DurationReCal[m3u8.m3u8Url] = calculateM3U8Duration(m3u8.m3u8Content);
+                            }
+                            m3u8.duration = this.m3u8DurationReCal[m3u8.m3u8Url];
                         } catch { }
                     })
                     this.m3u8Files[data['id']] = data['m3u8Files'];
@@ -4591,18 +4647,15 @@
             } catch (e) { console.error(e); }
         }
 
-        linkWithMemberState(link) {
+        linkWithMemberState(link, newRole = undefined, expire = true) {
             let url = new URL(link);
             let tmpSearch = url.search;
             url.search = "";
-            if (link.toLowerCase().includes("youtube")) {
-                url.searchParams.set("app", "desktop");
-            }
             url.searchParams.set("VideoTogetherUrl", link);
             url.searchParams.set("VideoTogetherRoomName", this.roomName);
             url.searchParams.set("VideoTogetherPassword", this.password);
-            url.searchParams.set("VideoTogetherRole", this.role);
-            url.searchParams.set("VideoTogetherTimestamp", Date.now() / 1000);
+            url.searchParams.set("VideoTogetherRole", newRole ? newRole : this.role);
+            url.searchParams.set("VideoTogetherTimestamp", expire ? Date.now() / 1000 : 1e10);
             let urlStr = url.toString();
             if (tmpSearch.length > 1) {
                 urlStr = urlStr + "&" + tmpSearch.slice(1);
