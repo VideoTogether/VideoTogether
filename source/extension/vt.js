@@ -26,6 +26,18 @@
     const timeLimitation = 15;
     const textVoiceAudio = document.createElement('audio');
 
+    const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
+    function getCdnPath(encodedCdn, path) {
+        const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
+        return `${cdn}/${path}`;
+    }
+    async function getCdnConfig(encodedCdn) {
+        return fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json())
+    }
+    async function getEasyShareHostChina() {
+        return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
+    }
+
     function getDurationStr(duration) {
         try {
             let d = parseInt(duration);
@@ -1384,9 +1396,12 @@
                         if (isWeb()) {
                             await navigator.clipboard.writeText(extension.linkWithMemberState(window.location, extension.RoleEnum.Member, false))
                         } else {
-                            await navigator.clipboard.writeText("{$easy_share_line_template$}"
-                                .replace("<main_share_link>", extension.generateEasyShareLink())
-                                .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                            let shareText = '{$easy_share_line_template$}';
+                            shareText = shareText.replace("<main_share_link>", await extension.generateEasyShareLink())
+                            if (shareText.indexOf("<china_share_link>") != -1) {
+                                shareText = shareText.replace("<china_share_link>", await extension.generateEasyShareLink(true))
+                            }
+                            await navigator.clipboard.writeText(shareText);
                         }
                         popupError("{$easy_share_link_copied$}");
                     } catch {
@@ -1979,11 +1994,12 @@
             }
         }
 
-        generateEasyShareLink(china = false) {
+        async generateEasyShareLink(china = false) {
+            const path = `${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
             if (china) {
-                return ''
+                return getCdnPath(await getEasyShareHostChina(), path);
             } else {
-                return `https://videotogether.github.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
+                return getCdnPath('https://videotogether.github.io', path);
             }
         }
 

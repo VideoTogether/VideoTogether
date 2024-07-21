@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1721548126
+// @version      1721562725
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -25,6 +25,18 @@
     const periodSec = 5;
     const timeLimitation = 15;
     const textVoiceAudio = document.createElement('audio');
+
+    const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
+    function getCdnPath(encodedCdn, path) {
+        const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
+        return `${cdn}/${path}`;
+    }
+    async function getCdnConfig(encodedCdn) {
+        return fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json())
+    }
+    async function getEasyShareHostChina() {
+        return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
+    }
 
     function getDurationStr(duration) {
         try {
@@ -1852,7 +1864,7 @@
           <span id="videoTogetherRoleText"></span>
           <span id="memberCount"></span>
         </div>
-        <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
+        <div id="videoTogetherStatusText" style="height: 22.5px;">已修复轻松分享链接无法访问</div>
         <div style="margin-bottom: 10px;">
           <span id="videoTogetherRoomNameLabel">房间</span>
           <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="请输入房间名">
@@ -2676,9 +2688,12 @@
                         if (isWeb()) {
                             await navigator.clipboard.writeText(extension.linkWithMemberState(window.location, extension.RoleEnum.Member, false))
                         } else {
-                            await navigator.clipboard.writeText("点击链接，和我一起看吧：<main_share_link> , 如果打不开可以尝试备用链接：<china_share_link>"
-                                .replace("<main_share_link>", extension.generateEasyShareLink())
-                                .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                            let shareText = '点击链接，和我一起看吧：<main_share_link> , 如果打不开可以尝试备用链接：<china_share_link>';
+                            shareText = shareText.replace("<main_share_link>", await extension.generateEasyShareLink())
+                            if (shareText.indexOf("<china_share_link>") != -1) {
+                                shareText = shareText.replace("<china_share_link>", await extension.generateEasyShareLink(true))
+                            }
+                            await navigator.clipboard.writeText(shareText);
                         }
                         popupError("复制成功，快去分享吧");
                     } catch {
@@ -3125,7 +3140,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1721548126';
+            this.version = '1721562725';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3271,11 +3286,12 @@
             }
         }
 
-        generateEasyShareLink(china = false) {
+        async generateEasyShareLink(china = false) {
+            const path = `${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
             if (china) {
-                return ''
+                return getCdnPath(await getEasyShareHostChina(), path);
             } else {
-                return `https://videotogether.github.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
+                return getCdnPath('https://videotogether.github.io', path);
             }
         }
 
