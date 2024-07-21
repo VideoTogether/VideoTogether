@@ -1683,8 +1683,11 @@
         HelpButtonOnClick() {
             this.Maximize();
             let url = 'https://videotogether.github.io/guide/qa.html';
+            if (language == 'zh-cn') {
+                url = 'https://www.bilibili.com/opus/956528691876200471';
+            }
             if (vtRuntime == "website") {
-                url = "https://videotogether.github.io/guide/website_qa.html"
+                url = "https://videotogether.github.io/guide/website_qa.html";
             }
             window.open(url, '_blank');
         }
@@ -2577,7 +2580,7 @@
                     try {
                         if (firstSync) {
                             if (!isWeb()) {
-                                window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
+                                window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://videotogether.github.io/setting/v2.html";
                                 show(select('#videoTogetherSetting'));
                             } else {
                                 // website

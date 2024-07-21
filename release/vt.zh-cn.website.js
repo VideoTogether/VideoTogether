@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1721490527
+// @version      1721548126
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -2975,8 +2975,11 @@
         HelpButtonOnClick() {
             this.Maximize();
             let url = 'https://videotogether.github.io/guide/qa.html';
+            if (language == 'zh-cn') {
+                url = 'https://www.bilibili.com/opus/956528691876200471';
+            }
             if (vtRuntime == "website") {
-                url = "https://videotogether.github.io/guide/website_qa.html"
+                url = "https://videotogether.github.io/guide/website_qa.html";
             }
             window.open(url, '_blank');
         }
@@ -3122,7 +3125,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1721490527';
+            this.version = '1721548126';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3869,7 +3872,7 @@
                     try {
                         if (firstSync) {
                             if (!isWeb()) {
-                                window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
+                                window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://videotogether.github.io/setting/v2.html";
                                 show(select('#videoTogetherSetting'));
                             } else {
                                 // website
