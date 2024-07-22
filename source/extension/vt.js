@@ -15,6 +15,11 @@
     const realUrlCache = {}
     const m3u8ContentCache = {}
 
+    const Var = {
+        isThisMemberLoading: false,
+        cdnConfig: undefined,
+    }
+
     let inDownload = false;
     let isDownloading = false;
 
@@ -32,7 +37,10 @@
         return `${cdn}/${path}`;
     }
     async function getCdnConfig(encodedCdn) {
-        return fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json())
+        if (Var.cdnConfig != undefined) {
+            return Var.cdnConfig;
+        }
+        return extension.Fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json()).then(config => Var.cdnConfig = config).then(() => Var.cdnConfig)
     }
     async function getEasyShareHostChina() {
         return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
@@ -346,10 +354,6 @@
         NativePostMessageFunction: null,
         NativeAttachShadow: null,
         NativeFetch: null
-    }
-
-    const Var = {
-        isThisMemberLoading: false
     }
 
     function AttachShadow(e, options) {
@@ -2490,13 +2494,20 @@
                         data.m3u8Url = "";
                     }
                     try {
+                        function showEasyShareCopyBtn() {
+                            if (language == 'zh-cn') {
+                                getCdnConfig(encodedChinaCdnA).then(() => show(windowPannel.easyShareCopyBtn));
+                            } else {
+                                show(windowPannel.easyShareCopyBtn);
+                            }
+                        }
                         if (!isEmpty(data.m3u8Url) && isEasyShareEnabled()) {
                             this.currentM3u8Url = data.m3u8Url;
-                            show(windowPannel.easyShareCopyBtn);
+                            showEasyShareCopyBtn();
                         } else {
                             this.currentM3u8Url = undefined;
                             if (isWeb()) {
-                                show(windowPannel.easyShareCopyBtn);
+                                showEasyShareCopyBtn();
                             } else {
                                 hide(windowPannel.easyShareCopyBtn);
                             }
