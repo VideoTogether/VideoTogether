@@ -21,7 +21,7 @@
     const encodeFastlyJsdelivrCdn = 'aHR0cHM6Ly9mYXN0bHkuanNkZWxpdnIubmV0L2doL1ZpZGVvVG9nZXRoZXIvVmlkZW9Ub2dldGhlckBsYXRlc3Q='
     function getCdnPath(encodedCdn, path) {
         const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
-        return `${cdn}/${path}`;
+        return getBrowser().runtime.getURL(path.replace('release/', ''));
     }
     async function getCdnConfig(encodedCdn) {
         return fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json())

@@ -43,9 +43,10 @@
     let extensionGM = {};
     const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
     const encodeFastlyJsdelivrCdn = 'aHR0cHM6Ly9mYXN0bHkuanNkZWxpdnIubmV0L2doL1ZpZGVvVG9nZXRoZXIvVmlkZW9Ub2dldGhlckBsYXRlc3Q='
+    let disableRemoteScript = true;
     function getCdnPath(encodedCdn, path) {
         const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
-        return `${cdn}/${path}`;
+        return getBrowser().runtime.getURL(path.replace('release/', ''));
     }
     async function getCdnConfig(encodedCdn) {
         return fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json())
@@ -608,7 +609,7 @@
                     hotUpdated = true;
                 }
             });
-            if (isDevelopment) {
+            if (isDevelopment || disableRemoteScript) {
                 script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             } else {
                 script.src = getBrowser().runtime.getURL(`load.${language}.js`);
