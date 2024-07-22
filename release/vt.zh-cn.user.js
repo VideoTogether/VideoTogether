@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1721645219
+// @version      1721647297
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -40,7 +40,7 @@
         if (Var.cdnConfig != undefined) {
             return Var.cdnConfig;
         }
-        return fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json()).then(config => Var.cdnConfig = config).then(() => Var.cdnConfig)
+        return extension.Fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json()).then(config => Var.cdnConfig = config).then(() => Var.cdnConfig)
     }
     async function getEasyShareHostChina() {
         return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
@@ -3144,7 +3144,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1721645219';
+            this.version = '1721647297';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3786,15 +3786,20 @@
                         data.m3u8Url = "";
                     }
                     try {
+                        function showEasyShareCopyBtn() {
+                            if (language == 'zh-cn') {
+                                getCdnConfig(encodedChinaCdnA).then(() => show(windowPannel.easyShareCopyBtn));
+                            } else {
+                                show(windowPannel.easyShareCopyBtn);
+                            }
+                        }
                         if (!isEmpty(data.m3u8Url) && isEasyShareEnabled()) {
                             this.currentM3u8Url = data.m3u8Url;
-                            show(windowPannel.easyShareCopyBtn);
-                            getCdnConfig();
+                            showEasyShareCopyBtn();
                         } else {
                             this.currentM3u8Url = undefined;
                             if (isWeb()) {
-                                show(windowPannel.easyShareCopyBtn);
-                                getCdnConfig();
+                                showEasyShareCopyBtn();
                             } else {
                                 hide(windowPannel.easyShareCopyBtn);
                             }
