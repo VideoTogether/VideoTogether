@@ -43,10 +43,10 @@
     let extensionGM = {};
     const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
     const encodeFastlyJsdelivrCdn = 'aHR0cHM6Ly9mYXN0bHkuanNkZWxpdnIubmV0L2doL1ZpZGVvVG9nZXRoZXIvVmlkZW9Ub2dldGhlckBsYXRlc3Q='
-    let disableRemoteScript = true;
+
     function getCdnPath(encodedCdn, path) {
         const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
-        return getBrowser().runtime.getURL(path.replace('release/', ''));
+        return `${cdn}/${path}`;
     }
     async function getCdnConfig(encodedCdn) {
         return fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json())
@@ -79,7 +79,7 @@
                             window.location.origin === iframe.contentWindow.location.origin) {
                             console.log("inject to iframe");
                             const script = document.createElement('script');
-                            script.src = getCdnPath(encodeFastlyJsdelivrCdn, "release/extension.website.user.js");
+                            // script.src = getCdnPath(encodeFastlyJsdelivrCdn, "release/extension.website.user.js");
                             iframe.contentWindow.document.body.appendChild(script);
                             iframe.contentWindow.VideoTogetherParentInject = true;
                         }
@@ -584,7 +584,7 @@
     script.type = 'text/javascript';
     switch (type) {
         case "userscript":
-            script.src = getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.user.js?timestamp=${version}`);
+            // script.src = getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.user.js?timestamp=${version}`);
             break;
         case "Chrome":
         case "Safari":
@@ -609,7 +609,7 @@
                     hotUpdated = true;
                 }
             });
-            if (isDevelopment || disableRemoteScript) {
+            if (isDevelopment || cachedVt == null) {
                 script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             } else {
                 script.src = getBrowser().runtime.getURL(`load.${language}.js`);
@@ -617,13 +617,13 @@
             script.setAttribute("cachedVt", cachedVt);
             break;
         case "userscript_debug":
-            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
+            // script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
             break;
         case "website":
-            script.src = getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.website.js?timestamp=${version}`);
+            // script.src = getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.website.js?timestamp=${version}`);
             break;
         case "website_debug":
-            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
+            // script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
             break;
     }
 
@@ -651,18 +651,15 @@
     }
 
     // fallback to china service
-    setTimeout(async () => {
+    setTimeout(async function () {
         try {
             document.querySelector("#videoTogetherLoading").remove()
         } catch { }
-        if (type == "Chrome" || type == "Firefox" || type == "Safari") {
-            return;
-        }
         if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
             const chinaCdnB = await getChinaCdnB();
-            script.src = getCdnPath(chinaCdnB, `release/vt.${language}.user.js`);
+            script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             (document.body || document.documentElement).appendChild(script);
             try {
                 if (isWebsite) {
@@ -675,7 +672,7 @@
                 })
             } catch (e) { };
         }
-    }, 5000);
+    }, 1000);
     function filter(e) {
         let target = e.target;
 
