@@ -49,6 +49,12 @@ def isChanged(path, content: str):
 def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
     global rootPath
     global releasePath
+    # check if vt_source.json exists in sourceSubDir
+    vtSourceConfig = None
+    if os.path.exists(Path(sourceSubDir).joinpath("vt_source.json")):
+        with open(Path(sourceSubDir).joinpath("vt_source.json"), encoding="utf-8") as f:
+            vtSourceConfig = json.load(f)
+    
     if r"{{{" not in content:
         if '$}' in content:
             for lan in languages:
@@ -69,6 +75,8 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
             if subName["name"] != "":
                 resultFilename = resultFilename + "."+subName["name"]
         resultPath = releasePath.joinpath(resultFilename+extension)
+        if vtSourceConfig != None and 'releaseTarget' in vtSourceConfig:
+            resultPath = Path(sourceSubDir).joinpath(vtSourceConfig['releaseTarget']).joinpath(resultFilename+extension)
         resultPath = str(resultPath).replace(".buildme", "")
         print(resultPath)
 
@@ -119,6 +127,11 @@ if __name__ == '__main__':
     os.system(
         "git clone https://github.com/VideoTogether/localvideo {}/source/local".format(rootPath))
     os.system("cd {}/source/local && git pull".format(rootPath))
+
+    os.system(
+        "git clone https://github.com/VideoTogether/website_next {}/source/website".format(rootPath))
+    os.system("cd {}/source/website && git pull".format(rootPath))
+
 
     build()
 
