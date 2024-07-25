@@ -41,8 +41,8 @@
     let isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
-    const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
-    const encodeFastlyJsdelivrCdn = 'aHR0cHM6Ly9mYXN0bHkuanNkZWxpdnIubmV0L2doL1ZpZGVvVG9nZXRoZXIvVmlkZW9Ub2dldGhlckBsYXRlc3Q='
+    const encodedChinaCdnA = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com'
+    const encodeFastlyJsdelivrCdn = 'https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest'
 
     function getCdnPath(encodedCdn, path) {
         const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);

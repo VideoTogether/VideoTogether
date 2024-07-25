@@ -45,7 +45,7 @@
     "you_have_a_new_msg": "VideoTogether: 您有一条新消息，点击屏幕接收",
     "new_message_change_voice": "有新消息 (<a id='changeVoiceBtn' style='color:inherit' href='#''>修改语音包</a>)",
     "choose_voice_below": "你可以在下方选择朗读信息的语音:",
-    "global_notification": "已修复轻松分享链接无法访问",
+    "global_notification": "",
     "textMessageDisabled": "文字聊天已关闭",
     "UsedStorageLabel": "已使用空间:",
     "UsedStorageUnknown": "未知",
