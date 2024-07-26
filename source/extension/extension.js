@@ -36,11 +36,13 @@
                 return chrome;
         }
     }
+
     let isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
     let isWebsite = (type == "website" || type == "website_debug");
     let isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
+
     const encodedChinaCdnA = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com'
     const encodeFastlyJsdelivrCdn = 'https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest'
 
@@ -53,6 +55,18 @@
     }
     async function getChinaCdnB() {
         return getCdnConfig(encodedChinaCdnA).then(c => c.jsCdnHostChina)
+    }
+
+    const browser = {
+        runtime: {
+            getURL: function (url) {
+                return getCdnPath(this.endpoint, url);
+            },
+            setEndpoint: function (endpoint) {
+                browser.runtime.endpoint = endpoint;
+            },
+            endpoint: undefined,
+        }
     }
 
     function getGM() {
@@ -243,15 +257,17 @@
         if (cachedVersion == vtRefreshVersion) {
             cachedVt = privateCachedVt['data'];
         } else {
-            console.log("Refresh VT");
-            fetch(getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.${vtType}.js?vtRefreshVersion=${vtRefreshVersion}`))
+            browser.runtime.setEndpoint(encodeFastlyJsdelivrCdn);
+
+            fetch(browser.runtime.getURL(`release/vt.${language}.${vtType}.js`))
                 .then(r => r.text())
                 .then(data => getGM().setValue('PrivateCachedVt', {
                     'version': vtRefreshVersion,
                     'data': data
                 }))
                 .catch(() => {
-                    getChinaCdnB().then(chinaCdnB => fetch(getCdnPath(chinaCdnB, `release/vt.${language}.${vtType}.js?vtRefreshVersion=${vtRefreshVersion}`)))
+                    getChinaCdnB().then(chinaCdnB => browser.runtime.setEndpoint(chinaCdnB))
+                        .then(() => fetch(browser.runtime.getURL(`release/vt.${language}.${vtType}.js`)))
                         .then(r => r.text())
                         .then(data => getGM().setValue('PrivateCachedVt', {
                             'version': vtRefreshVersion,
@@ -658,7 +674,6 @@
         if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
-            const chinaCdnB = await getChinaCdnB();
             script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             (document.body || document.documentElement).appendChild(script);
             try {
