@@ -44,7 +44,7 @@
     let extensionGM = {};
 
     const encodedChinaCdnA = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com'
-    const encodeFastlyJsdelivrCdn = 'https://fastly.jsdelivr.net/gh/VideoTogether/VideoTogether@latest'
+    const encodeFastlyJsdelivrCdn = 'https://2gether.video'
 
     function getCdnPath(encodedCdn, path) {
         const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
