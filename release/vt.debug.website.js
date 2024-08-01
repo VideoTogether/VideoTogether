@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1721647297
+// @version      1722523861
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -1870,11 +1870,11 @@
         </div>
         <div id="videoTogetherStatusText" style="height: 22.5px;">已修复轻松分享链接无法访问</div>
         <div style="margin-bottom: 10px;">
-          <span id="videoTogetherRoomNameLabel">房间</span>
+          <span class="ellipsis" id="videoTogetherRoomNameLabel">房间</span>
           <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="请输入房间名">
         </div>
         <div>
-          <span id="videoTogetherRoomPasswordLabel">密码</span>
+          <span class="ellipsis" id="videoTogetherRoomPasswordLabel">密码</span>
           <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="输入建房密码">
         </div>
         <div>
@@ -2587,6 +2587,12 @@
   #downloadVideoInfo {
     display: block;
   }
+
+  .ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 </style>`;
                 (document.body || document.documentElement).appendChild(shadowWrapper);
 
@@ -3144,7 +3150,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1721647297';
+            this.version = '1722523861';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -4960,10 +4966,9 @@
     }
 
     try {
-        if (window.location.hostname == 'yiyan.baidu.com') {
+        if (window.location.hostname == 'yiyan.baidu.com' || window.location.hostname.endsWith('cloudflare.com')) {
             GetNativeFunction();
             window.Element.prototype.attachShadow = Global.NativeAttachShadow;
-            console.log("Use native attachShadow in yiyan")
         }
     } catch { }
 

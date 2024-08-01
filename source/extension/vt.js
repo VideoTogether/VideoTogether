@@ -3668,10 +3668,9 @@
     }
 
     try {
-        if (window.location.hostname == 'yiyan.baidu.com') {
+        if (window.location.hostname == 'yiyan.baidu.com' || window.location.hostname.endsWith('cloudflare.com')) {
             GetNativeFunction();
             window.Element.prototype.attachShadow = Global.NativeAttachShadow;
-            console.log("Use native attachShadow in yiyan")
         }
     } catch { }
 
