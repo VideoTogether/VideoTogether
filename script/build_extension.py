@@ -194,7 +194,7 @@ if __name__ == '__main__':
     for lan in languages:
         if lan != "":
             cp("release/vt."+lan+".user.js", "source/chrome/vt."+lan+".user.js")
-            cp("release/load."+lan+".js", "source/chrome/load."+lan+".user.js")
+            cp("release/load."+lan+".js", "source/chrome/load."+lan+".js")
 
     # shutil.copyfile(rootPath.joinpath("release/vt.debug.en-us.user.js"),
     #                 rootPath.joinpath("source/chrome/vt.debug.en-us.user.js"))

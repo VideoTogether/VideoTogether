@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1721548341
+// @version      1723029131
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -25,7 +25,7 @@
 (async function () {
     let isDevelopment = false;
 
-    let version = '1721548341'
+    let version = '1723029131'
     let type = 'Safari'
     function getBrowser() {
         switch (type) {
@@ -196,9 +196,8 @@
     }
 
 
-    let languages = ['en-us', 'zh-cn'];
+    const languages = ['en-us', 'zh-cn', 'ja-jp'];
     let language = 'en-us';
-    let prefixLen = 0;
     let settingLanguage = undefined;
     try {
         settingLanguage = await getGM().getValue("DisplayLanguage");
@@ -209,14 +208,15 @@
     }
     if (typeof settingLanguage == 'string') {
         settingLanguage = settingLanguage.toLowerCase();
-        for (let i = 0; i < languages.length; i++) {
-            for (let j = 0; j < languages[i].length && j < settingLanguage.length; j++) {
-                if (languages[i][j] != settingLanguage[j]) {
-                    break;
-                }
-                if (j > prefixLen) {
-                    prefixLen = j;
+        if (languages.includes(settingLanguage)) {
+            language = settingLanguage;
+        } else {
+            const settingLanguagePrefix = settingLanguage.split('-')[0];
+            for (let i = 0; i < languages.length; i++) {
+                const languagePrefix = languages[i].split('-')[0];
+                if (settingLanguagePrefix === languagePrefix) {
                     language = languages[i];
+                    break;
                 }
             }
         }
@@ -405,7 +405,8 @@
                     if (window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
                         || e.data.data.key.startsWith("Public")
-                        || isWebsite) {
+                        || isWebsite
+                        || isDevelopment) {
                         getGM().setValue(e.data.data.key, e.data.data.value)
                         AppendKey(e.data.data.key);
                         break;
@@ -551,6 +552,7 @@
             data["UserscriptType"] = type;
             data["LoaddingVersion"] = version;
             data["VideoTogetherTabStorageEnabled"] = true;
+            data['ExtensionLanguages'] = languages;
             try {
                 data["VideoTogetherTabStorage"] = (await getGM().getTab()).VideoTogetherTabStorage;
             } catch (e) {
@@ -639,12 +641,17 @@
                 if (hotUpdated) {
                     return;
                 }
-                if (e.blockedURI.indexOf('2gether.video') != -1) {
-                    urlDisabled = true;
+                for (let blockedStr of [e.blockedURI, e.sample]) {
+                    for (let extensionUrl of ["2gether.video", "jsdelivr.net"]) {
+                        try {
+                            if (blockedStr.indexOf(extensionUrl) != -1) {
+                                urlDisabled = true;
+                            }
+                        } catch { }
+
+                    }
                 }
-                if (e.blockedURI.indexOf('jsdelivr.net') != -1) {
-                    urlDisabled = true;
-                }
+
                 if (urlDisabled) {
                     console.log("hot update is not successful")
                     insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));

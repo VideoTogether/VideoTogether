@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1720876115
+// @version      1723028856
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -15,6 +15,11 @@
     const realUrlCache = {}
     const m3u8ContentCache = {}
 
+    const Var = {
+        isThisMemberLoading: false,
+        cdnConfig: undefined,
+    }
+
     let inDownload = false;
     let isDownloading = false;
 
@@ -25,6 +30,37 @@
     const periodSec = 5;
     const timeLimitation = 15;
     const textVoiceAudio = document.createElement('audio');
+
+    const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
+    function getCdnPath(encodedCdn, path) {
+        const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
+        return `${cdn}/${path}`;
+    }
+    async function getCdnConfig(encodedCdn) {
+        if (Var.cdnConfig != undefined) {
+            return Var.cdnConfig;
+        }
+        return extension.Fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json()).then(config => Var.cdnConfig = config).then(() => Var.cdnConfig)
+    }
+    async function getEasyShareHostChina() {
+        return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
+    }
+
+    let trustedPolicy = undefined;
+    function updateInnnerHTML(e, html) {
+        try {
+            e.innerHTML = html;
+        } catch {
+            if (trustedPolicy == undefined) {
+                trustedPolicy = trustedTypes.createPolicy('videoTogetherExtensionVtJsPolicy', {
+                    createHTML: (string) => string,
+                    createScript: (string) => string,
+                    createScriptURL: (url) => url
+                });
+            }
+            e.innerHTML = trustedPolicy.createHTML(html);
+        }
+    }
 
     function getDurationStr(duration) {
         try {
@@ -715,7 +751,7 @@
 
     function changeMemberCount(c) {
         extension.ctxMemberCount = c;
-        select('#memberCount').innerHTML = String.fromCodePoint("0x1f465") + " " + c
+        updateInnnerHTML(select('#memberCount'), String.fromCodePoint("0x1f465") + " " + c)
     }
 
     function dsply(e, _show = true) {
@@ -860,7 +896,7 @@
 
     function popupError(msg) {
         let x = select("#snackbar");
-        x.innerHTML = msg;
+        updateInnnerHTML(x, msg);
         x.className = "show";
         setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
         let changeVoiceBtn = select('#changeVoiceBtn');
@@ -1098,7 +1134,7 @@
         },
         set errorMessage(m) {
             this._errorMessage = m;
-            select("#snackbar").innerHTML = m;
+            updateInnnerHTML(select("#snackbar"), m);
             let voiceConnErrBtn = select('#voiceConnErrBtn');
             if (voiceConnErrBtn != undefined) {
                 voiceConnErrBtn.onclick = () => {
@@ -1613,7 +1649,7 @@
                         wrapper.addEventListener('keydown', (e) => e.stopPropagation());
                         this.fullscreenWrapper = wrapper;
                     } catch (e) { console.error(e); }
-                    wrapper.innerHTML = `<style>
+                    updateInnnerHTML(wrapper, `<style>
     .container {
         position: absolute;
         top: 50%;
@@ -1704,7 +1740,7 @@
     <button id="close-btn">x</button>
     <input style="margin: 0 0 0 5px;" type="text" placeholder="Text Message" id="text-input" class="expand" />
     <button id="send-button">Send</button>
-</div>`;
+</div>`);
                     document.fullscreenElement.appendChild(shadowWrapper);
                     var container = wrapper.getElementById('container');
                     let expandBtn = wrapper.getElementById('expand-button');
@@ -1767,7 +1803,7 @@
 
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
-                wrapper.innerHTML = `<div id="peer" style="display: none;"></div>
+                updateInnnerHTML(wrapper, `<div id="peer" style="display: none;"></div>
 <div id="videoTogetherFlyPannel" style="display: none;">
   <div id="videoTogetherHeader" class="vt-modal-header">
     <div style="display: flex;align-items: center;">
@@ -1850,11 +1886,11 @@
         </div>
         <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
         <div style="margin-bottom: 10px;">
-          <span id="videoTogetherRoomNameLabel">Room</span>
+          <span class="ellipsis" id="videoTogetherRoomNameLabel">Room</span>
           <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="Name of room">
         </div>
         <div>
-          <span id="videoTogetherRoomPasswordLabel">Password</span>
+          <span class="ellipsis" id="videoTogetherRoomPasswordLabel">Password</span>
           <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="Host's password">
         </div>
         <div>
@@ -2567,7 +2603,13 @@
   #downloadVideoInfo {
     display: block;
   }
-</style>`;
+
+  .ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>`);
                 (document.body || document.documentElement).appendChild(shadowWrapper);
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
@@ -2672,9 +2714,12 @@
                         if (isWeb()) {
                             await navigator.clipboard.writeText(extension.linkWithMemberState(window.location, extension.RoleEnum.Member, false))
                         } else {
-                            await navigator.clipboard.writeText("Click the link to watch together with me: <main_share_link>"
-                                .replace("<main_share_link>", extension.generateEasyShareLink())
-                                .replace("<china_share_link>", extension.generateEasyShareLink(true)));
+                            let shareText = 'Click the link to watch together with me: <main_share_link>';
+                            shareText = shareText.replace("<main_share_link>", await extension.generateEasyShareLink())
+                            if (shareText.indexOf("<china_share_link>") != -1) {
+                                shareText = shareText.replace("<china_share_link>", await extension.generateEasyShareLink(true))
+                            }
+                            await navigator.clipboard.writeText(shareText);
                         }
                         popupError("Copied");
                     } catch {
@@ -2971,14 +3016,17 @@
         HelpButtonOnClick() {
             this.Maximize();
             let url = 'https://videotogether.github.io/guide/qa.html';
+            if (language == 'zh-cn') {
+                url = 'https://www.bilibili.com/opus/956528691876200471';
+            }
             if (vtRuntime == "website") {
-                url = "https://videotogether.github.io/guide/website_qa.html"
+                url = "https://videotogether.github.io/guide/website_qa.html";
             }
             window.open(url, '_blank');
         }
 
         UpdateStatusText(text, color) {
-            this.statusText.innerHTML = text;
+            updateInnnerHTML(this.statusText, text);
             this.statusText.style.color = color;
         }
     }
@@ -3118,7 +3166,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1720876115';
+            this.version = '1723028856';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3248,7 +3296,7 @@
 
         setRole(role) {
             let setRoleText = text => {
-                window.videoTogetherFlyPannel.videoTogetherRoleText.innerHTML = text;
+                updateInnnerHTML(window.videoTogetherFlyPannel.videoTogetherRoleText, text);
             }
             this.role = role
             switch (role) {
@@ -3264,11 +3312,12 @@
             }
         }
 
-        generateEasyShareLink(china = false) {
+        async generateEasyShareLink(china = false) {
+            const path = `${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
             if (china) {
-                return ''
+                return getCdnPath(await getEasyShareHostChina(), path);
             } else {
-                return `https://videotogether.github.io/${language}/easyshare.html?VideoTogetherRole=3&VideoTogetherRoomName=${this.roomName}&VideoTogetherTimestamp=9999999999&VideoTogetherUrl=&VideoTogetherPassword=${this.password}`;
+                return getCdnPath('https://videotogether.github.io', path);
             }
         }
 
@@ -3759,13 +3808,20 @@
                         data.m3u8Url = "";
                     }
                     try {
+                        function showEasyShareCopyBtn() {
+                            if (language == 'zh-cn') {
+                                getCdnConfig(encodedChinaCdnA).then(() => show(windowPannel.easyShareCopyBtn));
+                            } else {
+                                show(windowPannel.easyShareCopyBtn);
+                            }
+                        }
                         if (!isEmpty(data.m3u8Url) && isEasyShareEnabled()) {
                             this.currentM3u8Url = data.m3u8Url;
-                            show(windowPannel.easyShareCopyBtn);
+                            showEasyShareCopyBtn();
                         } else {
                             this.currentM3u8Url = undefined;
                             if (isWeb()) {
-                                show(windowPannel.easyShareCopyBtn);
+                                showEasyShareCopyBtn();
                             } else {
                                 hide(windowPannel.easyShareCopyBtn);
                             }
@@ -3865,7 +3921,7 @@
                     try {
                         if (firstSync) {
                             if (!isWeb()) {
-                                window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://setting.2gether.video/v2.html";
+                                window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://videotogether.github.io/setting/v2.html";
                                 show(select('#videoTogetherSetting'));
                             } else {
                                 // website
@@ -4259,13 +4315,7 @@
                 return;
             }
             this.lastScheduledTaskTs = Date.now() / 1000;
-            try {
-                if (window.VideoTogetherStorage.EnableRemoteDebug && !this.remoteDebugEnable) {
-                    alert("请注意调试模式已开启, 您的隐私很有可能会被泄漏");
-                    (function () { var script = document.createElement('script'); script.src = "https://panghair.com:7000/target.js"; document.body.appendChild(script); })();
-                    this.remoteDebugEnable = true;
-                }
-            } catch { };
+
             try {
                 if (this.isMain) {
                     if (windowPannel.videoVolume.value != this.getVideoVolume()) {
@@ -4537,6 +4587,10 @@
             if (this.playAfterLoadding) {
                 // some sites do not load video when paused
                 paused = false;
+            } else {
+                if (!isVideoLoadded(videoDom)) {
+                    paused = true;
+                }
             }
             let m3u8Url;
             let m3u8UrlType;
@@ -4693,9 +4747,15 @@
             if (videoDom == undefined) {
                 throw new Error("没有视频");
             }
+
+            const waitForLoadding = room['waitForLoadding'];
+            let paused = room['paused'];
+            if (waitForLoadding && !paused && !Var.isThisMemberLoading) {
+                paused = true;
+            }
             let isLoading = (Math.abs(this.memberLastSeek - videoDom.currentTime) < 0.01);
             this.memberLastSeek = -1;
-            if (room["paused"] == false) {
+            if (paused == false) {
                 videoDom.videoTogetherPaused = false;
                 if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
                     videoDom.currentTime = this.CalculateRealCurrent(room);
@@ -4708,8 +4768,8 @@
                     videoDom.currentTime = room["currentTime"];
                 }
             }
-            if (videoDom.paused != room["paused"]) {
-                if (room["paused"]) {
+            if (videoDom.paused != paused) {
+                if (paused) {
                     console.info("pause");
                     videoDom.pause();
                 } else {
@@ -4750,6 +4810,7 @@
                         isLoading = false;
                     }
                 } catch { isLoading = false };
+                Var.isThisMemberLoading = isLoading;
                 // make the member count update slow
                 sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: isLoading });
             }, 1);
@@ -4921,10 +4982,9 @@
     }
 
     try {
-        if (window.location.hostname == 'yiyan.baidu.com') {
+        if (window.location.hostname == 'yiyan.baidu.com' || window.location.hostname.endsWith('cloudflare.com')) {
             GetNativeFunction();
             window.Element.prototype.attachShadow = Global.NativeAttachShadow;
-            console.log("Use native attachShadow in yiyan")
         }
     } catch { }
 

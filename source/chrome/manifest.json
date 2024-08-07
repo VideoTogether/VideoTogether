@@ -1,7 +1,7 @@
 {
     "name": "VideoTogether",
     "description": "Watch video together",
-    "version": "3.0.6",
+    "version": "3.0.10",
     "manifest_version": 3,
     "content_scripts": [
         {
@@ -40,8 +40,10 @@
             "resources": [
                 "load.en-us.js",
                 "load.zh-cn.js",
+                "load.ja-jp.js",
                 "vt.en-us.user.js",
                 "vt.zh-cn.user.js",
+                "vt.ja-jp.user.js",
                 "preInjected.js"
             ],
             "matches": [
