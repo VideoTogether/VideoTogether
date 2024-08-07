@@ -46,6 +46,22 @@
         return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
     }
 
+    let trustedPolicy = undefined;
+    function updateInnnerHTML(e, html) {
+        try {
+            e.innerHTML = html;
+        } catch {
+            if (trustedPolicy == undefined) {
+                trustedPolicy = trustedTypes.createPolicy('videoTogetherExtensionVtJsPolicy', {
+                    createHTML: (string) => string,
+                    createScript: (string) => string,
+                    createScriptURL: (url) => url
+                });
+            }
+            e.innerHTML = trustedPolicy.createHTML(html);
+        }
+    }
+
     function getDurationStr(duration) {
         try {
             let d = parseInt(duration);
@@ -334,7 +350,7 @@
 
     function changeMemberCount(c) {
         extension.ctxMemberCount = c;
-        select('#memberCount').innerHTML = String.fromCodePoint("0x1f465") + " " + c
+        updateInnnerHTML(select('#memberCount'), String.fromCodePoint("0x1f465") + " " + c)
     }
 
     function dsply(e, _show = true) {
@@ -479,7 +495,7 @@
 
     function popupError(msg) {
         let x = select("#snackbar");
-        x.innerHTML = msg;
+        updateInnnerHTML(x, msg);
         x.className = "show";
         setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
         let changeVoiceBtn = select('#changeVoiceBtn');
@@ -717,7 +733,7 @@
         },
         set errorMessage(m) {
             this._errorMessage = m;
-            select("#snackbar").innerHTML = m;
+            updateInnnerHTML(select("#snackbar"), m);
             let voiceConnErrBtn = select('#voiceConnErrBtn');
             if (voiceConnErrBtn != undefined) {
                 voiceConnErrBtn.onclick = () => {
@@ -1232,7 +1248,7 @@
                         wrapper.addEventListener('keydown', (e) => e.stopPropagation());
                         this.fullscreenWrapper = wrapper;
                     } catch (e) { console.error(e); }
-                    wrapper.innerHTML = `{{{ {"": "./html/fullscreen.html","order":100} }}}`;
+                    updateInnnerHTML(wrapper, `{{{ {"": "./html/fullscreen.html","order":100} }}}`);
                     document.fullscreenElement.appendChild(shadowWrapper);
                     var container = wrapper.getElementById('container');
                     let expandBtn = wrapper.getElementById('expand-button');
@@ -1295,7 +1311,7 @@
 
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
-                wrapper.innerHTML = `{{{ {"": "./html/pannel.html","order":100} }}}`;
+                updateInnnerHTML(wrapper, `{{{ {"": "./html/pannel.html","order":100} }}}`);
                 (document.body || document.documentElement).appendChild(shadowWrapper);
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
@@ -1712,7 +1728,7 @@
         }
 
         UpdateStatusText(text, color) {
-            this.statusText.innerHTML = text;
+            updateInnnerHTML(this.statusText, text);
             this.statusText.style.color = color;
         }
     }
@@ -1982,7 +1998,7 @@
 
         setRole(role) {
             let setRoleText = text => {
-                window.videoTogetherFlyPannel.videoTogetherRoleText.innerHTML = text;
+                updateInnnerHTML(window.videoTogetherFlyPannel.videoTogetherRoleText, text);
             }
             this.role = role
             switch (role) {
