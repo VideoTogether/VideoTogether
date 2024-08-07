@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1721651493
+// @version      1723031116
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -25,7 +25,7 @@
 (async function () {
     let isDevelopment = false;
 
-    let version = '1721651493'
+    let version = '1723031116'
     let type = 'Chrome'
     function getBrowser() {
         switch (type) {
@@ -36,13 +36,15 @@
                 return chrome;
         }
     }
+
     let isExtension = (type == "Chrome" || type == "Safari" || type == "Firefox");
     let isWebsite = (type == "website" || type == "website_debug");
     let isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
-    const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
-    const encodeFastlyJsdelivrCdn = 'aHR0cHM6Ly9mYXN0bHkuanNkZWxpdnIubmV0L2doL1ZpZGVvVG9nZXRoZXIvVmlkZW9Ub2dldGhlckBsYXRlc3Q='
+
+    const encodedChinaCdnA = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com'
+    const encodeFastlyJsdelivrCdn = 'https://2gether.video'
 
     function getCdnPath(encodedCdn, path) {
         const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
@@ -53,6 +55,18 @@
     }
     async function getChinaCdnB() {
         return getCdnConfig(encodedChinaCdnA).then(c => c.jsCdnHostChina)
+    }
+
+    const browser = {
+        runtime: {
+            getURL: function (url) {
+                return getCdnPath(this.endpoint, url);
+            },
+            setEndpoint: function (endpoint) {
+                browser.runtime.endpoint = endpoint;
+            },
+            endpoint: undefined,
+        }
     }
 
     function getGM() {
@@ -243,15 +257,17 @@
         if (cachedVersion == vtRefreshVersion) {
             cachedVt = privateCachedVt['data'];
         } else {
-            console.log("Refresh VT");
-            fetch(getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.${vtType}.js?vtRefreshVersion=${vtRefreshVersion}`))
+            browser.runtime.setEndpoint(encodeFastlyJsdelivrCdn);
+
+            fetch(browser.runtime.getURL(`release/vt.${language}.${vtType}.js`))
                 .then(r => r.text())
                 .then(data => getGM().setValue('PrivateCachedVt', {
                     'version': vtRefreshVersion,
                     'data': data
                 }))
                 .catch(() => {
-                    getChinaCdnB().then(chinaCdnB => fetch(getCdnPath(chinaCdnB, `release/vt.${language}.${vtType}.js?vtRefreshVersion=${vtRefreshVersion}`)))
+                    getChinaCdnB().then(chinaCdnB => browser.runtime.setEndpoint(chinaCdnB))
+                        .then(() => fetch(browser.runtime.getURL(`release/vt.${language}.${vtType}.js`)))
                         .then(r => r.text())
                         .then(data => getGM().setValue('PrivateCachedVt', {
                             'version': vtRefreshVersion,
@@ -640,12 +656,20 @@
                 if (hotUpdated) {
                     return;
                 }
-                if (e.blockedURI.indexOf('2gether.video') != -1) {
+                for (let blockedStr of [e.blockedURI, e.sample]) {
+                    for (let extensionUrl of ["2gether.video", "jsdelivr.net"]) {
+                        try {
+                            if (blockedStr.indexOf(extensionUrl) != -1) {
+                                urlDisabled = true;
+                            }
+                        } catch { }
+
+                    }
+                }
+                if (e.blockedURI == 'trusted-types-sink') {
                     urlDisabled = true;
                 }
-                if (e.blockedURI.indexOf('jsdelivr.net') != -1) {
-                    urlDisabled = true;
-                }
+
                 if (urlDisabled) {
                     console.log("hot update is not successful")
                     insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
@@ -701,7 +725,6 @@
         if (!ExtensionInitSuccess) {
             let script = document.createElement('script');
             script.type = 'text/javascript';
-            const chinaCdnB = await getChinaCdnB();
             script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             (document.body || document.documentElement).appendChild(script);
             try {

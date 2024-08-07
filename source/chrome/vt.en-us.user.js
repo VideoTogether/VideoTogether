@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1721647297
+// @version      1723030931
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -31,7 +31,7 @@
     const timeLimitation = 15;
     const textVoiceAudio = document.createElement('audio');
 
-    const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
+    const encodedChinaCdnA = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com'
     function getCdnPath(encodedCdn, path) {
         const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
         return `${cdn}/${path}`;
@@ -44,6 +44,22 @@
     }
     async function getEasyShareHostChina() {
         return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
+    }
+
+    let trustedPolicy = undefined;
+    function updateInnnerHTML(e, html) {
+        try {
+            e.innerHTML = html;
+        } catch {
+            if (trustedPolicy == undefined) {
+                trustedPolicy = trustedTypes.createPolicy('videoTogetherExtensionVtJsPolicy', {
+                    createHTML: (string) => string,
+                    createScript: (string) => string,
+                    createScriptURL: (url) => url
+                });
+            }
+            e.innerHTML = trustedPolicy.createHTML(html);
+        }
     }
 
     function getDurationStr(duration) {
@@ -735,7 +751,7 @@
 
     function changeMemberCount(c) {
         extension.ctxMemberCount = c;
-        select('#memberCount').innerHTML = String.fromCodePoint("0x1f465") + " " + c
+        updateInnnerHTML(select('#memberCount'), String.fromCodePoint("0x1f465") + " " + c)
     }
 
     function dsply(e, _show = true) {
@@ -880,7 +896,7 @@
 
     function popupError(msg) {
         let x = select("#snackbar");
-        x.innerHTML = msg;
+        updateInnnerHTML(x, msg);
         x.className = "show";
         setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000);
         let changeVoiceBtn = select('#changeVoiceBtn');
@@ -1118,7 +1134,7 @@
         },
         set errorMessage(m) {
             this._errorMessage = m;
-            select("#snackbar").innerHTML = m;
+            updateInnnerHTML(select("#snackbar"), m);
             let voiceConnErrBtn = select('#voiceConnErrBtn');
             if (voiceConnErrBtn != undefined) {
                 voiceConnErrBtn.onclick = () => {
@@ -1633,7 +1649,7 @@
                         wrapper.addEventListener('keydown', (e) => e.stopPropagation());
                         this.fullscreenWrapper = wrapper;
                     } catch (e) { console.error(e); }
-                    wrapper.innerHTML = `<style>
+                    updateInnnerHTML(wrapper, `<style>
     .container {
         position: absolute;
         top: 50%;
@@ -1724,7 +1740,7 @@
     <button id="close-btn">x</button>
     <input style="margin: 0 0 0 5px;" type="text" placeholder="Text Message" id="text-input" class="expand" />
     <button id="send-button">Send</button>
-</div>`;
+</div>`);
                     document.fullscreenElement.appendChild(shadowWrapper);
                     var container = wrapper.getElementById('container');
                     let expandBtn = wrapper.getElementById('expand-button');
@@ -1787,7 +1803,7 @@
 
                 this.shadowWrapper = shadowWrapper;
                 this.wrapper = wrapper;
-                wrapper.innerHTML = `<div id="peer" style="display: none;"></div>
+                updateInnnerHTML(wrapper, `<div id="peer" style="display: none;"></div>
 <div id="videoTogetherFlyPannel" style="display: none;">
   <div id="videoTogetherHeader" class="vt-modal-header">
     <div style="display: flex;align-items: center;">
@@ -2587,7 +2603,7 @@
   #downloadVideoInfo {
     display: block;
   }
-</style>`;
+</style>`);
                 (document.body || document.documentElement).appendChild(shadowWrapper);
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
@@ -3004,7 +3020,7 @@
         }
 
         UpdateStatusText(text, color) {
-            this.statusText.innerHTML = text;
+            updateInnnerHTML(this.statusText, text);
             this.statusText.style.color = color;
         }
     }
@@ -3144,7 +3160,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1721647297';
+            this.version = '1723030931';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3274,7 +3290,7 @@
 
         setRole(role) {
             let setRoleText = text => {
-                window.videoTogetherFlyPannel.videoTogetherRoleText.innerHTML = text;
+                updateInnnerHTML(window.videoTogetherFlyPannel.videoTogetherRoleText, text);
             }
             this.role = role
             switch (role) {

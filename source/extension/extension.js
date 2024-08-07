@@ -623,6 +623,9 @@
 
                     }
                 }
+                if (e.blockedURI == 'trusted-types-sink') {
+                    urlDisabled = true;
+                }
 
                 if (urlDisabled) {
                     console.log("hot update is not successful")
