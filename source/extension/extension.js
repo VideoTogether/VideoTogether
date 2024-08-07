@@ -196,9 +196,8 @@
     }
 
 
-    let languages = ['en-us', 'zh-cn'];
+    const languages = ['en-us', 'zh-cn', 'ja-jp'];
     let language = 'en-us';
-    let prefixLen = 0;
     let settingLanguage = undefined;
     try {
         settingLanguage = await getGM().getValue("DisplayLanguage");
@@ -209,14 +208,15 @@
     }
     if (typeof settingLanguage == 'string') {
         settingLanguage = settingLanguage.toLowerCase();
-        for (let i = 0; i < languages.length; i++) {
-            for (let j = 0; j < languages[i].length && j < settingLanguage.length; j++) {
-                if (languages[i][j] != settingLanguage[j]) {
-                    break;
-                }
-                if (j > prefixLen) {
-                    prefixLen = j;
+        if (languages.includes(settingLanguage)) {
+            language = settingLanguage;
+        } else {
+            const settingLanguagePrefix = settingLanguage.split('-')[0];
+            for (let i = 0; i < languages.length; i++) {
+                const languagePrefix = languages[i].split('-')[0];
+                if (settingLanguagePrefix === languagePrefix) {
                     language = languages[i];
+                    break;
                 }
             }
         }
@@ -405,7 +405,8 @@
                     if (window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
                         || e.data.data.key.startsWith("Public")
-                        || isWebsite) {
+                        || isWebsite
+                        || isDevelopment) {
                         getGM().setValue(e.data.data.key, e.data.data.value)
                         AppendKey(e.data.data.key);
                         break;
@@ -551,6 +552,7 @@
             data["UserscriptType"] = type;
             data["LoaddingVersion"] = version;
             data["VideoTogetherTabStorageEnabled"] = true;
+            data['ExtensionLanguages'] = languages;
             try {
                 data["VideoTogetherTabStorage"] = (await getGM().getTab()).VideoTogetherTabStorage;
             } catch (e) {

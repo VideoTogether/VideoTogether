@@ -81,11 +81,11 @@
         </div>
         <div id="videoTogetherStatusText" style="height: 22.5px;">{$global_notification$}</div>
         <div style="margin-bottom: 10px;">
-          <span id="videoTogetherRoomNameLabel">{$room_input_lable$}</span>
+          <span class="ellipsis" id="videoTogetherRoomNameLabel">{$room_input_lable$}</span>
           <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="{$room_input_placeholder$}">
         </div>
         <div>
-          <span id="videoTogetherRoomPasswordLabel">{$password_input_lable$}</span>
+          <span class="ellipsis" id="videoTogetherRoomPasswordLabel">{$password_input_lable$}</span>
           <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="{$password_input_placeholder$}">
         </div>
         <div>
@@ -797,5 +797,11 @@
 
   #downloadVideoInfo {
     display: block;
+  }
+
+  .ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>

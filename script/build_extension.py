@@ -19,11 +19,16 @@ def WriteSource(path, content):
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
 
-
+# https://www.alchemysoftware.com/livedocs/ezscript/Topics/Catalyst/Language.html
 languages = {
     '': './source/extension/localization/zh-cn.json',
     'zh-cn': './source/extension/localization/zh-cn.json',
     'en-us': './source/extension/localization/en-us.json',
+    'ja-jp': './source/extension/localization/ja-jp.json',
+}
+
+usedLocalizationKeys = {
+
 }
 
 timestamp_str = str(int(time()))
@@ -45,6 +50,15 @@ def isChanged(path, content: str):
         idx = idx+len(s)+len(timestamp_str)
     return False
 
+def outputUnusedLocalizationKeys():
+    for lan in usedLocalizationKeys:
+        unusedKeys = []
+        with open(rootPath.joinpath(languages[lan]), encoding="utf-8") as f:
+            strings = json.load(f)
+            for key in strings:
+                if key not in usedLocalizationKeys[lan]:
+                    unusedKeys.append(key)
+        print("Unused keys in {}: {}".format(lan, unusedKeys))
 
 def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
     global rootPath
@@ -64,6 +78,10 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
                 with open(rootPath.joinpath(languages[lan]), encoding="utf-8") as f:
                     strings = json.load(f)
                     for key in strings:
+                        if lan not in usedLocalizationKeys:
+                            usedLocalizationKeys[lan] = {}
+                        if '{$'+key+'$}' in newContent:
+                            usedLocalizationKeys[lan][key] = True
                         newContent = newContent.replace(
                             '{$'+key+'$}', strings[key])
                 compile(sourceSubDir, extension,
@@ -81,6 +99,8 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
         print(resultPath)
 
         content = content.replace('{{timestamp}}', timestamp_str)
+        # remove all lines contains 'VT_DELETE_THIS_LINE'
+        content = '\n'.join([line for line in content.split('\n') if 'VT_DELETE_THIS_LINE' not in line])
         if isChanged(resultPath, content):
             WriteSource(resultPath, content)
         return
@@ -132,6 +152,9 @@ if __name__ == '__main__':
         "git clone https://github.com/VideoTogether/website_next {}/source/website".format(rootPath))
     os.system("cd {}/source/website && git pull".format(rootPath))
 
+    os.system(
+        "git clone https://github.com/VideoTogether/setting {}/source/setting".format(rootPath))
+    os.system("cd {}/source/setting && git pull".format(rootPath))
 
     build()
 
@@ -168,10 +191,11 @@ if __name__ == '__main__':
     shutil.copyfile(rootPath.joinpath("release/load.zh-cn.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/load.zh-cn.js"))
 
-    shutil.copyfile(rootPath.joinpath("release/vt.en-us.user.js"),
-                    rootPath.joinpath("source/chrome/vt.en-us.user.js"))
-    shutil.copyfile(rootPath.joinpath("release/vt.zh-cn.user.js"),
-                    rootPath.joinpath("source/chrome/vt.zh-cn.user.js"))
+    for lan in languages:
+        if lan != "":
+            cp("release/vt."+lan+".user.js", "source/chrome/vt."+lan+".user.js")
+            cp("release/load."+lan+".js", "source/chrome/load."+lan+".user.js")
+
     # shutil.copyfile(rootPath.joinpath("release/vt.debug.en-us.user.js"),
     #                 rootPath.joinpath("source/chrome/vt.debug.en-us.user.js"))
     # shutil.copyfile(rootPath.joinpath("release/vt.debug.zh-cn.user.js"),
@@ -198,3 +222,5 @@ if __name__ == '__main__':
                     rootPath.joinpath("source/firefox/background.firefox.js"))
     shutil.copyfile(rootPath.joinpath("release/background.safari.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/background.safari.js"))
+
+    outputUnusedLocalizationKeys()
