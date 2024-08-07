@@ -598,12 +598,17 @@
                 if (hotUpdated) {
                     return;
                 }
-                if (e.blockedURI.indexOf('2gether.video') != -1) {
-                    urlDisabled = true;
+                for (let blockedStr of [e.blockedURI, e.sample]) {
+                    for (let extensionUrl of ["2gether.video", "jsdelivr.net"]) {
+                        try {
+                            if (blockedStr.indexOf(extensionUrl) != -1) {
+                                urlDisabled = true;
+                            }
+                        } catch { }
+
+                    }
                 }
-                if (e.blockedURI.indexOf('jsdelivr.net') != -1) {
-                    urlDisabled = true;
-                }
+
                 if (urlDisabled) {
                     console.log("hot update is not successful")
                     insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
