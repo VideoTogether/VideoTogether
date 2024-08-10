@@ -82,15 +82,6 @@ window.VideoTogetherFetch = window.fetch;
     const runId = generateUUID();
     const m3u8Files = [];
 
-    let originalAttachShadow = Element.prototype.attachShadow;
-    Element.prototype.attachShadow = function (shadowRootInit = {}) {
-        let modifiedShadowRootInit = {
-            ...shadowRootInit,
-            mode: 'open'
-        };
-        return originalAttachShadow.call(this, modifiedShadowRootInit);
-    };
-
     // const isAndroid = navigator.userAgent.toLowerCase().indexOf("android") > -1;
     // iOS, iPad OS won't use this code, we don't need to check device
     // disable all hls support
