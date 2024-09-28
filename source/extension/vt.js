@@ -10,6 +10,10 @@
 // ==/UserScript==
 
 (function () {
+    try{
+        // this attribute will break the cloudflare turnstile
+        document.currentScript.removeAttribute("cachedvt")
+    }catch{}
     const language = '{$language$}'
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
     const realUrlCache = {}
