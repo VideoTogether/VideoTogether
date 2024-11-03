@@ -573,7 +573,7 @@
             this._connectedToService = false;
             try {
                 this.disconnect()
-                this._socket = new WebSocket(`wss://${extension.video_together_host.replace("https://", "")}/ws?language=${language}`);
+                this._socket = new WebSocket(`${extension.GetVideoTogetherUrl().startsWith("https://") ? "wss" : "ws"}://${extension.GetVideoTogetherUrl().replace(/^https?:\/\//, "")}/ws?language=${language}`);
                 this._socket.onmessage = async e => {
                     let lines = e.data.split('\n');
                     for (let i = 0; i < lines.length; i++) {
@@ -985,7 +985,7 @@
 
             async function rpc(method, params = [], retryTime = -1) {
                 try {
-                    const response = await window.videoTogetherExtension.Fetch(extension.video_together_host + "/kraken", "POST", { id: generateUUID(), method: method, params: params }, {
+                    const response = await window.videoTogetherExtension.Fetch(extension.GetVideoTogetherUrl() + "/kraken", "POST", { id: generateUUID(), method: method, params: params }, {
                         method: 'POST', // *GET, POST, PUT, DELETE, etc.
                         mode: 'cors', // no-cors, *cors, same-origin
                         cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
@@ -1366,7 +1366,7 @@
                 this.confirmDownloadBtn = wrapper.querySelector("#confirmDownloadBtn")
                 this.confirmDownloadBtn.onclick = () => {
                     if (extension.downloadM3u8UrlType == "video") {
-                        extension.Fetch(extension.video_together_host + "/beta/counter?key=confirm_video_download")
+                        extension.Fetch(extension.GetVideoTogetherUrl() + "/beta/counter?key=confirm_video_download")
                         console.log(extension.downloadM3u8Url, extension.downloadM3u8UrlType)
                         sendMessageToTop(MessageType.SetStorageValue, {
                             key: "PublicNextDownload", value: {
@@ -1381,7 +1381,7 @@
                         a.click();
                         return;
                     }
-                    extension.Fetch(extension.video_together_host + "/beta/counter?key=confirm_m3u8_download")
+                    extension.Fetch(extension.GetVideoTogetherUrl() + "/beta/counter?key=confirm_m3u8_download")
                     isDownloading = true;
                     const m3u8url = extension.downloadM3u8Url
                     sendMessageTo(extension.m3u8PostWindows[extension.GetM3u8WindowId(m3u8url)], MessageType.StartDownload, {
@@ -1854,6 +1854,8 @@
 
             this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
             this.video_together_main_host = '{{{ {"":"./config/release_host","order":0} }}}';
+            this.video_together_use_self_hosted = false;
+            this.video_together_self_hosted = '';
             this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
@@ -1950,6 +1952,10 @@
                     }, 2000);
                 } catch (e) { console.error(e) }
             }
+        }
+
+        GetVideoTogetherUrl() {
+            return this.video_together_use_self_hosted ? this.video_together_self_hosted : this.video_together_host;
         }
 
         async gotTextMsg(id, msg, prepare = false, idx = -1, audioUrl = undefined) {
@@ -2094,7 +2100,7 @@
                     });
                 }
             } catch (e) {
-                const host = new URL(extension.video_together_host);
+                const host = new URL(extension.GetVideoTogetherUrl());
                 const requestUrl = new URL(url);
                 if (host.hostname == requestUrl.hostname) {
                     extension.httpSucc = false;
@@ -2408,14 +2414,14 @@
                             rtnType('video');
                         }
                     }).catch(e => {
-                        if (testUrl.startsWith('blob')) {
-                            rtnType('unknown');
-                        } else {
-                            rtnType('video');
-                        }
-                    }).finally(() => {
-                        document.removeEventListener("securitypolicyviolation", onsecuritypolicyviolation)
-                    })
+                    if (testUrl.startsWith('blob')) {
+                        rtnType('unknown');
+                    } else {
+                        rtnType('video');
+                    }
+                }).finally(() => {
+                    document.removeEventListener("securitypolicyviolation", onsecuritypolicyviolation)
+                })
             })
         }
 
@@ -2624,6 +2630,8 @@
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
                         sendMessageToTop(MessageType.SetStorageValue, { key: "PublicUserId", value: generateUUID() });
                     }
+                    this.video_together_use_self_hosted =  data.UseSelfHosted || false;
+                    this.video_together_self_hosted = typeof data.SelfHost === 'string' ? data.SelfHost : "";
                     try {
                         if (firstSync) {
                             if (!isWeb()) {
@@ -2786,7 +2794,7 @@
                     if (extension.downloadPercentage == 100) {
                         if (this.downloadM3u8Completed != true) {
                             this.downloadM3u8Completed = true;
-                            extension.Fetch(extension.video_together_host + "/beta/counter?key=download_m3u8_completed")
+                            extension.Fetch(extension.GetVideoTogetherUrl() + "/beta/counter?key=download_m3u8_completed")
                         }
                         hide(select("#downloadingAlert"))
                         show(select("#downloadCompleted"))
@@ -2887,7 +2895,7 @@
 
         async SyncTimeWithServer(url = null) {
             if (url == null) {
-                url = this.video_together_host;
+                url = this.GetVideoTogetherUrl();
             }
             let startTime = Date.now() / 1000;
             let response = await this.Fetch(url + "/timestamp");
@@ -3081,7 +3089,7 @@
                     }
                 } catch { }
                 try {
-                    if (this.minTrip == 1e9 || !this.httpSucc) {
+                    if (!this.video_together_use_self_hosted && (this.minTrip == 1e9 || !this.httpSucc)) {
                         this.SyncTimeWithServer(this.video_together_main_host);
                         setTimeout(() => {
                             if (this.minTrip == 1e9 || !this.httpSucc) {
@@ -3090,7 +3098,7 @@
                         }, 3000);
                     } else {
                         // TODO
-                        // if (this.video_together_host == this.video_together_backup_host) {
+                        // if (this.GetVideoTogetherUrl() == this.video_together_backup_host) {
                         //     this.SyncTimeWithServer(this.video_together_main_host);
                         // }
                     }
@@ -3571,7 +3579,7 @@
                 sendMessageToTop(MessageType.RoomDataNotification, WSRoom);
                 return WSRoom;
             }
-            let apiUrl = new URL(this.video_together_host + "/room/update");
+            let apiUrl = new URL(this.GetVideoTogetherUrl() + "/room/update");
             apiUrl.searchParams.set("name", name);
             apiUrl.searchParams.set("password", password);
             apiUrl.searchParams.set("playbackRate", playbackRate);
@@ -3609,7 +3617,7 @@
                 // TODO updatetimestamp
                 return WSRoom;
             }
-            let url = new URL(this.video_together_host + "/room/get");
+            let url = new URL(this.GetVideoTogetherUrl() + "/room/get");
             url.searchParams.set("name", name);
             url.searchParams.set("tempUser", this.tempUser);
             url.searchParams.set("password", password);
