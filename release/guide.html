@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoTogether - Guide</title>
+    <!-- <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --link-color: #4CAF50;
+            --border-color: #333;
+            --select-bg: #333;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --link-color: #2b8a3e;
+            --border-color: #dee2e6;
+            --select-bg: #ffffff;
+        }
+
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            flex-wrap: wrap;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        nav a {
+            color: var(--text-color);
+            text-decoration: none;
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        nav a.active {
+            color: var(--link-color);
+        }
+        .switch-container {
+            display: flex;
+            align-items: center;
+            margin-left: 20px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: var(--text-color);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 767px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            nav {
+                margin-top: 20px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            nav a, .switch-container, .language-switch {
+                margin-left: 0;
+                margin-right: 20px;
+                margin-top: 10px;
+            }
+            .switch-container, .language-switch {
+                align-self: flex-start;
+            }
+        }
+    </style> -->
+</head>
+
+<body>
+    <link rel="stylesheet" href="./style.css">
+
+    <div class="container">
+        <header>
+    <a href="./index.html" class="logo">VideoTogether</a>
+    <nav>
+        <a href="#">Installation</a>
+        <a href="./guide.html" class="active">Guide</a>
+        <a href="#">Add to your website</a>
+        <a href="#">Q&A</a>
+        <a href="#">...</a>
+        <div class="switch-container">
+            <span>🌙</span>
+            <label class="switch">
+                <input type="checkbox" id="theme-switch">
+                <span class="slider"></span>
+            </label>
+            <span>☀️</span>
+        </div>
+        <div class="language-switch">
+            <select>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="zh">中文</option>
+            </select>
+        </div>
+    </nav>
+</header>
+
+<script>
+    const themeSwitch = document.getElementById('theme-switch');
+    const htmlElement = document.documentElement;
+    function setTheme(theme, updateSwitch = true) {
+        if (theme === 'light') {
+            if (updateSwitch) {
+                themeSwitch.checked = true;
+            }
+            htmlElement.setAttribute('data-theme', 'light');
+        } else {
+            if (updateSwitch) {
+                themeSwitch.checked = false;
+            }
+            htmlElement.setAttribute('data-theme', 'dark');
+        }
+        localStorage.setItem('theme', theme);
+    }
+
+    localStorage.getItem('theme') ? setTheme(localStorage.getItem('theme'), true) : undefined;
+
+    themeSwitch.addEventListener('change', function () {
+        if (this.checked) {
+            setTheme('light', false);
+        } else {
+            setTheme('dark', false);
+        }
+    });
+</script>
+
+        <main>
+            <div class="section">
+                <h1>Guide</h1>
+
+                <p>If you encounter any issues, feel free to give feedback at:
+                    <a
+                        href="https://github.com/VideoTogether/VideoTogether/issues">https://github.com/VideoTogether/VideoTogether/issues</a>
+                </p>
+
+                <p>After the VideoTogether extension is installed, open any website such as Google, and the
+                    extension window will appear in the lower right corner</p>
+            </div>
+            <div class="section">
+                <h2>Create Room</h2>
+                <p>The host can choose which videos to watch and control the progress of the video</p>
+                <p>Open a video site and enter the room name and the password. Click 'Create'</p>
+                <p>Share the room name with your friend and she/he can join your room</p>
+            </div>
+
+            <div class="section">
+                <h2>Join Room</h2>
+                <p>Enter the room name and password, then click 'Join' to automatically open the video the
+                    host is sharing</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>Give feedback: <a
+                    href="https://github.com/VideoTogether/VideoTogether/issues">https://github.com/VideoTogether/VideoTogether/issues</a>
+            </p>
+            <p>Copyright © 2022-present VideoTogether</p>
+        </footer>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoTogether</title>
+    
+</head>
+<body>
+    <link rel="stylesheet" href="./style.css">
+
+    <div class="container">
+        <header>
+    <a href="./index.html" class="logo">VideoTogether</a>
+    <nav>
+        <a href="#">Installation</a>
+        <a href="./guide.html" class="active">Guide</a>
+        <a href="#">Add to your website</a>
+        <a href="#">Q&A</a>
+        <a href="#">...</a>
+        <div class="switch-container">
+            <span>🌙</span>
+            <label class="switch">
+                <input type="checkbox" id="theme-switch">
+                <span class="slider"></span>
+            </label>
+            <span>☀️</span>
+        </div>
+        <div class="language-switch">
+            <select>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="zh">中文</option>
+            </select>
+        </div>
+    </nav>
+</header>
+
+<script>
+    const themeSwitch = document.getElementById('theme-switch');
+    const htmlElement = document.documentElement;
+    function setTheme(theme, updateSwitch = true) {
+        if (theme === 'light') {
+            if (updateSwitch) {
+                themeSwitch.checked = true;
+            }
+            htmlElement.setAttribute('data-theme', 'light');
+        } else {
+            if (updateSwitch) {
+                themeSwitch.checked = false;
+            }
+            htmlElement.setAttribute('data-theme', 'dark');
+        }
+        localStorage.setItem('theme', theme);
+    }
+
+    localStorage.getItem('theme') ? setTheme(localStorage.getItem('theme'), true) : undefined;
+
+    themeSwitch.addEventListener('change', function () {
+        if (this.checked) {
+            setTheme('light', false);
+        } else {
+            setTheme('dark', false);
+        }
+    });
+</script>
+        <main>
+            <div>
+                <h1><span>VideoTogether</span><br>Watch videos<br>together</h1>
+                <p class="subtitle">Watch videos online with your family and friends, no matter the distance between you</p>
+                <div class="buttons">
+                    <a href="#" class="btn btn-primary">Installation</a>
+                    <a href="#" class="btn btn-secondary">Play local videos</a>
+                    <a href="#" class="btn btn-secondary">Add to your website</a>
+                </div>
+            </div>
+            <div class="logo-image">
+                <img src="/api/placeholder/200/200" alt="VideoTogether logo" style="border-radius: 10px; max-width: 100%; height: auto;">
+            </div>
+        </main>
+        <div class="features">
+            <div class="feature">
+                <h3>Use on any device</h3>
+                <p>Compatible with Windows PCs, Linux PCs, Android smartphones, tablets, and TVs, iPhone and iPad. Even supports Apple TV via AirPlay.</p>
+            </div>
+            <div class="feature">
+                <h3>Supports all online video platforms and local videos</h3>
+                <p>Compatible with YouTube, Netflix, Disney+, and all other online video platforms. Browser-based local video playback can also be synchronized.</p>
+            </div>
+            <div class="feature">
+                <h3>Add watch-together functionality to your website</h3>
+                <p>Integrate watch-together functionality into your video website with just one line of code.</p>
+            </div>
+        </div>
+        <footer>
+            <p>Give feedback: https://github.com/VideoTogether/VideoTogether/issues</p>
+            <p>Copyright © 2022-present VideoTogether</p>
+        </footer>
+    </div>
+</body>
+</html>

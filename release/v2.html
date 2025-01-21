@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" />
+    <meta name="renderer" content="webkit" />
+    <meta name="force-rendering" content="webkit" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <!-- MDUI CSS -->
+    <link rel="stylesheet" href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/css/mdui.min.css" />
+    <title>VideoTogether</title>
+</head>
+
+<body class="mdui-theme-primary-indigo mdui-theme-accent-pink mdui-theme-layout-auto">
+    <!-- Toolbar -->
+    <div class="mdui-toolbar mdui-color-theme">
+        <span class="mdui-typo-title">VideoTogether</span>
+        <div class="mdui-toolbar-spacer"></div>
+        <a class="mdui-btn mdui-btn-icon">
+            <i class="mdui-icon material-icons" id="brightness">brightness_4</i>
+        </a>
+        <a class="mdui-btn mdui-btn-icon" mdui-menu="{target: '#menu'}">
+            <i class="mdui-icon material-icons">more_vert</i>
+        </a>
+        <ul class="mdui-menu" id="menu">
+            <li class="mdui-menu-item">
+                <a class="mdui-ripple" id="Refresh" onClick="window.location.reload()"></a>
+                <a class="mdui-ripple" id="Return" onClick="window.history.back()"></a>
+            </li>
+        </ul>
+    </div>
+    <div class="mdui-container mdui-p-t-3">
+        <div class="mdui-row">
+            <div class="mdui-col-md-6 mdui-col-sm-12">
+                <div class="mdui-card" style="padding: 10px">
+                    <div class="mdui-card-primary">
+                        <div class="mdui-card-primary-title" id="Setting"></div>
+                    </div>
+
+                    <script>
+                        function emptyStrIfUdf(s) {
+                            return s == undefined ? "" : s;
+                        }
+
+                        let settingItems = [
+                            {
+                                key: "EnableMiniBar",
+                                defaultVal: true
+                            },
+                            {
+                                key: "EnableTextMessage",
+                                defaultVal: true
+                            }
+                        ]
+
+                        let languageDicts = {
+                            /**VT_DELETE_THIS_LINE
+                            "zh-cn": {
+    "LanguageName": "简体中文",
+    "Setting": "VideoTogether 设置",
+    "Refresh": "刷新页面",
+    "Return": "返回上级页面",
+    "MinimiseDefaultLabel": "窗口默认最小化",
+    "MinimiseDefaultLabelHelp": "可以通过点击右下角的小图标显示窗口",
+    "DisableRedirectJoinLabel": "加入房间时不要自动跳转",
+    "DisableRedirectJoinLabelHelp": "如果遇到一些视频链接无法正确跳转时，请开启这个选项。手动打开和房主相同的视频后再加入房间",
+    "PasswordProtectedRoomLabel": "我创建的房间必须要密码才能加入",
+    "PasswordProtectedRoomLabelHelp": "注意：其他人同样可以用相同的密码挤掉房主，分享密码前请确认对方值得信赖",
+    "ExtensionIsDisabled": "插件没有被启用, 设置将不会生效",
+    "EchoCancellationLabel": "通话时开启回声消除和噪声消除",
+    "WaitForLoaddingLabel": "成员视频卡顿时, 房主暂停等待",
+    "SkipIntroLabel": "跳过片头",
+    "SkipIntroLengthLabel": "片头长度:",
+    "SkipIntroSecondLabel": "秒",
+    "ExperimentalFeature": "实验性功能",
+    "EasyShareLabel": "轻松分享",
+    "SuperEasyShareLabel": "超级无敌牛的轻松分享(可能会影响视频播放)",
+    "DisableNativeM3u8PlayerLabel": "关闭原生M3U8播放器",
+    "EnableTextMessageLabel": "文本聊天",
+    "EnableMiniBarLabel": "全屏视频时的迷你小窗",
+    "CheckUpdateLabel": "检查更新",
+    "CheckUpdateSucc": "更新成功"
+},
+                            "en-us": {
+    "LanguageName": "English",
+    "Setting": "VideoTogether Settings",
+    "Refresh": "Refresh",
+    "Return": "Return to previous",
+    "MinimiseDefaultLabel": "Minimize window default",
+    "MinimiseDefaultLabelHelp": "You can display the window by clicking the small icon in the lower right corner.",
+    "DisableRedirectJoinLabel": "Do not automatically jump when joining a room",
+    "DisableRedirectJoinLabelHelp": "If you encounter some video links that cannot be jumped correctly, please enable this option and manually open the same video as the host before joining the room.",
+    "PasswordProtectedRoomLabel": "The room I created must have a password to join",
+    "PasswordProtectedRoomLabelHelp": "Note: Others can also use the same password to become the owner. Please confirm that he/she is trustworthy before sharing the password.",
+    "ExtensionIsDisabled": "VideoTogether is disabled in this page, the settings in this page will not take effect",
+    "EchoCancellationLabel": "Enable echo cancellation and noise cancellation when call",
+    "WaitForLoaddingLabel": "When a member's video lags, host will pause to wait",
+    "SkipIntroLabel": "Skip Intro",
+    "SkipIntroLengthLabel": "Intro Length:",
+    "SkipIntroSecondLabel": "Seconds",
+    "ExperimentalFeature": "Experimental Feature",
+    "EasyShareLabel": "Easy Share",
+    "SuperEasyShareLabel": "Super Powerful Easy Share(may cause video playback issues)",
+    "DisableNativeM3u8PlayerLabel": "Disable native M3U8 player",
+    "EnableTextMessageLabel": "Text Message",
+    "EnableMiniBarLabel": "Mini Bar at fullscreen video",
+    "CheckUpdateLabel": "Check Update",
+    "CheckUpdateSucc": "Update Successfully"
+},
+                            'ja-jp': {
+    "LanguageName": "日本語",
+    "Setting": "VideoTogether 設定",
+    "Refresh": "ページをリフレッシュ",
+    "Return": "前のページに戻る",
+    "MinimiseDefaultLabel": "デフォルトでウィンドウを最小化",
+    "MinimiseDefaultLabelHelp": "右下のアイコンをクリックしてウィンドウを表示できます",
+    "DisableRedirectJoinLabel": "部屋に参加するときに自動リダイレクトしない",
+    "DisableRedirectJoinLabelHelp": "一部のビデオリンクが正しくリダイレクトされない場合は、このオプションを有効にしてください。ホストと同じビデオを手動で開いてから部屋に参加してください",
+    "PasswordProtectedRoomLabel": "私が作成する部屋にはパスワードが必要です",
+    "PasswordProtectedRoomLabelHelp": "注意: 他の人も同じパスワードを使用してホストを追い出すことができます。パスワードを共有する前に、相手が信頼できるかどうか確認してください",
+    "ExtensionIsDisabled": "拡張機能が有効になっていないため、設定は反映されません",
+    "EchoCancellationLabel": "通話時にエコーキャンセルとノイズキャンセルを有効にする",
+    "WaitForLoaddingLabel": "メンバーのビデオが遅延した場合、ホストは一時停止して待機",
+    "SkipIntroLabel": "イントロをスキップ",
+    "SkipIntroLengthLabel": "イントロの長さ:",
+    "SkipIntroSecondLabel": "秒",
+    "ExperimentalFeature": "実験的機能",
+    "EasyShareLabel": "簡単に共有",
+    "SuperEasyShareLabel": "超簡単共有（ビデオ再生に影響を与える可能性あり）",
+    "DisableNativeM3u8PlayerLabel": "ネイティブのM3U8プレーヤーを無効にする",
+    "EnableTextMessageLabel": "テキストチャット",
+    "EnableMiniBarLabel": "フルスクリーンビデオ時のミニウィンドウ",
+    "CheckUpdateLabel": "更新を確認",
+    "CheckUpdateSucc": "更新に成功しました"
+}
+,
+                            VT_DELETE_THIS_LINE **/
+                        }
+
+                        let currentExtensionLanguages = undefined;
+                        function getExtensionLanguages() {
+                            let languages = ['en-us', 'zh-cn'];
+                            try{
+                                if(currentExtensionLanguages.length > 0){
+                                    languages = currentExtensionLanguages;
+                                }
+                            }finally{
+                                return languages;
+                            }
+                        }
+
+                        function getDisplayLanguage(settingLanguage = undefined) {
+                            let languages = Object.keys(languageDicts);
+                            let language = 'en-us';
+                            let prefixLen = 0;
+
+                            if (typeof settingLanguage != 'string') {
+                                settingLanguage = navigator.language;
+                            }
+                            if (typeof settingLanguage == 'string') {
+                                settingLanguage = settingLanguage.toLowerCase();
+                                if (languages.includes(settingLanguage)) {
+                                    language = settingLanguage;
+                                } else {
+                                    const settingLanguagePrefix = settingLanguage.split('-')[0];
+                                    for (let i = 0; i < languages.length; i++) {
+                                        const languagePrefix = languages[i].split('-')[0];
+                                        if (settingLanguagePrefix === languagePrefix) {
+                                            language = languages[i];
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            return language;
+                        }
+                        let _settingLanguage = undefined;
+                        let _lastExtensionLanguages = ['en-us', 'zh-cn'];
+                        function updateDisplayLanguage(settingLanguage = undefined) {
+                            lastExtensionLanguages = getExtensionLanguages();
+                            if (lastExtensionLanguages.toString() != _lastExtensionLanguages.toString()) {
+                                _lastExtensionLanguages = lastExtensionLanguages;
+                                // update the select options
+                                const select = document.querySelector("#DisplayLanguage");
+                                select.innerHTML = "<option style='display: none'></option>";
+                                for (let i = 0; i < lastExtensionLanguages.length; i++) {
+                                    const language = lastExtensionLanguages[i];
+                                    const option = document.createElement("option");
+                                    option.value = language;
+                                    option.innerText = languageDicts[language]["LanguageName"];
+                                    select.appendChild(option);
+                                }
+                            }
+                            _settingLanguage = settingLanguage;
+                            const displayLanguage = getDisplayLanguage(settingLanguage);
+                            let languageDict = languageDicts[getDisplayLanguage(settingLanguage)];
+                            for (let key in languageDict) {
+                                try {
+                                    document.querySelector("#" + key).innerHTML = languageDict[key];
+                                } catch (e) {
+                                }
+                            }
+                            if (displayLanguage == "zh-cn") {
+                                document.getElementById('voicePannel').style.display = "none"
+                            } else {
+                                document.getElementById('voicePannel').style.display = "none"
+                            }
+                        }
+                        function getLanguageText(key) {
+                            return languageDicts[getDisplayLanguage(_settingLanguage)][key];
+                        }
+
+                        let extensionEnabled = false;
+                        window.addEventListener("message", e => {
+                            if (e.data.type == 16) {
+                                extensionEnabled = true;
+                                document.querySelector("#MinimiseDefault").checked = e.data.data.MinimiseDefault;
+                                document.querySelector("#DisableRedirectJoin").checked = e.data.data.DisableRedirectJoin;
+                                document.querySelector("#PasswordProtectedRoom").checked = (e.data.data.PasswordProtectedRoom != false);
+                                document.querySelector("#WaitForLoadding").checked = (e.data.data.WaitForLoadding != false);
+                                document.querySelector("#EchoCancellation").checked = !(e.data.data.EchoCancellation === false);
+                                let isDisplayLanguageUpdated = false;
+                                try {
+                                    let newValue = e.data.data.DisplayLanguage ? e.data.data.DisplayLanguage : "";
+                                    if (newValue != document.querySelector("#DisplayLanguage").value) {
+                                        isDisplayLanguageUpdated = true;
+                                    }
+                                } catch { };
+                                document.querySelector("#DisplayLanguage").value = e.data.data.DisplayLanguage;
+                                try {
+                                    if (isDisplayLanguageUpdated) {
+                                        DisplayLanguageSelect.handleUpdate();
+                                    }
+                                } catch { }
+
+                                document.querySelector("#SkipIntroLength").value = emptyStrIfUdf(e.data.data.SkipIntroLength);
+                                document.querySelector("#SkipIntro").checked = e.data.data.SkipIntro;
+                                document.querySelector("#EasyShare").checked = (e.data.data.EasyShare != false);
+                                document.querySelector("#SuperEasyShare").checked = e.data.data.SuperEasyShare;
+                                document.querySelector("#DisableNativeM3u8Player").checked = (e.data.data.DisableNativeM3u8Player != false);
+                                if (e.data.data.PublicReechoVoiceId) {
+                                    updateInnerText(document.getElementById('voiceIdLabel'), "语音角色ID: " + e.data.data.PublicReechoVoiceId)
+                                } else {
+                                    updateInnerText(document.getElementById('voiceIdLabel'), "没有真人语音角色")
+                                }
+                                for (let i in settingItems) {
+                                    let item = settingItems[i]
+                                    document.querySelector(`#${item.key}`).checked = e.data.data[item.key] == undefined ? item.defaultVal : e.data.data[item.key];
+                                }
+                                currentExtensionLanguages = e.data.data.ExtensionLanguages;
+                                updateDisplayLanguage(e.data.data.DisplayLanguage);
+
+                            }
+                        });
+                        setTimeout(() => {
+                            if (!extensionEnabled) {
+                                alert(getLanguageText('ExtensionIsDisabled'));
+                            }
+                        }, 4000);
+                    </script>
+
+                    <!-- Rectangular switch -->
+                    <div class="mdui-card-content" style="padding-top: 0px">
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            Language / 语言
+                            <div class="mdui-float-right">
+                                <select id="DisplayLanguage">
+                                    <option style='display: none'></option>
+                                    <option value="zh-cn">简体中文</option>
+                                    <option value="en-us">English</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <span onclick="mdui.snackbar({message: getLanguageText('MinimiseDefaultLabelHelp')})">
+                                <a id="MinimiseDefaultLabel"></a>
+                                <i class="mdui-icon material-icons mdui-ripple">help_outline</i>
+                            </span>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="MinimiseDefault" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <a id="EchoCancellationLabel"></a>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="EchoCancellation" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <span onclick="mdui.snackbar({message: getLanguageText('DisableRedirectJoinLabelHelp')})">
+                                <a id="DisableRedirectJoinLabel"></a>
+                                <i class="mdui-icon material-icons mdui-ripple">help_outline</i>
+                            </span>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="DisableRedirectJoin" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <span onclick="mdui.snackbar({message: getLanguageText('PasswordProtectedRoomLabelHelp')})">
+                                <a id="PasswordProtectedRoomLabel"></a>
+                                <i class="mdui-icon material-icons mdui-ripple">help_outline</i>
+                            </span>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="PasswordProtectedRoom" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <a id="WaitForLoaddingLabel"></a>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="WaitForLoadding" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <button class="mdui-btn" onclick="checkUpdate()" id="CheckUpdateLabel"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mdui-col-md-6 mdui-col-sm-12">
+                <div class="mdui-card" style="padding: 10px">
+                    <div class="mdui-card-primary">
+                        <div class="mdui-card-primary-title" id="ExperimentalFeature"></div>
+                    </div>
+                    <div class="mdui-card-content" style="padding-top: 0px">
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <a id="SkipIntroLabel"></a>
+                            <a>,</a>
+                            <a id="SkipIntroLengthLabel"></a>
+                            <span class="mdui-textfield">
+                                <input id="SkipIntroLength" style="display: inline-block; width: 3em;"
+                                    class="mdui-textfield-input" type="text" placeholder="0"
+                                    onkeypress='return event.charCode >= 48 && event.charCode <= 57' />
+                            </span>
+                            <a id="SkipIntroSecondLabel"></a>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="SkipIntro" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <a id="EasyShareLabel"></a>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="EasyShare" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <a id="SuperEasyShareLabel"></a>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="SuperEasyShare" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <a id="DisableNativeM3u8PlayerLabel"></a>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="DisableNativeM3u8Player" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <a id="EnableTextMessageLabel"></a>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="EnableTextMessage" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+                        <div class="mdui-clearfix mdui-p-t-2">
+                            <a id="EnableMiniBarLabel"></a>
+                            <label class="mdui-switch mdui-float-right">
+                                <input id="EnableMiniBar" type="checkbox">
+                                <span class="mdui-switch-icon"></span>
+                            </label>
+                        </div>
+                        <div id="voicePannel" class="mdui-clearfix mdui-p-t-2">
+                            <div>
+                                <label id="voiceAlertLabel" class="mdui-float-left">
+                                    开启真人语音播报后，房间内的文字消息将会通过AI技术，模拟真人语音播报。
+                                    注意：AI语音的生成需要一定的时间，一条消息发送最长需要等待10秒，单条消息超过10个字就不会使用AI语音了。
+                                    <br><br>
+                                    <h3>该功能内测中。有问题欢迎加QQ群反馈：204015847 </h3>
+                                    <h3>请录制10秒左右没有背景噪音的人声。</h3>
+                                </label>
+
+                                <label id="voiceIdLabel" class="mdui-float-left">
+                                    没有真人语音角色
+                                </label>
+
+                                <div class="mdui-float-right">
+                                    <label class="mdui-float-left" id="voiceRecordSeconds"></label>
+
+                                    <button class="mdui-btn-raised mdui-btn mdui-color-theme-accent"
+                                        id="voiceRecordBtn">录制语音角色</button>
+                                    <button class="mdui-btn-raised mdui-btn mdui-color-theme-accent"
+                                        id="voiceDeleteBtn">删除语音角色</button>
+
+                                </div>
+                                <script>
+                                    let startRecordTime = undefined;
+                                    let endRecordTime = undefined;
+                                    const voiceRecordBtn = document.getElementById('voiceRecordBtn')
+                                    voiceRecordBtn.onclick = startRecording;
+
+                                    document.getElementById('voiceDeleteBtn').onclick = function () {
+                                        setStorageValue('PublicReechoVoiceId', "")
+                                    }
+                                    let mediaRecorder;
+                                    let audioChunks = [];
+
+                                    async function startRecording() {
+                                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                                        mediaRecorder = new MediaRecorder(stream);
+                                        mediaRecorder.ondataavailable = event => {
+                                            audioChunks.push(event.data);
+                                        };
+                                        mediaRecorder.onstop = convertToBase64;
+                                        mediaRecorder.start();
+                                        startRecordTime = new Date().getTime();
+                                        endRecordTime = undefined;
+                                        voiceRecordBtn.innerText = '停止录制并创建语音角色';
+                                        voiceRecordBtn.onclick = stopRecording;
+                                    }
+
+                                    function stopRecording() {
+                                        mediaRecorder.stop();
+
+                                        endRecordTime = new Date().getTime();
+                                        mediaRecorder.stream.getTracks().forEach(track => track.stop()); // Stop each track to release the microphone
+                                        mediaRecorder = undefined;
+                                        voiceRecordBtn.innerText = '录制语音角色';
+                                        voiceRecordBtn.onclick = startRecording;
+                                    }
+
+                                    function convertToBase64() {
+                                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                                        const reader = new FileReader();
+                                        reader.readAsDataURL(audioBlob);
+                                        reader.onloadend = () => {
+                                            const base64String = reader.result;
+                                            console.log(base64String); // This is your base64-encoded string
+                                            // base64String smaller than 5MB
+                                            if (base64String.length > 5 * 1024 * 1024) {
+                                                document.getElementById('voiceRecordSeconds').innerText = '录制的语音文件过大，请重新录制';
+                                                return;
+                                            }
+
+                                            const recordDuration = (endRecordTime - startRecordTime) / 1000
+                                            if (recordDuration < 2.5) {
+                                                document.getElementById('voiceRecordSeconds').innerText = '录制的语音文件过短，请重新录制';
+                                                return;
+                                            }
+                                            document.getElementById('voiceRecordSeconds').innerText = "录音长度" + (endRecordTime - startRecordTime) / 1000 + '秒, 上传中';
+                                            const url = "https://vt.panghair.com:5000/reecho/new_voice"
+                                            const data = {
+                                                voiceAudioBase64: base64String,
+                                            }
+                                            fetch(url, {
+                                                method: 'POST',
+                                                body: JSON.stringify(data)
+                                            }).then(response => response.json()).then(data => {
+                                                console.log(data)
+                                                const voiceId = data.voiceId
+                                                setStorageValue('PublicReechoVoiceId', voiceId)
+                                            }).catch((error) => {
+                                                console.error('Error:', error);
+                                            });
+                                        };
+                                        audioChunks = [];
+                                    }
+                                </script>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        var DisplayLanguageSelect = undefined;
+        setInterval(() => {
+            if (DisplayLanguageSelect == undefined) {
+                DisplayLanguageSelect = new mdui.Select(document.querySelector('#DisplayLanguage'))
+            }
+        }, 500);
+        updateDisplayLanguage();
+        function checkBoxChanged(e) {
+
+            console.log(e.target.id);
+            let value = e.target.checked;
+            if (e.target.id == "DisplayLanguage" || e.target.id == "SkipIntroLength") {
+                value = e.target.value;
+            }
+
+            window.postMessage(
+                {
+                    type: 15,
+                    source: "VideoTogether",
+                    data: {
+                        key: e.target.id,
+                        value: value
+                    }
+                }, "*")
+        }
+        function setStorageValue(key, value) {
+            window.postMessage(
+                {
+                    type: 15,
+                    source: "VideoTogether",
+                    data: {
+                        key: key,
+                        value: value
+                    }
+                }, "*")
+        }
+        document.querySelector("#MinimiseDefault").addEventListener("change", checkBoxChanged);
+        document.querySelector("#DisableRedirectJoin").addEventListener("change", checkBoxChanged);
+        document.querySelector("#PasswordProtectedRoom").addEventListener("change", checkBoxChanged);
+        document.querySelector("#EchoCancellation").addEventListener("change", checkBoxChanged);
+        document.querySelector("#DisplayLanguage").addEventListener("change", checkBoxChanged);
+        document.querySelector("#WaitForLoadding").addEventListener("change", checkBoxChanged);
+        document.querySelector("#SkipIntro").addEventListener("change", checkBoxChanged);
+        document.querySelector("#EasyShare").addEventListener("change", checkBoxChanged);
+        document.querySelector("#SuperEasyShare").addEventListener("change", checkBoxChanged);
+        document.querySelector("#DisableNativeM3u8Player").addEventListener("change", checkBoxChanged);
+        document.querySelector("#SkipIntroLength").addEventListener("input", checkBoxChanged);
+        for (let i in settingItems) {
+            let item = settingItems[i]
+            document.querySelector(`#${item.key}`).addEventListener("change", checkBoxChanged);
+        }
+        // Dark Mode
+        var body = document.querySelector("body");
+        var button = document.getElementById("brightness");
+        button.addEventListener("click", function () {
+            var isDark = body.classList.contains("mdui-theme-layout-dark");
+            if (isDark) {
+                body.classList.remove("mdui-theme-layout-dark");
+                body.classList.remove("mdui-theme-layout-auto");
+            }
+            else {
+                body.classList.add("mdui-theme-layout-dark");
+                body.classList.remove("mdui-theme-layout-auto");
+            }
+        });
+        function sendMessageToTop(type, data) {
+            window.top.postMessage({
+                source: "VideoTogether",
+                type: type,
+                data: data
+            }, "*")
+        }
+
+        function checkUpdate() {
+            sendMessageToTop(15, { key: "PublicVtVersion", value: Date.now() });
+            mdui.snackbar({ message: getLanguageText('CheckUpdateSucc') })
+        }
+        function updateInnerText(element, text) {
+            try {
+                if (element.innerText != text) {
+                    element.innerText = text;
+                }
+            } catch (e) {
+            }
+        }
+    </script>
+    <!-- MDUI JavaScript -->
+    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/mdui/1.0.2/js/mdui.min.js"></script>
+    <style>
+        .mdui-card {
+            border-radius: 12px;
+            box-shadow: 0 2px 2px 0 rgb(0 0 0 / 16%), 0 1px 5px 0 rgb(0 0 0 / 16%);
+            margin-top: 10px;
+        }
+
+        .mdui-menu {
+            border-radius: 12px;
+        }
+
+        .mdui-snackbar {
+            border-radius: 12px;
+        }
+
+        .mdui-select-menu {
+            border-radius: 12px;
+        }
+    </style>
+</body>
+
+</html>
