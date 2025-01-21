@@ -139,22 +139,28 @@ def build():
             compile(sourceSubDir, resultExtension,
                     resultFilename, [], sourceContent)
 
+disable_network = False
+for arg in sys.argv:
+    if arg == "disable_network":
+        disable_network = True
+        break
 
 if __name__ == '__main__':
     global rootPath
     path = Path(os.path.realpath(sys.argv[0]))
     rootPath = path.parent.parent
-    os.system(
-        "git clone https://github.com/VideoTogether/localvideo {}/source/local".format(rootPath))
-    os.system("cd {}/source/local && git pull".format(rootPath))
+    if not disable_network:
+        os.system(
+            "git clone https://github.com/VideoTogether/localvideo {}/source/local".format(rootPath))
+        os.system("cd {}/source/local && git pull".format(rootPath))
 
-    os.system(
-        "git clone https://github.com/VideoTogether/website_next {}/source/website".format(rootPath))
-    os.system("cd {}/source/website && git pull".format(rootPath))
+        os.system(
+            "git clone https://github.com/VideoTogether/website_next {}/source/website".format(rootPath))
+        os.system("cd {}/source/website && git pull".format(rootPath))
 
-    os.system(
-        "git clone https://github.com/VideoTogether/setting {}/source/setting".format(rootPath))
-    os.system("cd {}/source/setting && git pull".format(rootPath))
+        os.system(
+            "git clone https://github.com/VideoTogether/setting {}/source/setting".format(rootPath))
+        os.system("cd {}/source/setting && git pull".format(rootPath))
 
     build()
 

@@ -1,5 +1,9 @@
 window.VideoTogetherFetch = window.fetch;
 
+try {
+    document.currentScript.remove();
+} catch (e) { }
+
 (() => {
     const blackList = ['yiyan.baidu.com']
     const hostname = window.location.hostname;
