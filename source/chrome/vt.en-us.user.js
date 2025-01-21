@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1723028856
+// @version      1735360339
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -10,6 +10,10 @@
 // ==/UserScript==
 
 (function () {
+    try{
+        // this attribute will break the cloudflare turnstile
+        document.currentScript.removeAttribute("cachedvt")
+    }catch{}
     const language = 'en-us'
     const vtRuntime = `extension`;
     const realUrlCache = {}
@@ -1840,12 +1844,12 @@
       </span>
     </button>
 
-    <a href="https://afdian.net/a/videotogether" target="_blank" id="vtDonate" type="button"
+    <a href="https://afdian.com/a/videotogether" target="_blank" id="vtDonate" type="button"
       class="vt-modal-donate vt-modal-title-button">
       <span class="vt-modal-close-x">
         <span role="img" class="vt-anticon vt-anticon-close vt-modal-close-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
-            <path fill="currentColor"
+            <path fill="red"
               d="M12 4.435c-1.989-5.399-12-4.597-12 3.568 0 4.068 3.06 9.481 12 14.997 8.94-5.516 12-10.929 12-14.997 0-8.118-10-8.999-12-3.568z" />
           </svg>
         </span>
@@ -3166,7 +3170,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1723028856';
+            this.version = '1735360339';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>ローカル動画リスト</title>
+    <script src="./download.js"></script>
+    <script src="./local_page.ja-jp.js"></script>
+    <link rel="StyleSheet" href="./local_page.css" type="text/css" />
+
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+
+    </style>
+    <script src="./unpkg.com_hyperlist@1.0.0_dist_hyperlist.js"></script>
+
+</head>
+
+<body>
+    <div class="search-bar">
+        <input id="search-input" type="text" placeholder="Search videos..." oninput="onSearch()">
+        <div class="notification">
+            <p id="storage-notification">使用済みストレージ： 不明 <br> これは一時的な保存スペースです。多くの動画を保存するとブラウザがクラッシュする可能性があります。不要な動画はすぐに削除してください。長期保存したい場合は、動画再生ページでビデオファイルをエクスポートしてください。</p>
+            <!-- <button id="compactBtn" onclick="compact()" class="button">compact</button> -->
+        </div>
+    </div>
+    <div style="display: none;" id="deletingPannel" class="fullscreen">
+        <p>削除中です。お待ちください</p>
+        <p id="deletingProgress"></p>
+    </div>
+    <div class="container"></div>
+    <script>
+        const language = 'ja-jp'
+        function timestampToFormattedDate(timestamp) {
+            const date = new Date(timestamp);
+
+            const year = date.getFullYear();
+            const month = ("0" + (date.getMonth() + 1)).slice(-2);
+            const day = ("0" + date.getDate()).slice(-2);
+            const hours = ("0" + date.getHours()).slice(-2);
+            const minutes = ("0" + date.getMinutes()).slice(-2);
+            const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`;
+            return formattedDate;
+        }
+
+        const container = document.querySelector('.container');
+        var searchBar = document.querySelector('.search-bar');
+        var styles = window.getComputedStyle(searchBar);
+        var margin = parseFloat(styles['marginTop']) + parseFloat(styles['marginBottom']);
+
+        var searchBarHeight = searchBar.offsetHeight + margin;
+        let allM3u8Keys = [];
+        let data = allM3u8Keys;
+        let todayHistory = [];
+        function generateConfig(data) {
+            return config = {
+                height: window.innerHeight - searchBarHeight,
+                itemHeight: 500, // Approximate height of a tweet
+                total: data.length, // Total number of tweets
+                generate(index) {
+                    let element = data[index];
+
+                    // Generate a tweet.
+                    const tweet = document.createElement('div');
+                    tweet.classList.add('tweet');
+                    tweet.innerHTML = `
+                    <div class="images">
+                    </div>
+                    <div class="title">
+                        <a id="titleLink" target="_blank" class="title-text"></a>
+                    </div>
+                    <div class="buttons">
+                        <a id="playBtn" target="_blank" class="button">再生</a>
+                        <a id="originalLink" target="_blank" class="button">元のウェブサイト</a>
+                        <button id="deleteBtn" class="button">削除</button>
+                    </div>
+                    <div class="timestampfooter">
+                        <p id="statusText" class="status-text status_${parseInt(element.status)}"><p>
+                        <p id="timestamp" class="timestamp-text"></p>
+                    </div>
+                `;
+                    tweet.querySelector("#statusText").innerText = GetDownloadStatusStr(element.status)
+                    tweet.querySelector("#timestamp").innerText = `ダウンロード日時: ${timestampToFormattedDate(element.saveTime)}`
+                    tweet.querySelector('#titleLink').innerText = element.title;
+                    tweet.querySelector('#titleLink').href = "./local_video_player.ja-jp.html#" + element.m3u8Url;
+                    tweet.querySelector("#deleteBtn").onclick = () => {
+                        deleteVideo(element.m3u8Url)
+                    }
+                    tweet.querySelector("#originalLink").href = element.pageUrl;
+
+                    tweet.querySelector("#playBtn").href = "./local_video_player.ja-jp.html#" + element.m3u8Url;
+                    container.appendChild(tweet);
+
+                    var styles = window.getComputedStyle(tweet);
+                    var margin = parseFloat(styles['marginTop']) + parseFloat(styles['marginBottom']);
+
+                    var newHeight = tweet.offsetHeight + margin;
+
+                    return { element: tweet, height: newHeight };
+                }
+            };
+
+        }
+        var list = undefined
+        // Initialize a new Hyperlist instance with the configuration
+        async function onSearch() {
+            if (allM3u8Keys.length == 0) {
+                await loadData()
+            }
+            let keywords = document.querySelector('#search-input').value;
+            const searchData = data.filter(x => x.title.indexOf(keywords) != -1);
+            list.refresh(container, generateConfig(searchData));
+        }
+        window.addEventListener('resize', onSearch)
+
+        setTimeout(() => {
+            loadData()
+        }, 500);
+
+        async function loadData() {
+            await new Promise(r => setTimeout(r, 500));
+            // TODO, chrome will compact leveldb for this request
+            // requestStorageEstimate();
+            allM3u8Keys = await regexMatchKeys('m3u8s', '.');
+            const tmpData = [];
+            for (let i in allM3u8Keys) {
+                const key = allM3u8Keys[i]
+                let m3u8Data = await readFromIndexedDB('m3u8s-mini', key);
+                tmpData.push(m3u8Data);
+                console.log(m3u8Data)
+            }
+            tmpData.sort((l, r) => r.saveTime - l.saveTime)
+            data = tmpData
+            list = new HyperList(container, generateConfig(data));
+            // cleanUselessVideos()
+        }
+
+        async function cleanUselessVideos() {
+            return; // don't use, has issue
+            m3u8Ids = []
+            data.forEach(m3u8 => {
+                try {
+                    if (m3u8.m3u8Id) {
+                        m3u8Ids.push(m3u8.m3u8Id)
+                    }
+                } catch { }
+            })
+            console.log(m3u8Ids)
+            console.log(`(?<!${m3u8Ids.join('|')})$`)
+            uselessVideos = await regexMatchKeys('videos', `(?<!${m3u8Ids.join('|')})$`)
+            console.log(uselessVideos)
+
+            for (let i in uselessVideos) {
+                const videoKey = uselessVideos[i];
+                const m3u8Id = extractM3u8IdFromKey(videoKey);
+                const test = await regexMatchKeys('m3u8s', m3u8Id);
+                if (test.length == 0) {
+                    // await deleteFromIndexedDB('videos', videoKey)
+                }
+            }
+        }
+
+        async function deleteVideo(m3u8Url) {
+            show(document.querySelector('#deletingPannel'))
+            let m3u8Data = undefined
+            for (let i in allM3u8Keys) {
+                const key = allM3u8Keys[i];
+                if (m3u8Url === key) {
+                    m3u8Data = await readFromIndexedDB('m3u8s', key);
+                }
+            }
+            if (m3u8Data == undefined) {
+                return;
+            }
+            await updateM3u8Status(m3u8Url, 2)
+            let m3u8Head = "-m3u8Id-" + m3u8Data.m3u8Id + "-end-"
+
+            await iosDeleteByPrefix('videos' + m3u8Head)
+            await iosDeleteByPrefix('m3u8s' + m3u8Head)
+            await iosDeleteByPrefix('future' + m3u8Head)
+            let tsFilesIds = await regexMatchKeys('videos', "^" + m3u8Head);
+            console.log(tsFilesIds)
+
+            for (let i in tsFilesIds) {
+                const id = tsFilesIds[i];
+                if (!(await deleteFromIndexedDB('videos', id))) {
+                    hide(document.querySelector('#deletingPannel'))
+                    return;
+                }
+                document.querySelector("#deletingProgress").innerText = `${parseInt(i) + 1}/${tsFilesIds.length}`
+            }
+            let futureFilesIds = await regexMatchKeys('future', "^" + m3u8Head);
+            console.log(futureFilesIds)
+            for (let id of futureFilesIds) {
+                await deleteFromIndexedDB('future', id)
+            }
+            await deleteFromIndexedDB('m3u8s', m3u8Url);
+            data = data.filter(x => x.m3u8Url != m3u8Url);
+            onSearch()
+            hide(document.querySelector('#deletingPannel'))
+
+            compact();
+        }
+
+        function compact() {
+            window.postMessage({
+                source: "VideoTogether",
+                type: 3009,
+                data: {
+                    beginKey: "",
+                    endKey: "~"
+                }
+            }, '*')
+        }
+        async function debug(m3u8Url) {
+            let m3u8Data = undefined
+            for (let i in allM3u8Keys) {
+                const key = allM3u8Keys[i];
+                if (m3u8Url === key) {
+                    m3u8Data = await readFromIndexedDB('m3u8s', key);
+                }
+            }
+            if (m3u8Data == undefined) {
+                return;
+            }
+            let tsFilesIds = await regexMatchKeys('videos', "^-m3u8Id-" + m3u8Data.m3u8Id + "-end-");
+            console.log(tsFilesIds)
+        }
+
+        window.addEventListener("message", e => {
+            if (e.data.source == "VideoTogether") {
+                switch (e.data.type) {
+                    case 2010: {
+                        document.querySelector("#storage-notification").innerText = `使用済みストレージ： ${parseInt(e.data.data.data / 1024 / 1024)}MB`
+                        break;
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

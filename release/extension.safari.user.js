@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1723029131
+// @version      1737471429
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -25,7 +25,11 @@
 (async function () {
     let isDevelopment = false;
 
-    let version = '1723029131'
+    if(document instanceof XMLDocument){
+        return;
+    }
+
+    let version = '1737471429'
     let type = 'Safari'
     function getBrowser() {
         switch (type) {
