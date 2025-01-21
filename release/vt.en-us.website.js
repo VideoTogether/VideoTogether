@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1735360339
+// @version      1737474033
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -13,6 +13,7 @@
     try{
         // this attribute will break the cloudflare turnstile
         document.currentScript.removeAttribute("cachedvt")
+        document.currentScript.remove()
     }catch{}
     const language = 'en-us'
     const vtRuntime = `website`;
@@ -3170,7 +3171,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1735360339';
+            this.version = '1737474033';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
