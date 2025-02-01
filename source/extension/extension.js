@@ -365,7 +365,7 @@
             switch (e.data.type) {
                 case 13: {
                     let url = new URL(e.data.data.url);
-                    if (!url.hostname.endsWith("2gether.video")
+                    if (!getGM().getValue("UseSelfHosted") &&!url.hostname.endsWith("2gether.video")
                         && !url.hostname.endsWith("chizhou.in")
                         && !url.hostname.endsWith("panghair.com")
                         && !url.hostname.endsWith("videotogether.github.io")
