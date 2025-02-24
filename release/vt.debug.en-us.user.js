@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1739015268
+// @version      1740403835
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -798,6 +798,7 @@
         Global.NativePostMessageFunction = temp.contentWindow.postMessage;
         Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
         Global.NativeFetch = temp.contentWindow.fetch;
+        temp.remove();
     }
 
     function PostMessage(window, data) {
@@ -3171,7 +3172,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1739015268';
+            this.version = '1740403835';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3196,8 +3197,10 @@
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
-                let host = (new URL(e.blockedURI)).host;
-                this.cspBlockedHost[host] = true;
+                try{
+                    let host = (new URL(e.blockedURI)).host;
+                    this.cspBlockedHost[host] = true;
+                }catch(e){}
             });
             try {
                 this.CreateVideoDomObserver();

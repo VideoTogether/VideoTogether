@@ -397,6 +397,7 @@
         Global.NativePostMessageFunction = temp.contentWindow.postMessage;
         Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
         Global.NativeFetch = temp.contentWindow.fetch;
+        temp.remove();
     }
 
     function PostMessage(window, data) {
@@ -1898,8 +1899,10 @@
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
-                let host = (new URL(e.blockedURI)).host;
-                this.cspBlockedHost[host] = true;
+                try{
+                    let host = (new URL(e.blockedURI)).host;
+                    this.cspBlockedHost[host] = true;
+                }catch(e){}
             });
             try {
                 this.CreateVideoDomObserver();
