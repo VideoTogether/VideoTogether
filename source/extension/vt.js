@@ -67,6 +67,10 @@
         }
     }
 
+    function isCloudflareChallenge() {
+        return window.location.hostname == 'challenges.cloudflare.com';
+    }
+
     function getDurationStr(duration) {
         try {
             let d = parseInt(duration);
@@ -397,7 +401,9 @@
         Global.NativePostMessageFunction = temp.contentWindow.postMessage;
         Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
         Global.NativeFetch = temp.contentWindow.fetch;
-        temp.remove();
+        if(isCloudflareChallenge()){
+            temp.remove();
+        }
     }
 
     function PostMessage(window, data) {

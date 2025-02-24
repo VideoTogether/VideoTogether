@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1740403835
+// @version      1740405026
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -65,6 +65,10 @@
             }
             e.innerHTML = trustedPolicy.createHTML(html);
         }
+    }
+
+    function isCloudflareChallenge() {
+        return window.location.hostname == 'challenges.cloudflare.com';
     }
 
     function getDurationStr(duration) {
@@ -798,7 +802,9 @@
         Global.NativePostMessageFunction = temp.contentWindow.postMessage;
         Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
         Global.NativeFetch = temp.contentWindow.fetch;
-        temp.remove();
+        if(isCloudflareChallenge()){
+            temp.remove();
+        }
     }
 
     function PostMessage(window, data) {
@@ -3172,7 +3178,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1740403835';
+            this.version = '1740405026';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
