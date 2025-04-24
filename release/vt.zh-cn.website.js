@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1740403835
+// @version      1745502627
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -10,11 +10,11 @@
 // ==/UserScript==
 
 (function () {
-    try{
+    try {
         // this attribute will break the cloudflare turnstile
         document.currentScript.removeAttribute("cachedvt")
         document.currentScript.remove()
-    }catch{}
+    } catch { }
     const language = 'zh-cn'
     const vtRuntime = `website`;
     const realUrlCache = {}
@@ -3172,7 +3172,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1740403835';
+            this.version = '1745502627';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3197,17 +3197,19 @@
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
-                try{
+                try {
                     let host = (new URL(e.blockedURI)).host;
                     this.cspBlockedHost[host] = true;
-                }catch(e){}
+                } catch (e) { }
             });
             try {
                 this.CreateVideoDomObserver();
             } catch { }
             this.timer = setInterval(() => this.ScheduledTask(true), 2 * 1000);
             this.videoMap = new Map();
-            window.addEventListener('message', message => {
+            let messageListenerAliveCount = 0;
+            const messageListener = message => {
+                messageListenerAliveCount++;
                 if (message.data.context) {
                     this.tempUser = message.data.context.tempUser;
                     this.videoTitle = message.data.context.videoTitle;
@@ -3221,7 +3223,17 @@
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
                 this.processReceivedMessage(message.data.type, message.data.data, message);
-            });
+            }
+            window.addEventListener('message', messageListener);
+            setInterval(() => {
+                const currentCount = messageListenerAliveCount;
+                setTimeout(() => {
+                    if(currentCount == messageListenerAliveCount){
+                        console.error("messageListener is dead");
+                        window.addEventListener('message', messageListener);
+                    }
+                }, 6000);
+            }, 1000);
             try {
                 navigator.serviceWorker.addEventListener('message', (message) => {
                     console.log(`Received a message from service worker: ${event.data}`);
