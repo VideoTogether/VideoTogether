@@ -1,6 +1,6 @@
 
 (function () {
-    let version = '1721480832'
+    let version = '1737470271'
 
     try {
         eval(document.currentScript.getAttribute("cachedvt"));
@@ -15,7 +15,7 @@
     } catch (e) { console.error(e) }
 
 
-    const language = "zh-cn";
+    const language = "ja-jp";
 
     const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
     const encodeFastlyJsdelivrCdn = 'aHR0cHM6Ly9mYXN0bHkuanNkZWxpdnIubmV0L2doL1ZpZGVvVG9nZXRoZXIvVmlkZW9Ub2dldGhlckBsYXRlc3Q='

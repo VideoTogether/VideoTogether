@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		05B1B5E1A555503BB2C60AFC /* Pods_VideoTogether_Extension__iOS_.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A43E68519248B548232D616 /* Pods_VideoTogether_Extension__iOS_.framework */; };
 		2CD96C63530864B58897E391 /* Pods_VideoTogether__iOS_.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7A2E9484F6C7AB87AD991F3F /* Pods_VideoTogether__iOS_.framework */; };
+		390959D02E606B91006A93F6 /* load.ja-jp.js in Resources */ = {isa = PBXBuildFile; fileRef = 390959CE2E606B91006A93F6 /* load.ja-jp.js */; };
+		390959D12E606B91006A93F6 /* vt.ja-jp.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 390959CF2E606B91006A93F6 /* vt.ja-jp.user.js */; };
+		390959D22E606B91006A93F6 /* load.ja-jp.js in Resources */ = {isa = PBXBuildFile; fileRef = 390959CE2E606B91006A93F6 /* load.ja-jp.js */; };
+		390959D32E606B91006A93F6 /* vt.ja-jp.user.js in Resources */ = {isa = PBXBuildFile; fileRef = 390959CF2E606B91006A93F6 /* vt.ja-jp.user.js */; };
 		3E9112ED5DBFAD6C7115939C /* Pods_VideoTogether_Extension__macOS_.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59FA1E44AC392B7F59CBE004 /* Pods_VideoTogether_Extension__macOS_.framework */; };
 		463C5AF828F2BBB8007A2310 /* background.safari.js in Resources */ = {isa = PBXBuildFile; fileRef = 463C5AF728F2BBB8007A2310 /* background.safari.js */; };
 		463C5AF928F2BBB8007A2310 /* background.safari.js in Resources */ = {isa = PBXBuildFile; fileRef = 463C5AF728F2BBB8007A2310 /* background.safari.js */; };
@@ -115,6 +119,8 @@
 
 /* Begin PBXFileReference section */
 		1A43E68519248B548232D616 /* Pods_VideoTogether_Extension__iOS_.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VideoTogether_Extension__iOS_.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		390959CE2E606B91006A93F6 /* load.ja-jp.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "load.ja-jp.js"; sourceTree = "<group>"; };
+		390959CF2E606B91006A93F6 /* vt.ja-jp.user.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "vt.ja-jp.user.js"; sourceTree = "<group>"; };
 		3EFDE359130A90A8AB9DE900 /* Pods_VideoTogether__macOS_.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VideoTogether__macOS_.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		425DB47368B935C6CA9DB5D5 /* Pods-VideoTogether (macOS).debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether (macOS).debug.xcconfig"; path = "Target Support Files/Pods-VideoTogether (macOS)/Pods-VideoTogether (macOS).debug.xcconfig"; sourceTree = "<group>"; };
 		4622240F2AB53F7D00A1CE86 /* Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Header.h; sourceTree = "<group>"; };
@@ -262,6 +268,8 @@
 		4682878128F1CF25008CFC46 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				390959CE2E606B91006A93F6 /* load.ja-jp.js */,
+				390959CF2E606B91006A93F6 /* vt.ja-jp.user.js */,
 				46D922F62A2C3E61006F8194 /* pre.js */,
 				46D922F72A2C3E61006F8194 /* preInjected.js */,
 				463C5AF728F2BBB8007A2310 /* background.safari.js */,
@@ -507,6 +515,8 @@
 			files = (
 				46D922F82A2C3E61006F8194 /* pre.js in Resources */,
 				463C5AF828F2BBB8007A2310 /* background.safari.js in Resources */,
+				390959D02E606B91006A93F6 /* load.ja-jp.js in Resources */,
+				390959D12E606B91006A93F6 /* vt.ja-jp.user.js in Resources */,
 				468287F228F1DEE2008CFC46 /* load.zh-cn.js in Resources */,
 				468287F828F25B10008CFC46 /* vt.zh-cn.user.js in Resources */,
 				46D922FA2A2C3E61006F8194 /* preInjected.js in Resources */,
@@ -525,6 +535,8 @@
 			files = (
 				46D922F92A2C3E61006F8194 /* pre.js in Resources */,
 				463C5AF928F2BBB8007A2310 /* background.safari.js in Resources */,
+				390959D22E606B91006A93F6 /* load.ja-jp.js in Resources */,
+				390959D32E606B91006A93F6 /* vt.ja-jp.user.js in Resources */,
 				468287F328F1DEE2008CFC46 /* load.zh-cn.js in Resources */,
 				468287F928F25B10008CFC46 /* vt.zh-cn.user.js in Resources */,
 				46D922FB2A2C3E61006F8194 /* preInjected.js in Resources */,
@@ -548,9 +560,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (iOS)/Pods-VideoTogether (iOS)-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (iOS)/Pods-VideoTogether (iOS)-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -587,9 +603,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (macOS)/Pods-VideoTogether (macOS)-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-VideoTogether (macOS)/Pods-VideoTogether (macOS)-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -949,7 +969,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.16;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -989,7 +1009,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.16;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
