@@ -1,10 +1,14 @@
 package main
 
 import (
+	"crypto/tls"
+	"errors"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	_ "net/http/pprof"
@@ -12,6 +16,48 @@ import (
 	"github.com/VideoTogether/VideoTogether/internal/qps"
 	"github.com/unrolled/render"
 )
+
+type certManager struct {
+	certFile string
+	keyFile  string
+	cert     *tls.Certificate
+	mu       sync.RWMutex
+}
+
+func (cm *certManager) loadCert() {
+	cert, err := tls.LoadX509KeyPair(cm.certFile, cm.keyFile)
+	if err != nil {
+		log.Printf("Error loading certificate: %v", err)
+		return
+	}
+	
+	cm.mu.Lock()
+	cm.cert = &cert
+	cm.mu.Unlock()
+	log.Printf("Certificate reloaded successfully")
+}
+
+func (cm *certManager) getCert() (*tls.Certificate, error) {
+	cm.mu.RLock()
+	cert := cm.cert
+	cm.mu.RUnlock()
+	
+	if cert == nil {
+		return nil, errors.New("certificate not loaded")
+	}
+	return cert, nil
+}
+
+func (cm *certManager) start() {
+	cm.loadCert()
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			cm.loadCert()
+		}
+	}()
+}
 
 func main() {
 	// go func() {
@@ -36,7 +82,34 @@ func main() {
 	case "debug":
 		panic(http.ListenAndServe("127.0.0.1:5001", server))
 	case "prod":
-		panic(http.ListenAndServeTLS(":5000", "./certificate.crt", "./private.pem", server))
+		certFile := os.Getenv("CERT_FILE")
+		keyFile := os.Getenv("KEY_FILE")
+		if certFile == "" {
+			certFile = "/etc/letsencrypt/live/yourdomain.com/fullchain.pem"
+		}
+		if keyFile == "" {
+			keyFile = "/etc/letsencrypt/live/yourdomain.com/privkey.pem"
+		}
+		
+		cm := &certManager{
+			certFile: certFile,
+			keyFile:  keyFile,
+		}
+		cm.start()
+		
+		tlsConfig := &tls.Config{
+			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+				return cm.getCert()
+			},
+		}
+		
+		httpServer := &http.Server{
+			Addr:      ":5000",
+			Handler:   server,
+			TLSConfig: tlsConfig,
+		}
+		
+		panic(httpServer.ListenAndServeTLS("", ""))
 	default:
 		panic("unknown env")
 	}
