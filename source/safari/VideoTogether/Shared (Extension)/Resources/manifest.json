@@ -3,7 +3,7 @@
     "default_locale": "en",
     "name": "__MSG_extension_name__",
     "description": "__MSG_extension_description__",
-    "version": "3.0.0",
+    "version": "3.0.20",
     "icons": {
         "192": "images/android-icon-192x192.png"
     },

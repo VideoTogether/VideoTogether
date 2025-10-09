@@ -23,9 +23,12 @@
 // ==/UserScript==
 
 (async function () {
+    if (['challenges.cloudflare.com'].indexOf(window.location.hostname) != -1) {
+        return;
+    }
     let isDevelopment = false;
 
-    if(document instanceof XMLDocument){
+    if (document instanceof XMLDocument) {
         return;
     }
 
