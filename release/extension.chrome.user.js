@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1739015268
+// @version      1760266471
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -14,7 +14,7 @@
 // @grant        GM.saveTab
 // @connect      2gether.video
 // @connect      api.2gether.video
-// @connect      api.xn--6kr25xemln66b.com
+// @connect      api.begin0114.wiki
 // @connect      api.panghair.com
 // @connect      vt.panghair.com
 // @connect      raw.githubusercontent.com
@@ -23,13 +23,16 @@
 // ==/UserScript==
 
 (async function () {
+    if (['challenges.cloudflare.com'].indexOf(window.location.hostname) != -1) {
+        return;
+    }
     let isDevelopment = false;
 
-    if(document instanceof XMLDocument){
+    if (document instanceof XMLDocument) {
         return;
     }
 
-    let version = '1739015268'
+    let version = '1760266471'
     let type = 'Chrome'
     function getBrowser() {
         switch (type) {

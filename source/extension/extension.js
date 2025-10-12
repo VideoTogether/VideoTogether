@@ -14,7 +14,7 @@
 // @grant        GM.saveTab
 // @connect      2gether.video
 // @connect      api.2gether.video
-// @connect      api.xn--6kr25xemln66b.com
+// @connect      api.begin0114.wiki
 // @connect      api.panghair.com
 // @connect      vt.panghair.com
 // @connect      raw.githubusercontent.com

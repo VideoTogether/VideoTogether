@@ -1856,7 +1856,7 @@
 
             this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
             this.video_together_main_host = '{{{ {"":"./config/release_host","order":0} }}}';
-            this.video_together_backup_host = 'https://api.xn--6kr25xemln66b.com/';
+            this.video_together_backup_host = 'https://api.begin0114.wiki/';
             this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
             this.timer = 0
