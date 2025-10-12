@@ -369,7 +369,7 @@
                 case 13: {
                     let url = new URL(e.data.data.url);
                     if (!url.hostname.endsWith("2gether.video")
-                        && !url.hostname.endsWith("xn--6kr25xemln66b.com")
+                        && !url.hostname.endsWith("begin0114.wiki")
                         && !url.hostname.endsWith("panghair.com")
                         && !url.hostname.endsWith("videotogether.github.io")
                         && !url.hostname.endsWith("aliyuncs.com")) {
@@ -597,37 +597,7 @@
         case "Chrome":
         case "Safari":
         case "Firefox":
-            let inlineDisabled = false;
-            let evalDisabled = false;
-            let urlDisabled = false;
-            let hotUpdated = false;
-            document.addEventListener("securitypolicyviolation", (e) => {
-                if (hotUpdated) {
-                    return;
-                }
-                for (let blockedStr of [e.blockedURI, e.sample]) {
-                    for (let extensionUrl of ["2gether.video", "jsdelivr.net"]) {
-                        try {
-                            if (blockedStr.indexOf(extensionUrl) != -1) {
-                                urlDisabled = true;
-                            }
-                        } catch { }
-
-                    }
-                }
-
-                if (urlDisabled) {
-                    console.log("hot update is not successful")
-                    insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
-                    hotUpdated = true;
-                }
-            });
-            if (isDevelopment) {
-                script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
-            } else {
-                script.src = getBrowser().runtime.getURL(`load.${language}.js`);
-            }
-            script.setAttribute("cachedVt", cachedVt);
+            script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
             break;
         case "userscript_debug":
             script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
@@ -659,36 +629,37 @@
                 } catch { }
             }
         }, 10);
+
+        // fallback to china service
+        setTimeout(async () => {
+            try {
+                document.querySelector("#videoTogetherLoading").remove()
+            } catch { }
+            if (type == "Chrome" || type == "Firefox" || type == "Safari") {
+                return;
+            }
+            if (!ExtensionInitSuccess) {
+                let script = document.createElement('script');
+                script.type = 'text/javascript';
+                const chinaCdnB = await getChinaCdnB();
+                script.src = getCdnPath(chinaCdnB, `release/vt.${language}.user.js`);
+                (document.body || document.documentElement).appendChild(script);
+                try {
+                    if (isWebsite) {
+                        InsertInlineJs(script.src);
+                    }
+
+                    GM_addElement('script', {
+                        src: script.src,
+                        type: 'text/javascript'
+                    })
+                } catch (e) { };
+            }
+        }, 5000);
     } else {
         (document.body || document.documentElement).appendChild(script);
     }
 
-    // fallback to china service
-    setTimeout(async () => {
-        try {
-            document.querySelector("#videoTogetherLoading").remove()
-        } catch { }
-        if (type == "Chrome" || type == "Firefox" || type == "Safari") {
-            return;
-        }
-        if (!ExtensionInitSuccess) {
-            let script = document.createElement('script');
-            script.type = 'text/javascript';
-            const chinaCdnB = await getChinaCdnB();
-            script.src = getCdnPath(chinaCdnB, `release/vt.${language}.user.js`);
-            (document.body || document.documentElement).appendChild(script);
-            try {
-                if (isWebsite) {
-                    InsertInlineJs(script.src);
-                }
-
-                GM_addElement('script', {
-                    src: script.src,
-                    type: 'text/javascript'
-                })
-            } catch (e) { };
-        }
-    }, 5000);
     function filter(e) {
         let target = e.target;
 

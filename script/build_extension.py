@@ -182,11 +182,11 @@ if __name__ == '__main__':
             mv("release/local_videos."+lan+".html", "source/local/local_videos."+lan+".html")
             mv("release/local_page."+lan+".js", "source/local/local_page."+lan+".js")
             cp("release/vt."+lan+".user.js", "source/chrome/vt."+lan+".user.js")
-            cp("release/load."+lan+".js", "source/chrome/load."+lan+".js")
-            cp("release/load."+lan+".js", "source/firefox/load."+lan+".js")
             cp("release/vt."+lan+".user.js", "source/firefox/vt."+lan+".user.js")
             cp("release/vt."+lan+".user.js", "source/safari/VideoTogether/Shared (Extension)/Resources/vt."+lan+".user.js")
-            cp("release/load."+lan+".js", "source/safari/VideoTogether/Shared (Extension)/Resources/load."+lan+".js")
+            # cp("release/load."+lan+".js", "source/chrome/load."+lan+".js")
+            # cp("release/load."+lan+".js", "source/firefox/load."+lan+".js")
+            # cp("release/load."+lan+".js", "source/safari/VideoTogether/Shared (Extension)/Resources/load."+lan+".js")
 
     # shutil.copyfile(rootPath.joinpath("release/vt.debug.en-us.user.js"),
     #                 rootPath.joinpath("source/chrome/vt.debug.en-us.user.js"))
