@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1760266471
+// @version      1760271889
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -49,6 +49,10 @@
     }
     async function getEasyShareHostChina() {
         return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
+    }
+    async function getApiHostChina() {
+        const encodedHost = await getCdnConfig(encodedChinaCdnA).then(c => c.apiHostChina)
+        return encodedHost.startsWith('https') ? encodedHost : atob(encodedHost);
     }
 
     let trustedPolicy = undefined;
@@ -3154,7 +3158,6 @@
 
             this.video_together_host = 'http://127.0.0.1:5001/';
             this.video_together_main_host = 'https://vt.panghair.com:5000/';
-            this.video_together_backup_host = 'https://api.begin0114.wiki/';
             this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
             this.timer = 0
@@ -3172,7 +3175,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1760266471';
+            this.version = '1760271889';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3228,7 +3231,7 @@
             setInterval(() => {
                 const currentCount = messageListenerAliveCount;
                 setTimeout(() => {
-                    if(currentCount == messageListenerAliveCount){
+                    if (currentCount == messageListenerAliveCount) {
                         console.error("messageListener is dead");
                         window.addEventListener('message', messageListener);
                     }
@@ -4399,7 +4402,9 @@
                         this.SyncTimeWithServer(this.video_together_main_host);
                         setTimeout(() => {
                             if (this.minTrip == 1e9 || !this.httpSucc) {
-                                this.SyncTimeWithServer(this.video_together_backup_host);
+                                getApiHostChina().then(host => {
+                                    this.SyncTimeWithServer(host);
+                                });
                             }
                         }, 3000);
                     } else {

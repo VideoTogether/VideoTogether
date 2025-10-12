@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1737471429
+// @version      1760266471
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -14,7 +14,7 @@
 // @grant        GM.saveTab
 // @connect      2gether.video
 // @connect      api.2gether.video
-// @connect      api.chizhou.in
+// @connect      api.begin0114.wiki
 // @connect      api.panghair.com
 // @connect      vt.panghair.com
 // @connect      raw.githubusercontent.com
@@ -23,13 +23,16 @@
 // ==/UserScript==
 
 (async function () {
+    if (['challenges.cloudflare.com'].indexOf(window.location.hostname) != -1) {
+        return;
+    }
     let isDevelopment = false;
 
-    if(document instanceof XMLDocument){
+    if (document instanceof XMLDocument) {
         return;
     }
 
-    let version = '1737471429'
+    let version = '1760266471'
     let type = 'Chrome'
     function getBrowser() {
         switch (type) {
@@ -366,7 +369,7 @@
                 case 13: {
                     let url = new URL(e.data.data.url);
                     if (!url.hostname.endsWith("2gether.video")
-                        && !url.hostname.endsWith("chizhou.in")
+                        && !url.hostname.endsWith("xn--6kr25xemln66b.com")
                         && !url.hostname.endsWith("panghair.com")
                         && !url.hostname.endsWith("videotogether.github.io")
                         && !url.hostname.endsWith("aliyuncs.com")) {

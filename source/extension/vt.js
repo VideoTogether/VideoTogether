@@ -50,6 +50,10 @@
     async function getEasyShareHostChina() {
         return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
     }
+    async function getApiHostChina() {
+        const encodedHost = await getCdnConfig(encodedChinaCdnA).then(c => c.apiHostChina)
+        return encodedHost.startsWith('https') ? encodedHost : atob(encodedHost);
+    }
 
     let trustedPolicy = undefined;
     function updateInnnerHTML(e, html) {
@@ -1856,7 +1860,6 @@
 
             this.video_together_host = '{{{ {"":"./config/release_host","debug":"./config/debug_host","order":0} }}}';
             this.video_together_main_host = '{{{ {"":"./config/release_host","order":0} }}}';
-            this.video_together_backup_host = 'https://api.begin0114.wiki/';
             this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
             this.timer = 0
@@ -1930,7 +1933,7 @@
             setInterval(() => {
                 const currentCount = messageListenerAliveCount;
                 setTimeout(() => {
-                    if(currentCount == messageListenerAliveCount){
+                    if (currentCount == messageListenerAliveCount) {
                         console.error("messageListener is dead");
                         window.addEventListener('message', messageListener);
                     }
@@ -3101,7 +3104,9 @@
                         this.SyncTimeWithServer(this.video_together_main_host);
                         setTimeout(() => {
                             if (this.minTrip == 1e9 || !this.httpSucc) {
-                                this.SyncTimeWithServer(this.video_together_backup_host);
+                                getApiHostChina().then(host => {
+                                    this.SyncTimeWithServer(host);
+                                });
                             }
                         }, 3000);
                     } else {

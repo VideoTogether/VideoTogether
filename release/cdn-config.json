@@ -1,4 +1,5 @@
 {
     "jsCdnHostChina": "aHR0cHM6Ly9yZWxlYXNlLmJlZ2luMDExNC53aWtp",
-    "easyShareHostChina": "aHR0cHM6Ly8yZ2V0aGVyLnZpZGVv"
+    "easyShareHostChina": "aHR0cHM6Ly8yZ2V0aGVyLnZpZGVv",
+    "apiHostChina": "aHR0cHM6Ly9hcGkuYmVnaW4wMTE0Lndpa2k="
 }

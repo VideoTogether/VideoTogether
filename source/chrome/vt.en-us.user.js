@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1735360339
+// @version      1760271889
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -10,10 +10,11 @@
 // ==/UserScript==
 
 (function () {
-    try{
+    try {
         // this attribute will break the cloudflare turnstile
         document.currentScript.removeAttribute("cachedvt")
-    }catch{}
+        document.currentScript.remove()
+    } catch { }
     const language = 'en-us'
     const vtRuntime = `extension`;
     const realUrlCache = {}
@@ -48,6 +49,10 @@
     }
     async function getEasyShareHostChina() {
         return getCdnConfig(encodedChinaCdnA).then(c => c.easyShareHostChina)
+    }
+    async function getApiHostChina() {
+        const encodedHost = await getCdnConfig(encodedChinaCdnA).then(c => c.apiHostChina)
+        return encodedHost.startsWith('https') ? encodedHost : atob(encodedHost);
     }
 
     let trustedPolicy = undefined;
@@ -797,6 +802,7 @@
         Global.NativePostMessageFunction = temp.contentWindow.postMessage;
         Global.NativeAttachShadow = temp.contentWindow.Element.prototype.attachShadow;
         Global.NativeFetch = temp.contentWindow.fetch;
+        temp.remove();
     }
 
     function PostMessage(window, data) {
@@ -3152,7 +3158,6 @@
 
             this.video_together_host = 'https://vt.panghair.com:5000/';
             this.video_together_main_host = 'https://vt.panghair.com:5000/';
-            this.video_together_backup_host = 'https://api.chizhou.in/';
             this.video_tag_names = ["video", "bwp-video", "fake-iframe-video"]
 
             this.timer = 0
@@ -3170,7 +3175,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1735360339';
+            this.version = '1760271889';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
@@ -3195,15 +3200,19 @@
             // we need a common callback function to deal with all message
             this.SetTabStorageSuccessCallback = () => { };
             document.addEventListener("securitypolicyviolation", (e) => {
-                let host = (new URL(e.blockedURI)).host;
-                this.cspBlockedHost[host] = true;
+                try {
+                    let host = (new URL(e.blockedURI)).host;
+                    this.cspBlockedHost[host] = true;
+                } catch (e) { }
             });
             try {
                 this.CreateVideoDomObserver();
             } catch { }
             this.timer = setInterval(() => this.ScheduledTask(true), 2 * 1000);
             this.videoMap = new Map();
-            window.addEventListener('message', message => {
+            let messageListenerAliveCount = 0;
+            const messageListener = message => {
+                messageListenerAliveCount++;
                 if (message.data.context) {
                     this.tempUser = message.data.context.tempUser;
                     this.videoTitle = message.data.context.videoTitle;
@@ -3217,7 +3226,17 @@
                     window.VideoTogetherStorage = message.data.context.VideoTogetherStorage;
                 }
                 this.processReceivedMessage(message.data.type, message.data.data, message);
-            });
+            }
+            window.addEventListener('message', messageListener);
+            setInterval(() => {
+                const currentCount = messageListenerAliveCount;
+                setTimeout(() => {
+                    if (currentCount == messageListenerAliveCount) {
+                        console.error("messageListener is dead");
+                        window.addEventListener('message', messageListener);
+                    }
+                }, 6000);
+            }, 1000);
             try {
                 navigator.serviceWorker.addEventListener('message', (message) => {
                     console.log(`Received a message from service worker: ${event.data}`);
@@ -4383,7 +4402,9 @@
                         this.SyncTimeWithServer(this.video_together_main_host);
                         setTimeout(() => {
                             if (this.minTrip == 1e9 || !this.httpSucc) {
-                                this.SyncTimeWithServer(this.video_together_backup_host);
+                                getApiHostChina().then(host => {
+                                    this.SyncTimeWithServer(host);
+                                });
                             }
                         }, 3000);
                     } else {
