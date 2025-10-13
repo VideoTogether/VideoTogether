@@ -89,20 +89,32 @@ def compile(sourceSubDir, extension, rawFilename, subNameList: list, content):
             return
         resultFilename = rawFilename
         subNameList.sort(key=lambda x: x["order"])
+        subNameSet = set()
         for subName in subNameList:
-            if subName["name"] != "":
+            MAX_ORDER = 999999
+            if(subName["order"] == MAX_ORDER+1):
+                if subName["name"] not in subNameSet:
+                    print("Skip build for order -1: "+subName["name"], subNameList)
+                    return
+            elif subName["order"] > MAX_ORDER+1:
+                raise Exception("Invalid order: "+str(subName["order"]))
+            elif subName["name"] != "":
+                subNameSet.add(subName["name"])
                 resultFilename = resultFilename + "."+subName["name"]
+            else:
+                subNameSet.add(subName["name"])
         resultPath = releasePath.joinpath(resultFilename+extension)
         if vtSourceConfig != None and 'releaseTarget' in vtSourceConfig:
             resultPath = Path(sourceSubDir).joinpath(vtSourceConfig['releaseTarget']).joinpath(resultFilename+extension)
         resultPath = str(resultPath).replace(".buildme", "")
-        print(resultPath)
 
         content = content.replace('{{timestamp}}', timestamp_str)
         # remove all lines contains 'VT_DELETE_THIS_LINE'
         content = '\n'.join([line for line in content.split('\n') if 'VT_DELETE_THIS_LINE' not in line])
         if isChanged(resultPath, content):
             WriteSource(resultPath, content)
+            print('--Changed: ', resultPath, subNameList)
+
         return
     start = content.index(r'{{{')
     end = content.index("}}}") + 3
