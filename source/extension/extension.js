@@ -197,15 +197,6 @@
         }
     }
 
-    let vtRefreshVersion = version + language;
-    try {
-        let publicVtVersion = await getGM().getValue("PublicVtVersion")
-        if (publicVtVersion != null) {
-            vtRefreshVersion = vtRefreshVersion + String(publicVtVersion);
-        }
-    } catch (e) { };
-    console.log(vtRefreshVersion)
-
     async function AppendKey(key) {
         let keysStr = await getGM().getValue("VideoTogetherKeys");
         let keys = new Set(JSON.parse(keysStr));

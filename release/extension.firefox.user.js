@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1760353541
+// @version      1760354064
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -32,7 +32,7 @@
         return;
     }
 
-    let version = '1760353541'
+    let version = '1760354064'
     let type = 'Firefox'
     function getBrowser() {
         switch (type) {
@@ -196,15 +196,6 @@
             }
         }
     }
-
-    let vtRefreshVersion = version + language;
-    try {
-        let publicVtVersion = await getGM().getValue("PublicVtVersion")
-        if (publicVtVersion != null) {
-            vtRefreshVersion = vtRefreshVersion + String(publicVtVersion);
-        }
-    } catch (e) { };
-    console.log(vtRefreshVersion)
 
     async function AppendKey(key) {
         let keysStr = await getGM().getValue("VideoTogetherKeys");
