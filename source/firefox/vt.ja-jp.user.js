@@ -15,7 +15,7 @@
         document.currentScript.removeAttribute("cachedvt")
         document.currentScript.remove()
     } catch { }
-    const language = 'en-us'
+    const language = 'ja-jp'
     const vtRuntime = `extension`;
     const realUrlCache = {}
     const m3u8ContentCache = {}
@@ -75,7 +75,7 @@
         try {
             let d = parseInt(duration);
             let str = ""
-            let units = [" Sec ", " Min ", " Hr "]
+            let units = [" 秒 ", " 分 ", " 時間 "]
             for (let i in units) {
                 if (d > 0) {
                     str = d % 60 + units[i] + str;
@@ -1037,7 +1037,7 @@
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
             }
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
-                popupError("New Messages (<a id='changeVoiceBtn' style='color:inherit' href='#''>Change Voice</a>)");
+                popupError("新しいメッセージ (<a id='changeVoiceBtn' style='color:inherit' href='#''>音声変更</a>)");
                 extension.gotTextMsg(data['data'].id, data['data'].msg, false, -1, data['data'].audioUrl);
                 sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
@@ -1148,7 +1148,7 @@
             let voiceConnErrBtn = select('#voiceConnErrBtn');
             if (voiceConnErrBtn != undefined) {
                 voiceConnErrBtn.onclick = () => {
-                    alert('If you have installed uBlock and other adblock extensions, please disable those extensions and try again.')
+                    alert('uBlockなどの広告ブロック拡張機能をインストールしている場合は、それらを無効にして再試行してください。')
                 }
             }
         },
@@ -1241,18 +1241,18 @@
             try {
                 notNullUuid = await waitForRoomUuid();
             } catch {
-                Voice.errorMessage = "uuid is missing";
+                Voice.errorMessage = "uuidが見つかりません";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
             const rnameRPC = fixedEncodeURIComponent(notNullUuid + "_" + rname);
             if (rnameRPC.length > 256) {
-                Voice.errorMessage = "Room name too long";
+                Voice.errorMessage = "ルーム名が長すぎます";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
             if (window.location.protocol != "https:" && window.location.protocol != 'file:') {
-                Voice.errorMessage = "Only support https website";
+                Voice.errorMessage = "httpsウェブサイトのみサポートしています";
                 Voice.status = VoiceStatus.ERROR;
                 return;
             }
@@ -1293,7 +1293,7 @@
             } catch (e) {
                 if (Voice.status == VoiceStatus.CONNECTTING) {
                     Voice.status = VoiceStatus.ERROR;
-                    Voice.errorMessage = "Connection error (<a id='voiceConnErrBtn' style='color:inherit' href='#''>Help</a>)";
+                    Voice.errorMessage = "接続エラー (<a id='voiceConnErrBtn' style='color:inherit' href='#''>ヘルプ</a>)";
                 }
             }
 
@@ -1355,7 +1355,7 @@
                     Voice.stream = await navigator.mediaDevices.getUserMedia(constraints);
                 } catch (err) {
                     if (Voice.status == VoiceStatus.CONNECTTING) {
-                        Voice.errorMessage = "No microphone access";
+                        Voice.errorMessage = "マイクへのアクセスがありません";
                         Voice.status = VoiceStatus.ERROR;
                     }
                     return;
@@ -1376,11 +1376,11 @@
                         await subscribe(Voice.conn);
                     }
                 } else {
-                    throw new Error('Unknown error');
+                    throw new Error('不明なエラー');
                 }
                 Voice.conn.oniceconnectionstatechange = e => {
                     if (Voice.conn.iceConnectionState == "disconnected" || Voice.conn.iceConnectionState == "failed" || Voice.conn.iceConnectionState == "closed") {
-                        Voice.errorMessage = "Connection lost";
+                        Voice.errorMessage = "接続が切れました";
                         Voice.status = VoiceStatus.ERROR;
                     } else {
                         if (Voice.status == VoiceStatus.ERROR) {
@@ -1748,8 +1748,8 @@
         <span id="memberCount">0</span>
     </div>
     <button id="close-btn">x</button>
-    <input style="margin: 0 0 0 5px;" type="text" placeholder="Text Message" id="text-input" class="expand" />
-    <button id="send-button">Send</button>
+    <input style="margin: 0 0 0 5px;" type="text" placeholder="テキストメッセージ" id="text-input" class="expand" />
+    <button id="send-button">送信</button>
 </div>`);
                     document.fullscreenElement.appendChild(shadowWrapper);
                     var container = wrapper.getElementById('container');
@@ -1896,32 +1896,32 @@
         </div>
         <div id="videoTogetherStatusText" style="height: 22.5px;"></div>
         <div style="margin-bottom: 10px;">
-          <span class="ellipsis" id="videoTogetherRoomNameLabel">Room</span>
-          <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="Name of room">
+          <span class="ellipsis" id="videoTogetherRoomNameLabel">ルーム</span>
+          <input id="videoTogetherRoomNameInput" autocomplete="off" placeholder="ルーム名を入力してください">
         </div>
         <div>
-          <span class="ellipsis" id="videoTogetherRoomPasswordLabel">Password</span>
-          <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="Host's password">
+          <span class="ellipsis" id="videoTogetherRoomPasswordLabel">パスワード</span>
+          <input id="videoTogetherRoomPdIpt" autocomplete="off" placeholder="ホストのパスワードを入力">
         </div>
         <div>
           <div id="textMessageChat" style="display: none;">
-            <input id="textMessageInput" autocomplete="off" placeholder="Text Message">
+            <input id="textMessageInput" autocomplete="off" placeholder="テキストメッセージ">
             <button id="textMessageSend" class="vt-btn vt-btn-primary" type="button">
-              <span>Send</span>
+              <span>送信</span>
             </button>
           </div>
           <div id="textMessageConnecting" style="display: none;">
-            <span id="textMessageConnectingStatus">Connecting to Message service...</span>
-            <span id="zhcnTtsMissing"></span>
+            <span id="textMessageConnectingStatus">メッセージサービスに接続中...</span>
+            <span id="zhcnTtsMissing">中国語音声パックがありません</span>
           </div>
         </div>
       </div>
 
       <div id="downloadPannel" style="display: none;">
         <div>
-          <span id="downloadVideoInfo">Detecting video...</span>
+          <span id="downloadVideoInfo">動画を検出中...</span>
           <button id="confirmDownloadBtn" style="display: none;" class="vt-btn vt-btn-primary" type="button">
-            <span>Confirm and download</span>
+            <span>確認してダウンロード</span>
           </button>
           <div id="downloadProgress" style="display: none;">
             <progress id="downloadProgressBar" style="width: 100%;" value="0" max="100"></progress>
@@ -1929,37 +1929,37 @@
               <span id="downloadStatus"></span>
               <span id="downloadSpeed"></span>
             </div>
-            <span id="downloadingAlert" style="color: red;">Downloading, do not close page</span>
-            <span id="downloadCompleted" style="color: green; display: none;">Download complete</span>
+            <span id="downloadingAlert" style="color: red;">ダウンロード中。ページを閉じないでください</span>
+            <span id="downloadCompleted" style="color: green; display: none;">ダウンロード完了</span>
           </div>
         </div>
         <div style="display: block;">
           <a target="_blank" style="display: block;padding: 5px 5px;"
-            href="https://local.2gether.video/local_videos.en-us.html">View downloaded videos</a>
+            href="https://local.2gether.video/local_videos.ja-jp.html">ダウンロードした動画を表示</a>
           <a target="_blank" style="display: block;padding: 5px 5px;"
-            href="https://local.2gether.video/about.en-us.html">Copyright Notice</a>
+            href="https://local.2gether.video/about.ja-jp.html">著作権表示</a>
         </div>
       </div>
       <div id="voicePannel" class="content" style="display: none;">
         <div id="videoVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
-          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Video volume</span>
+          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">動画の音量</span>
           <div class="range-slider">
             <input id="videoVolume" class="slider" type="range" value="100" min="0" max="100">
           </div>
 
         </div>
         <div id="callVolumeCtrl" style="margin-top: 5px;width: 100%;text-align: left;">
-          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">Call Volume</span>
+          <span style="margin-top: 5px;display: inline-block;width: 100px;margin-left: 20px;">通話の音量</span>
           <div class="range-slider">
             <input id="callVolume" class="slider" type="range" value="100" min="0" max="100">
           </div>
         </div>
         <div id="iosVolumeErr" style="display: none;">
-          <p>iOS does not support volume adjustment</p>
+          <p>iOSは音量調整をサポートしていません</p>
         </div>
         <!-- <div style="margin-top: 5px;width: 100%;text-align: left;">
           <span
-            style="margin-top: 0px;display: inline-block;margin-left: 20px; margin-right: 10px;">Noise cancelling voice</span>
+            style="margin-top: 0px;display: inline-block;margin-left: 20px; margin-right: 10px;">ノイズキャンセリング</span>
           <label class="toggler-wrapper style-1">
             <input id="voiceNc" type="checkbox">
             <div class="toggler-slider">
@@ -1978,10 +1978,10 @@
 
       <div id="lobbyBtnGroup">
         <button id="videoTogetherCreateButton" class="vt-btn vt-btn-primary" type="button">
-          <span>Create</span>
+          <span>作成</span>
         </button>
         <button id="videoTogetherJoinButton" class="vt-btn vt-btn-secondary" type="button">
-          <span>Join</span>
+          <span>参加</span>
         </button>
       </div>
 
@@ -1989,11 +1989,11 @@
       <div id="roomButtonGroup" style="display: none;">
 
         <button id="videoTogetherExitButton" class="vt-btn vt-btn-dangerous" type="button">
-          <span>Exit</span>
+          <span>退出</span>
         </button>
 
         <button id="callBtn" class="vt-btn vt-btn-dangerous" type="button">
-          <span>Call</span>
+          <span>通話</span>
         </button>
 
 
@@ -2067,7 +2067,7 @@
       </button>
 
       <button id="videoTogetherHelpButton" class="vt-btn" type="button">
-        <span>Help</span>
+        <span>ヘルプ</span>
       </button>
     </div>
   </div>
@@ -2709,7 +2709,7 @@
                             select('#downloadVideoInfo').innerText = getDurationStr(extension.downloadDuration);
                         } else {
                             hide(this.confirmDownloadBtn);
-                            select('#downloadVideoInfo').innerText = "Detecting video..."
+                            select('#downloadVideoInfo').innerText = "動画を検出中..."
                         }
                     }, 1000);
                     inDownload = true;
@@ -2724,16 +2724,16 @@
                         if (isWeb()) {
                             await navigator.clipboard.writeText(extension.linkWithMemberState(window.location, extension.RoleEnum.Member, false))
                         } else {
-                            let shareText = 'Click the link to watch together with me: <main_share_link>';
+                            let shareText = 'リンクをクリックして一緒に視聴しましょう：<main_share_link>';
                             shareText = shareText.replace("<main_share_link>", await extension.generateEasyShareLink())
                             if (shareText.indexOf("<china_share_link>") != -1) {
                                 shareText = shareText.replace("<china_share_link>", await extension.generateEasyShareLink(true))
                             }
                             await navigator.clipboard.writeText(shareText);
                         }
-                        popupError("Copied");
+                        popupError("コピーしました");
                     } catch {
-                        popupError("Copy failed");
+                        popupError("コピーに失敗しました");
                     }
                 }
                 this.callErrorBtn.onclick = () => {
@@ -2856,7 +2856,7 @@
             });
             document.body.appendChild(touch);
 
-            this.setTxtMsgTouchPannelText("VideoTogether: You got a new message, click the screen to receive");
+            this.setTxtMsgTouchPannelText("VideoTogether: 新しいメッセージがあります。画面をクリックして受信してください");
         }
 
         setTxtMsgInterface(type) {
@@ -2872,7 +2872,7 @@
             }
             if (type == 2) {
                 show(this.textMessageConnecting);
-                this.textMessageConnectingStatus.innerText = "Connecting to Message service..."
+                this.textMessageConnectingStatus.innerText = "メッセージサービスに接続中..."
                 show(this.textMessageConnectingStatus);
             }
             if (type == 3) {
@@ -2881,7 +2881,7 @@
             }
             if (type == 4) {
                 show(this.textMessageConnecting);
-                this.textMessageConnectingStatus.innerText = "Text Message is disabled"
+                this.textMessageConnectingStatus.innerText = "テキストメッセージは無効になっています"
                 show(this.textMessageConnectingStatus);
             }
         }
@@ -2911,7 +2911,7 @@
                 e.stopPropagation();
             }
             let label = span.cloneNode(true);
-            label.textContent = "You can select the voice for reading messages:";
+            label.textContent = "メッセージを読み上げる音声を選択できます：";
             this.txtMsgTouchPannel.shadowRoot.appendChild(document.createElement('br'));
             this.txtMsgTouchPannel.shadowRoot.appendChild(label);
             let voices = speechSynthesis.getVoices();
@@ -3000,7 +3000,7 @@
             this.inputRoomName.disabled = false;
             this.inputRoomPasswordLabel.style.display = "inline-block";
             this.inputRoomPassword.style.display = "inline-block";
-            this.inputRoomName.placeholder = "Name of room"
+            this.inputRoomName.placeholder = "ルーム名を入力してください"
             show(this.lobbyBtnGroup);
             hide(this.roomButtonGroup);
             hide(this.easyShareCopyBtn);
@@ -3324,10 +3324,10 @@
             this.role = role
             switch (role) {
                 case this.RoleEnum.Master:
-                    setRoleText("Host");
+                    setRoleText("ホスト");
                     break;
                 case this.RoleEnum.Member:
-                    setRoleText("Member");
+                    setRoleText("メンバー");
                     break;
                 default:
                     setRoleText("");
@@ -3382,7 +3382,7 @@
                     setTimeout(() => {
                         try {
                             if (this.callbackMap.has(id)) {
-                                this.callbackMap.get(id)({ error: "timeout" });
+                                this.callbackMap.get(id)({ error: "タイムアウト" });
                             }
                         } finally {
                             this.callbackMap.delete(id);
@@ -3853,9 +3853,9 @@
                     try {
                         await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp, data.m3u8Url);
                         if (this.waitForLoadding) {
-                            this.UpdateStatusText("wait for memeber loading", "red");
+                            this.UpdateStatusText("メンバーの読み込み中...", "red");
                         } else {
-                            _this.UpdateStatusText("Sync " + _this.GetDisplayTimeText(), "green");
+                            _this.UpdateStatusText("同期完了 " + _this.GetDisplayTimeText(), "green");
                         }
                     } catch (e) {
                         this.UpdateStatusText(e, "red");
@@ -4276,7 +4276,7 @@
 
         async JoinRoom(name, password) {
             if (name == "") {
-                popupError("Please input room name")
+                popupError("ルーム名を入力してください")
                 return;
             }
             try {
@@ -4436,7 +4436,7 @@
                                 true,
                                 1e9,
                                 this.getLocalTimestamp());
-                            throw new Error("No video in this page");
+                            throw new Error("このページに動画はありません");
                         } else {
                             sendMessageToTop(MessageType.SyncMasterVideo, {
                                 waitForLoadding: this.waitForLoadding,
@@ -4455,7 +4455,7 @@
                         let newUrl = room["url"];
                         if (isEasyShareMember()) {
                             if (isEmpty(room['m3u8Url'])) {
-                                throw new Error("Can't sync this video");
+                                throw new Error("この動画は同期できません");
                             } else {
                                 let _url = new URL(window.location);
                                 _url.hash = room['m3u8Url'];
@@ -4474,7 +4474,7 @@
                                             if (isWeb()) {
                                                 if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
                                                     this._jumping = true;
-                                                    alert("Please join again after jump");
+                                                    alert("ジャンプ後に再度参加してください");
                                                 }
                                             }
                                         } catch { };
@@ -4496,11 +4496,11 @@
                             sendMessageToTop(MessageType.SetTabStorage, state);
                         }
                         if (this.PlayAdNow()) {
-                            throw new Error("Playing AD");
+                            throw new Error("広告再生中");
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
-                            throw new Error("No video in this page");
+                            throw new Error("このページに動画はありません");
                         } else {
                             sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
                         }
@@ -4804,16 +4804,16 @@
                             // check if the video is ready
                             if (window.location.hostname.endsWith('aliyundrive.com')) {
                                 if (videoDom.readyState == 0) {
-                                    throw new Error("Need to play manually");
+                                    throw new Error("手動で再生してください");
                                 }
                             }
                         }
                         await videoDom.play();
                         if (videoDom.paused) {
-                            throw new Error("Need to play manually");
+                            throw new Error("手動で再生してください");
                         }
                     } catch (e) {
-                        throw new Error("Need to play manually");
+                        throw new Error("手動で再生してください");
                     }
                 }
             }
@@ -4823,9 +4823,9 @@
                 } catch (e) { }
             }
             if (isNaN(videoDom.duration)) {
-                throw new Error("Need to play manually");
+                throw new Error("手動で再生してください");
             }
-            sendMessageToTop(MessageType.UpdateStatusText, { text: "Sync " + this.GetDisplayTimeText(), color: "green" });
+            sendMessageToTop(MessageType.UpdateStatusText, { text: "同期完了 " + this.GetDisplayTimeText(), color: "green" });
 
             setTimeout(() => {
                 try {
@@ -4855,7 +4855,7 @@
 
         async CreateRoom(name, password) {
             if (name == "") {
-                popupError("Please input room name")
+                popupError("ルーム名を入力してください")
                 return;
             }
             try {
