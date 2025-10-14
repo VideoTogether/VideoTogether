@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://2gether.video/
-// @version      1760271889
+// @version      1760446828
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -36,7 +36,7 @@
     const timeLimitation = 15;
     const textVoiceAudio = document.createElement('audio');
 
-    const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
+    const encodedChinaCdnA = 'https://videotogether.oss-cn-hangzhou.aliyuncs.com'
     function getCdnPath(encodedCdn, path) {
         const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
         return `${cdn}/${path}`;
@@ -3175,7 +3175,7 @@
 
             this.activatedVideo = undefined;
             this.tempUser = generateTempUserId();
-            this.version = '1760271889';
+            this.version = '1760446828';
             this.isMain = (window.self == window.top);
             this.UserId = undefined;
 
