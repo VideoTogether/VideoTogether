@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Video Together 一起看视频
 // @namespace    https://videotogether.github.io/
-// @version      1760266471
+// @version      1760354064
 // @description  Watch video together 一起看视频
 // @author       maggch@outlook.com
 // @match        *://*/*
@@ -32,7 +32,7 @@
         return;
     }
 
-    let version = '1760266471'
+    let version = '1760354064'
     let type = 'Chrome'
     function getBrowser() {
         switch (type) {
@@ -48,18 +48,6 @@
     let isUserscript = (type == "userscript");
     let websiteGM = {};
     let extensionGM = {};
-    const encodedChinaCdnA = 'aHR0cHM6Ly92aWRlb3RvZ2V0aGVyLm9zcy1jbi1oYW5nemhvdS5hbGl5dW5jcy5jb20='
-    const encodeFastlyJsdelivrCdn = 'aHR0cHM6Ly9mYXN0bHkuanNkZWxpdnIubmV0L2doL1ZpZGVvVG9nZXRoZXIvVmlkZW9Ub2dldGhlckBsYXRlc3Q='
-    function getCdnPath(encodedCdn, path) {
-        const cdn = encodedCdn.startsWith('https') ? encodedCdn : atob(encodedCdn);
-        return `${cdn}/${path}`;
-    }
-    async function getCdnConfig(encodedCdn) {
-        return fetch(getCdnPath(encodedCdn, 'release/cdn-config.json')).then(r => r.json())
-    }
-    async function getChinaCdnB() {
-        return getCdnConfig(encodedChinaCdnA).then(c => c.jsCdnHostChina)
-    }
 
     function getGM() {
         if (type == "website" || type == "website_debug") {
@@ -75,26 +63,6 @@
         return table.replace('-mini', '');
     }
 
-    setInterval(() => {
-        if (isWebsite) {
-            (function () {
-                const iframes = document.getElementsByTagName('iframe');
-                for (const iframe of iframes) {
-                    try {
-                        if (iframe.contentWindow.VideoTogetherParentInject != true &&
-                            window.location.origin === iframe.contentWindow.location.origin) {
-                            console.log("inject to iframe");
-                            const script = document.createElement('script');
-                            script.src = getCdnPath(encodeFastlyJsdelivrCdn, "release/extension.website.user.js");
-                            iframe.contentWindow.document.body.appendChild(script);
-                            iframe.contentWindow.VideoTogetherParentInject = true;
-                        }
-                    } catch (error) {
-                    }
-                }
-            })();
-        }
-    }, 2000);
 
     if (type == "website" || type == "website_debug") {
 
@@ -229,44 +197,6 @@
         }
     }
 
-    let vtRefreshVersion = version + language;
-    try {
-        let publicVtVersion = await getGM().getValue("PublicVtVersion")
-        if (publicVtVersion != null) {
-            vtRefreshVersion = vtRefreshVersion + String(publicVtVersion);
-        }
-    } catch (e) { };
-    console.log(vtRefreshVersion)
-
-    let cachedVt = null;
-    try {
-        let vtType = isWebsite ? "website" : "user";
-        let privateCachedVt = await getGM().getValue("PrivateCachedVt");
-        let cachedVersion = null;
-        try {
-            cachedVersion = privateCachedVt['version'];
-        } catch { };
-        if (cachedVersion == vtRefreshVersion) {
-            cachedVt = privateCachedVt['data'];
-        } else {
-            console.log("Refresh VT");
-            fetch(getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.${vtType}.js?vtRefreshVersion=${vtRefreshVersion}`))
-                .then(r => r.text())
-                .then(data => getGM().setValue('PrivateCachedVt', {
-                    'version': vtRefreshVersion,
-                    'data': data
-                }))
-                .catch(() => {
-                    getChinaCdnB().then(chinaCdnB => fetch(getCdnPath(chinaCdnB, `release/vt.${language}.${vtType}.js?vtRefreshVersion=${vtRefreshVersion}`)))
-                        .then(r => r.text())
-                        .then(data => getGM().setValue('PrivateCachedVt', {
-                            'version': vtRefreshVersion,
-                            'data': data
-                        }))
-                })
-        }
-    } catch (e) { };
-
     async function AppendKey(key) {
         let keysStr = await getGM().getValue("VideoTogetherKeys");
         let keys = new Set(JSON.parse(keysStr));
@@ -369,7 +299,7 @@
                 case 13: {
                     let url = new URL(e.data.data.url);
                     if (!url.hostname.endsWith("2gether.video")
-                        && !url.hostname.endsWith("xn--6kr25xemln66b.com")
+                        && !url.hostname.endsWith("begin0114.wiki")
                         && !url.hostname.endsWith("panghair.com")
                         && !url.hostname.endsWith("videotogether.github.io")
                         && !url.hostname.endsWith("aliyuncs.com")) {
@@ -633,105 +563,18 @@
     (document.body || document.documentElement).appendChild(wrapper);
     let script = document.createElement('script');
     script.type = 'text/javascript';
-    switch (type) {
-        case "userscript":
-            script.src = getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.user.js?timestamp=${version}`);
-            break;
-        case "Chrome":
-        case "Safari":
-        case "Firefox":
-            let inlineDisabled = false;
-            let evalDisabled = false;
-            let urlDisabled = false;
-            let hotUpdated = false;
-            document.addEventListener("securitypolicyviolation", (e) => {
-                if (hotUpdated) {
-                    return;
-                }
-                for (let blockedStr of [e.blockedURI, e.sample]) {
-                    for (let extensionUrl of ["2gether.video", "jsdelivr.net"]) {
-                        try {
-                            if (blockedStr.indexOf(extensionUrl) != -1) {
-                                urlDisabled = true;
-                            }
-                        } catch { }
 
-                    }
-                }
-
-                if (urlDisabled) {
-                    console.log("hot update is not successful")
-                    insertJs(getBrowser().runtime.getURL(`vt.${language}.user.js`));
-                    hotUpdated = true;
-                }
-            });
-            if (isDevelopment) {
-                script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
-            } else {
-                script.src = getBrowser().runtime.getURL(`load.${language}.js`);
-            }
-            script.setAttribute("cachedVt", cachedVt);
-            break;
-        case "userscript_debug":
-            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.user.js?timestamp=` + parseInt(Date.now());
-            break;
-        case "website":
-            script.src = getCdnPath(encodeFastlyJsdelivrCdn, `release/vt.${language}.website.js?timestamp=${version}`);
-            break;
-        case "website_debug":
-            script.src = `http://127.0.0.1:7000/release/vt.debug.${language}.website.js?timestamp=` + parseInt(Date.now());
-            break;
-    }
-
-    if (isWebsite || isUserscript) {
-        if (cachedVt != null) {
-            InsertInlineScript(cachedVt);
-        }
-        setTimeout(() => {
-            if (!ExtensionInitSuccess) {
-                (document.body || document.documentElement).appendChild(script);
-                if (isWebsite) {
-                    // keep this inline inject because shark browser needs this
-                    InsertInlineJs(script.src);
-                }
-                try {
-                    GM_addElement('script', {
-                        src: script.src,
-                        type: 'text/javascript'
-                    })
-                } catch { }
-            }
-        }, 10);
-    } else {
+    if (isExtension) {
+        script.src = getBrowser().runtime.getURL(`vt.${language}.user.js`);
         (document.body || document.documentElement).appendChild(script);
     }
 
-    // fallback to china service
-    setTimeout(async () => {
-        try {
-            document.querySelector("#videoTogetherLoading").remove()
-        } catch { }
-        if (type == "Chrome" || type == "Firefox" || type == "Safari") {
-            return;
-        }
-        if (!ExtensionInitSuccess) {
-            let script = document.createElement('script');
-            script.type = 'text/javascript';
-            const chinaCdnB = await getChinaCdnB();
-            script.src = getCdnPath(chinaCdnB, `release/vt.${language}.user.js`);
-            (document.body || document.documentElement).appendChild(script);
-            try {
-                if (isWebsite) {
-                    InsertInlineJs(script.src);
-                }
 
-                GM_addElement('script', {
-                    src: script.src,
-                    type: 'text/javascript'
-                })
-            } catch (e) { };
-        }
-    }, 5000);
+
+    if (isWebsite || isUserscript) {
+        /*Chrome*/
+    }
+
     function filter(e) {
         let target = e.target;
 

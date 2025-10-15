@@ -35,9 +35,8 @@
         }
     ],
     "web_accessible_resources": [
-        "load.en-us.js",
-        "load.zh-cn.js",
         "vt.en-us.user.js",
+        "vt.ja-jp.user.js",
         "vt.zh-cn.user.js",
         "preInjected.js"
     ],
