@@ -1,7 +1,7 @@
 {
     "name": "VideoTogether",
     "description": "Watch video together",
-    "version": "3.0.22",
+    "version": "3.0.23",
     "manifest_version": 3,
     "content_scripts": [
         {
