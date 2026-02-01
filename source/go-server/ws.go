@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/VideoTogether/VideoTogether/internal/qps"
@@ -29,6 +30,7 @@ func (h *slashFix) newWsHandler(hub *Hub) http.HandlerFunc {
 		language := r.URL.Query().Get("language")
 
 		client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), isHost: false, vtContext: NewVtContext(language, r.RemoteAddr)}
+		atomic.StoreInt64(&client.lastActiveNano, time.Now().UnixNano())
 		client.hub.register <- client
 
 		// Allow collection of memory referenced by the caller by doing all work in
@@ -219,6 +221,7 @@ type Client struct {
 	lastTempUserId string
 	isHost         bool
 	vtContext      *VtContext
+	lastActiveNano int64
 }
 
 type WsRequestMessage struct {
@@ -289,7 +292,11 @@ func (c *Client) readPump() {
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.conn.SetPongHandler(func(string) error {
+		atomic.StoreInt64(&c.lastActiveNano, time.Now().UnixNano())
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -299,6 +306,7 @@ func (c *Client) readPump() {
 			break
 		}
 
+		atomic.StoreInt64(&c.lastActiveNano, time.Now().UnixNano())
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		var req WsRequestMessage
 		if err = json.Unmarshal(message, &req); err != nil {
@@ -662,6 +670,11 @@ func (c *Client) writePump() {
 				return
 			}
 		case <-ticker.C:
+			lastActive := time.Unix(0, atomic.LoadInt64(&c.lastActiveNano))
+			if time.Since(lastActive) > 300*time.Second {
+				c.conn.Close()
+				return
+			}
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
