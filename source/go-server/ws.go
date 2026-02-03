@@ -108,9 +108,19 @@ func (h *Hub) getRoomClients(roomName string) *RoomClients {
 }
 
 func (h *Hub) run() {
+	cleanupTicker := time.NewTicker(5 * time.Minute)
+	defer cleanupTicker.Stop()
+
 	for {
 		func() {
 			select {
+			case <-cleanupTicker.C:
+				h.roomClients.Range(func(key, _ any) bool {
+					if h.vtSrv.QueryRoom(key.(string)) == nil {
+						h.roomClients.Delete(key)
+					}
+					return true
+				})
 			case _ = <-h.register:
 				return
 			case client := <-h.unregister:
