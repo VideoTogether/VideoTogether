@@ -104,9 +104,10 @@ func main() {
 		}
 		
 		httpServer := &http.Server{
-			Addr:      ":5000",
-			Handler:   server,
-			TLSConfig: tlsConfig,
+			Addr:        ":5000",
+			Handler:     server,
+			TLSConfig:   tlsConfig,
+			IdleTimeout: 120 * time.Second,
 		}
 		
 		panic(httpServer.ListenAndServeTLS("", ""))
