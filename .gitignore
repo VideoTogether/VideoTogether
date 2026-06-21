@@ -4,3 +4,9 @@ node_modules
 chrome.zip
 xcuserdata/
 *.zip
+# 建構時 clone 進來的內嵌獨立 repo / 外部來源，不納入主 repo 追蹤
+source/local/
+source/setting/
+source/website/
+# 開發交接 / 暫存產物，不納入追蹤
+handoff/

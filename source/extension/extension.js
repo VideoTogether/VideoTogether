@@ -171,20 +171,23 @@
     }
 
 
-    const languages = ['en-us', 'zh-cn', 'ja-jp'];
+    const languages = ['en-us', 'zh-cn', 'zh-tw', 'ja-jp'];
     let language = 'en-us';
     let settingLanguage = undefined;
     try {
         settingLanguage = await getGM().getValue("DisplayLanguage");
     } catch (e) { };
 
-    if (typeof settingLanguage != 'string') {
-        settingLanguage = navigator.language;
+    if (typeof settingLanguage != 'string' || settingLanguage.trim() === '' || settingLanguage.toLowerCase() === 'auto') {
+        settingLanguage = navigator.language; // 空值／auto＝自動偵測瀏覽器語言（修正：選空白選項時不再固定變英文）
     }
     if (typeof settingLanguage == 'string') {
         settingLanguage = settingLanguage.toLowerCase();
         if (languages.includes(settingLanguage)) {
             language = settingLanguage;
+        } else if (settingLanguage.split('-')[0] === 'zh') {
+            // 中文再細分:繁體（tw/hk/mo/hant）對到 zh-tw,其餘（cn/sg/hans…）對到 zh-cn
+            language = /(^|-)(tw|hk|mo|hant)(-|$)/.test(settingLanguage) ? 'zh-tw' : 'zh-cn';
         } else {
             const settingLanguagePrefix = settingLanguage.split('-')[0];
             for (let i = 0; i < languages.length; i++) {
@@ -278,7 +281,8 @@
 
         if (isTrustPageCache == undefined) {
             const domains = [
-                '2gether.video', 'videotogether.github.io'
+                '2gether.video', 'videotogether.github.io',
+                'lcy000.github.io' // 我們 fork 的設定頁網域（信任，才能讀寫設定）
             ];
 
             const hostname = window.location.hostname;
@@ -341,6 +345,7 @@
                 case 15: {
                     if (window.location.hostname.endsWith("videotogether.github.io")
                         || window.location.hostname.endsWith("2gether.video")
+                        || window.location.hostname.endsWith("lcy000.github.io")
                         || e.data.data.key.startsWith("Public")
                         || isWebsite
                         || isDevelopment) {
@@ -516,8 +521,20 @@
     }
 
     let wrapper = document.createElement("div");
-    wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`;
     (document.body || document.documentElement).appendChild(wrapper);
+    // 開機 splash「loading ...」的顯示策略：
+    //  ‑ 擴充版(isExtension)：vt.js 本機載入、幾乎瞬間，splash 沒意義 → 完全不顯示。
+    //  ‑ 網路版(userscript/website)：vt.js 從 CDN 抓、可能慢 → 只在最上層頁框延遲 800ms 才注入，
+    //    且 vt.js 已建立 #VideoTogetherWrapper 就不注入（避免快速載入閃一下）。iframe 子框沒有主面板、
+    //    splash 無意義且移除碼不在該框執行會變孤兒 → 不注入。vt.js 啟動後既有 remove() 仍會收掉。
+    function injectVtLoading() {
+        wrapper.innerHTML = `{{{ {"user": "./html/loading.html", "order":1} }}}`;
+    }
+    if (!isExtension && window.self === window.top) {
+        setTimeout(() => {
+            try { if (!document.querySelector("#VideoTogetherWrapper")) injectVtLoading(); } catch (e) { }
+        }, 800);
+    }
     let script = document.createElement('script');
     script.type = 'text/javascript';
 

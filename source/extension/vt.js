@@ -17,6 +17,13 @@
     } catch { }
     const language = '{$language$}'
     const vtRuntime = `{{{ {"user": "./config/vt_runtime_extension", "website": "./config/vt_runtime_website","order":100} }}}`;
+    // 設定頁網址（要改成自己部署的設定頁時，只改這一行即可）
+    const VT_SETTING_PAGE_URL = "https://lcy000.github.io/VideoTogether-setting/v3.html";
+    // 換頁/跳轉後「人數凍結」時長：還原舊人數後，這段時間內擋掉伺服器的假性掉人數。改這一行即可調整。
+    const VT_MC_FREEZE_MS = 6000;
+    // 「換頁帶過去的人數」最多多舊還願意還原：要涵蓋換頁載入空檔（YT 等重站可達 6~7 秒以上），
+    // 與凍結時長是兩回事——這個只決定「值不值得還原」，還原後仍只凍結 VT_MC_FREEZE_MS。
+    const VT_MC_CARRY_MAX_AGE_MS = 15000;
     const realUrlCache = {}
     const m3u8ContentCache = {}
 
@@ -56,9 +63,22 @@
     }
 
     let trustedPolicy = undefined;
+    // YouTube 等「強制 Trusted Types」的頁面：提前建立 policy，讓第一次就走 policy，
+    // 不會先試 raw innerHTML 而觸發 CSP 違規（console 噴 "requires 'TrustedHTML' assignment"）。
+    // 非強制 TT 的頁面 trustedTypes 不存在或不限名稱，createPolicy 失敗也無妨（維持 raw innerHTML）。
+    try {
+        if (typeof trustedTypes !== 'undefined' && trustedTypes.createPolicy) {
+            trustedPolicy = trustedTypes.createPolicy('videoTogetherExtensionVtJsPolicy', {
+                createHTML: (string) => string,
+                createScript: (string) => string,
+                createScriptURL: (url) => url
+            });
+        }
+    } catch (e) { }
     function updateInnnerHTML(e, html) {
         try {
-            e.innerHTML = html;
+            // 已建立 Trusted Types policy（如 YouTube 強制）就直接用，避免先丟 raw innerHTML 而噴 console 錯誤
+            e.innerHTML = trustedPolicy ? trustedPolicy.createHTML(html) : html;
         } catch {
             if (trustedPolicy == undefined) {
                 trustedPolicy = trustedTypes.createPolicy('videoTogetherExtensionVtJsPolicy', {
@@ -133,7 +153,9 @@
             lastRunQueue.shift();
         }
         if (lastRunQueue.length > timeLimitation) {
-            console.error("limited")
+            // 事件風暴(如 YT 廣告/緩衝/換畫質 狂噴 play/pause/seeked)時的正常節流，非錯誤——
+            // 同步仍由每 2 秒的 ScheduledTask 固定跑，這裡只是擋掉冗餘的即時催同步；故降為 debug，不汙染 console「錯誤」。
+            console.debug("limited")
             return true;
         }
         lastRunQueue.push(Date.now() / 1000);
@@ -160,6 +182,10 @@
 
     function getEnableMiniBar() {
         return getVideoTogetherStorage('EnableMiniBar', true);
+    }
+
+    function getEnableMessageVoice() {
+        return getVideoTogetherStorage('EnableMessageVoice', true);
     }
 
     function skipIntroLen() {
@@ -327,6 +353,25 @@
         if (e) e.style.display = null;
     }
 
+    // === collapse-state:start — 純函式，單元測試見 test/extension/collapse-state.test.js ===
+    // 決定面板初始 minimized：
+    //   在房間   → 繼承 carried（1/"1"/true=收合、0/"0"/false=展開、缺失=展開）
+    //   不在房間 → 看 MinimiseDefault（true=收合、false=展開、未知=收合「安全，絕不先展開」）
+    function VideoTogetherResolveMinimized(state) {
+        if (state && state.inRoom) {
+            var c = state.carried;
+            if (c === 1 || c === "1" || c === true) return true;
+            if (c === 0 || c === "0" || c === false) return false;
+            return false; // 在房間、無記憶 → 展開
+        }
+        // 注意：呼叫端需將 VideoTogetherStorage.MinimiseDefault (PascalCase) 映射到此 minimiseDefault 欄位
+        var d = state ? state.minimiseDefault : undefined;
+        if (d === true) return true;
+        if (d === false) return false;
+        return true; // 不在房間、設定未知 → 收合（安全，絕不先展開）
+    }
+    // === collapse-state:end ===
+
     function isVideoLoadded(video) {
         try {
             if (isNaN(video.readyState)) {
@@ -357,9 +402,39 @@
         }
     }
 
+    // 人數區塊 HTML：icon 永遠在；數字放 .vt-mc-num（CSS 給固定保留寬）。
+    // c 為 null/undefined 時只畫 icon＋保留位（剛進房、人數還沒讀到時用），讀到後填入數字，角色文字不會跳位。
+    function memberCountInner(c) {
+        // 中文顯示「人」單位（如 1 人，數字與「人」間留一個空格）；其他語言只留數字，避免長字爆版
+        const unit = (language === 'zh-tw' || language === 'zh-cn') ? '人' : '';
+        const icon = '<svg class="vt-mc-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+        const has = !(c === null || c === undefined || c === '');
+        const num = has ? (unit ? (c + ' ' + unit) : ('' + c)) : '';
+        const cls = unit ? 'vt-mc-num vt-mc-cjk' : 'vt-mc-num';
+        return icon + '<span class="' + cls + '">' + num + '</span>';
+    }
+
     function changeMemberCount(c) {
+        // 退出房間時 exitRoom() 會先 setRole(Null)，飛行中的 tick 事後回來就不會把人數重畫進大廳。
+        if (extension.role === extension.RoleEnum.Null) return;
+        // 防呆：只接受數字（含數字字串與 0）。非數字/undefined 不採用，避免把 ctxMemberCount 設成壞值 → 顯示空白或 "undefined"。
+        if (c == null || isNaN(Number(c))) return;
+        let now = Date.now();
+        // 換頁後最多凍結 VT_MC_FREEZE_MS（目前 6 秒）：用「跳轉前的人數」擋住換頁延遲/伺服器「同URL才算」造成的暫時掉到 1 人。
+        // 凍結期內，伺服器回報「比目前低」就先不採用（等觀眾跟上）；持平或更高直接採用；逾凍結時長恢復照伺服器。
+        // 沒有可凍結的舊值（剛進房/第一筆）時不擋，照伺服器正常顯示 → 不會卡空白。
+        let held = extension._mcHoldUntil && now < extension._mcHoldUntil;
+        let prev = parseInt(extension.ctxMemberCount);
+        if (held && !isNaN(prev) && Number(c) < prev) {
+            return;
+        }
         extension.ctxMemberCount = c;
-        updateInnnerHTML(select('#memberCount'), String.fromCodePoint("0x1f465") + " " + c)
+        // 記住「目前人數＋時間」，作為下次換頁要帶過去的『跳轉前人數』（同網域整頁重整也能還原；逾 10 秒視為過期）
+        try {
+            window.sessionStorage.setItem("VideoTogetherLastMemberCount", String(c));
+            window.sessionStorage.setItem("VideoTogetherLastMemberCountTime", String(now));
+        } catch (e) { }
+        updateInnnerHTML(select('#memberCount'), memberCountInner(c));
     }
 
     function dsply(e, _show = true) {
@@ -451,10 +526,10 @@
         const max = slider.max
         const value = slider.value
 
-        slider.style.background = `linear-gradient(to right, #1abc9c 0%, #1abc9c ${(value - min) / (max - min) * 100}%, #d7dcdf ${(value - min) / (max - min) * 100}%, #d7dcdf 100%)`
+        slider.style.background = `linear-gradient(to right, var(--vt-accent) 0%, var(--vt-accent) ${(value - min) / (max - min) * 100}%, var(--vt-border) ${(value - min) / (max - min) * 100}%, var(--vt-border) 100%)`
 
         slider.addEventListener('input', function () {
-            this.style.background = `linear-gradient(to right, #1abc9c 0%, #1abc9c ${(this.value - this.min) / (this.max - this.min) * 100}%, #d7dcdf ${(this.value - this.min) / (this.max - this.min) * 100}%, #d7dcdf 100%)`
+            this.style.background = `linear-gradient(to right, var(--vt-accent) 0%, var(--vt-accent) ${(this.value - this.min) / (this.max - this.min) * 100}%, var(--vt-border) ${(this.value - this.min) / (this.max - this.min) * 100}%, var(--vt-border) 100%)`
         });
     }
 
@@ -636,7 +711,10 @@
                 m3u8ContentCache[data['data'].m3u8Url] = data['data'].content;
             }
             if (data['method'] == 'send_txtmsg' && getEnableTextMessage()) {
-                popupError("{$new_message_change_voice$}");
+                // 「有新訊息(更換語音)」是語音相關提示——關閉語音播報時就不跳，訊息仍會進聊天
+                if (getEnableMessageVoice()) {
+                    popupError("{$new_message_change_voice$}");
+                }
                 extension.gotTextMsg(data['data'].id, data['data'].msg, false, -1, data['data'].audioUrl);
                 sendMessageToTop(MessageType.GotTxtMsg, { id: data['data'].id, msg: data['data'].msg });
             }
@@ -759,12 +837,27 @@
             let callBtn = select("#callBtn");
             let callConnecting = select("#callConnecting");
             let callErrorBtn = select("#callErrorBtn");
-            dsply(callConnecting, s == VoiceStatus.CONNECTTING);
-            dsply(callBtn, s == VoiceStatus.STOP);
             let inCall = (VoiceStatus.UNMUTED == s || VoiceStatus.MUTED == s);
+            dsply(callConnecting, s == VoiceStatus.CONNECTTING);
+            dsply(callBtn, s == VoiceStatus.STOP || inCall);
             dsply(micBtn, inCall);
             dsply(audioBtn, inCall);
+            dsply(select('#vtDonate'), !(inCall || s == VoiceStatus.CONNECTTING)); // 通話中/連線中：只有愛心讓位，分享留著
             dsply(callErrorBtn, s == VoiceStatus.ERROR);
+            // 通話鈕做成切換：通話中顯示「結束通話」並可掛斷
+            if (callBtn) {
+                let callBtnLabel = callBtn.querySelector('span');
+                if (callBtnLabel) {
+                    callBtnLabel.textContent = inCall ? '{$end_voice_call_button$}' : '{$voice_call_button$}';
+                }
+                callBtn.classList.toggle('vt-btn-callactive', inCall);
+            }
+            // 非通話狀態（結束/斷線/連線中）若還停在音量面板就切回主畫面，避免卡住；並還原音量鈕高亮
+            if (!inCall && select('#voicePannel') && select('#voicePannel').style.display !== 'none') {
+                show(select('#mainPannel'));
+                hide(select('#voicePannel'));
+                if (audioBtn) audioBtn.style.color = '';
+            }
             switch (s) {
                 case VoiceStatus.STOP:
                     break;
@@ -1238,16 +1331,36 @@
             this.isInRoom = false;
 
             this.isMain = (window.self == window.top);
+            // 全螢幕小窗的「完整」移除：DOM + GotTxtMsgCallback + 舊全螢幕元素的 mousemove 監聽 + 閒置計時器。
+            // 退房／離開全螢幕／換全螢幕元素都共用它，避免清理路徑不一致而殘留監聽/計時器（codex 審查指出）。
+            const removeFullscreenMini = () => {
+                try { if (this.fullscreenSWrapper) this.fullscreenSWrapper.remove(); } catch (e) { }
+                this.fullscreenSWrapper = undefined;
+                this.fullscreenWrapper = undefined;
+                GotTxtMsgCallback = undefined;
+                try { if (this.fsIdleEl && this.fsIdleHandler) this.fsIdleEl.removeEventListener("mousemove", this.fsIdleHandler); } catch (e) { }
+                try { if (this.clearFsIdle) this.clearFsIdle(); } catch (e) { }
+                this.fsIdleEl = undefined; this.fsIdleHandler = undefined;
+            };
             setInterval(() => {
-                if (getEnableMiniBar() && getEnableTextMessage() && document.fullscreenElement != undefined
-                    && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member)) {
+                // 小窗(人數)由 EnableMiniBar 決定要不要顯示；聊天(輸入框等)另由 EnableTextMessage 控制(見下方建立小窗處)。
+                // 解耦：關掉文字訊息時仍保留人數小窗，不再整個不顯示。
+                const _miniShouldShow = getEnableMiniBar() && document.fullscreenElement != undefined
+                    && (extension.ctxRole == extension.RoleEnum.Master || extension.ctxRole == extension.RoleEnum.Member);
+                if (_miniShouldShow) {
                     const qs = (s) => this.fullscreenWrapper.querySelector(s);
                     try {
-                        qs("#memberCount").innerText = extension.ctxMemberCount;
+                        // 防呆：ctxMemberCount 尚未讀到(undefined)/非數字時顯示空白，不要把 "undefined" 印到小窗
+                        const _mc = extension.ctxMemberCount;
+                        qs("#memberCount").innerText = (_mc == null || _mc === '' || isNaN(Number(_mc))) ? '' : _mc;
                         qs("#send-button").disabled = !extension.ctxWsIsOpen;
                     } catch { };
                     if (document.fullscreenElement.contains(this.fullscreenSWrapper)) {
                         return;
+                    }
+                    // 換了全螢幕元素時，舊 wrapper 還掛在已退出全螢幕的舊元素上 → 完整移除(含監聽/計時器)，避免殘留洩漏
+                    if (this.fullscreenSWrapper) {
+                        removeFullscreenMini();
                     }
                     let shadowWrapper = document.createElement("div");
                     this.fullscreenSWrapper = shadowWrapper;
@@ -1265,6 +1378,13 @@
                     let msgInput = wrapper.getElementById('text-input');
                     let sendBtn = wrapper.getElementById('send-button');
                     let closeBtn = wrapper.getElementById('close-btn');
+                    // 文字訊息關閉：收掉聊天(箭頭/輸入框/送出)，只留人數膠囊＋✕。建立小窗時決定即可——
+                    // 改設定要開設定頁、通常會先離開全螢幕，回來再進全螢幕時小窗會重建並套用最新設定。
+                    if (!getEnableTextMessage()) {
+                        if (expandBtn) expandBtn.style.display = 'none';
+                        if (msgInput) msgInput.style.display = 'none';
+                        if (sendBtn) sendBtn.style.display = 'none';
+                    }
                     let expanded = true;
                     function expand() {
                         if (expanded) {
@@ -1279,7 +1399,7 @@
                         }
                         expanded = !expanded;
                     }
-                    closeBtn.onclick = () => { shadowWrapper.style.display = "none"; }
+                    closeBtn.onclick = () => { container.style.opacity = "0"; container.style.pointerEvents = "none"; }
                     wrapper.getElementById('expand-button').addEventListener('click', () => expand());
                     sendBtn.onclick = () => {
                         extension.currentSendingMsgId = generateUUID();
@@ -1296,13 +1416,55 @@
                             sendBtn.click();
                         }
                     });
-                } else {
-                    if (this.fullscreenSWrapper != undefined) {
-                        this.fullscreenSWrapper.remove();
-                        this.fullscreenSWrapper = undefined;
-                        this.fullscreenWrapper = undefined;
-                        GotTxtMsgCallback = undefined;
+                    // 可自由拖動（拖左側握把）：用 transform translate 相對位移，與定位脈絡無關，
+                    // 不會因全螢幕元素的 containing block 不同而飛到角落
+                    let dragHandle = wrapper.getElementById('drag-handle');
+                    if (dragHandle) {
+                        let vtDragX = 0, vtDragY = 0;
+                        dragHandle.addEventListener('mousedown', (e) => {
+                            let startX = e.clientX, startY = e.clientY;
+                            let baseX = vtDragX, baseY = vtDragY;
+                            const onMove = (ev) => {
+                                vtDragX = baseX + (ev.clientX - startX);
+                                vtDragY = baseY + (ev.clientY - startY);
+                                container.style.transform = "translate(" + vtDragX + "px, " + vtDragY + "px)";
+                            };
+                            const onUp = () => {
+                                document.removeEventListener('mousemove', onMove);
+                                document.removeEventListener('mouseup', onUp);
+                            };
+                            document.addEventListener('mousemove', onMove);
+                            document.addEventListener('mouseup', onUp);
+                            e.preventDefault();
+                        });
                     }
+                    // 3 秒無動作淡出、滑鼠移動再現（取代原本叉叉永久隱藏）
+                    let vtIdleTimer = null;
+                    const showBar = () => {
+                        container.style.opacity = "1";
+                        container.style.pointerEvents = "auto";
+                        clearTimeout(vtIdleTimer);
+                        if (this.fullscreenWrapper && this.fullscreenWrapper.activeElement === msgInput) {
+                            return; // 打字中不淡出
+                        }
+                        vtIdleTimer = setTimeout(() => {
+                            container.style.opacity = "0";
+                            container.style.pointerEvents = "none";
+                        }, 2500);
+                    };
+                    msgInput.addEventListener("focus", () => { clearTimeout(vtIdleTimer); container.style.opacity = "1"; });
+                    msgInput.addEventListener("blur", () => showBar());
+                    msgInput.addEventListener("keyup", () => { clearTimeout(vtIdleTimer); });
+                    container.addEventListener("mousemove", showBar);
+                    this.fsIdleEl = document.fullscreenElement;
+                    this.fsIdleHandler = showBar;
+                    this.fsIdleEl.addEventListener("mousemove", showBar);
+                    this.clearFsIdle = () => { clearTimeout(vtIdleTimer); };
+                    showBar();
+                } else {
+                    // 不顯示(退房 ctxRole→Null／離開全螢幕／關閉設定)：主動移除已注入的小窗(含監聽/計時器)，
+                    // 否則它只會停止更新、卻殘留在畫面上顯示舊人數與聊天框（使用者回報退房後小窗還在）。
+                    removeFullscreenMini();
                 }
             }, 500);
             if (this.isMain) {
@@ -1326,6 +1488,24 @@
 
                 wrapper.querySelector("#videoTogetherMinimize").onclick = () => { this.Minimize() }
                 wrapper.querySelector("#videoTogetherMaximize").onclick = () => { this.Maximize() }
+                let vtThemeBtn = wrapper.querySelector("#vtThemeToggle");
+                if (vtThemeBtn) { vtThemeBtn.onclick = () => { this.ToggleTheme() } }
+                this.InitTheme();
+                // 視窗太小時自動收成小圖示，避免佔掉僅剩的畫面；視窗變大再自動展開（只在自動收起時）
+                let autoCollapse = () => {
+                    let tooSmall = window.innerWidth < 720 || window.innerHeight < 560;
+                    if (tooSmall && !this.minimized) {
+                        this.Minimize(true);
+                        this.autoMinimized = true;
+                    } else if (!tooSmall && this.autoMinimized && this.minimized) {
+                        this.Maximize(true);
+                        this.autoMinimized = false;
+                    }
+                };
+                window.addEventListener("resize", autoCollapse);
+                // 不在載入時主動呼叫 autoCollapse()：初始收/展由 Init（一律先收合）＋ firstSync 決定。
+                // 早期呼叫（在元素參考指派前、this.minimized 仍為初始 false）只會把 autoMinimized 誤設成 true，
+                // 導致之後視窗放大時把「本該收合」的面板誤展開（codex 指出）。autoCollapse 只當 resize 處理器用。
                 ["", "webkit"].forEach(prefix => {
                     document.addEventListener(prefix + "fullscreenchange", (event) => {
                         if (document.fullscreenElement || document.webkitFullscreenElement) {
@@ -1355,7 +1535,13 @@
                 this.roomButtonGroup = wrapper.querySelector('#roomButtonGroup');
                 this.exitButton = wrapper.querySelector("#videoTogetherExitButton");
                 this.callBtn = wrapper.querySelector("#callBtn");
-                this.callBtn.onclick = () => Voice.join("", window.videoTogetherExtension.roomName);
+                this.callBtn.onclick = () => {
+                    if (Voice.inCall) {
+                        Voice.stop();
+                    } else {
+                        Voice.join("", window.videoTogetherExtension.roomName);
+                    }
+                };
                 this.helpButton = wrapper.querySelector("#videoTogetherHelpButton");
                 this.audioBtn = wrapper.querySelector("#audioBtn");
                 this.micBtn = wrapper.querySelector("#micBtn");
@@ -1438,6 +1624,33 @@
                         popupError("{$easy_share_link_copy_failed$}");
                     }
                 }
+                // 邀請鈕：複製「可直接點開的房間連結」（純連結，不加任何說明文字/備用連結）
+                this.inviteBtn = wrapper.querySelector('#vtInviteBtn');
+                if (this.inviteBtn) this.inviteBtn.onclick = async () => {
+                    try {
+                        // 直接給「加入房間連結」：朋友點開直達房主目前的影片頁並自動進房，
+                        // 不再經過 easyshare 轉送頁（該頁 zh-tw 在上游是 404，且會多等 6 秒才跳轉）。
+                        // 用「乾淨網址」(linkWithoutState) 當基底，讓對方的 url 與房間 url 一致 → 不會再觸發跳轉/暫時頁。
+                        const link = extension.linkWithMemberState(extension.linkWithoutState(window.location), extension.RoleEnum.Member, false).toString();
+                        await navigator.clipboard.writeText(link);
+                        popupError("{$easy_share_link_copied$}");
+                    } catch {
+                        popupError("{$easy_share_link_copy_failed$}");
+                    }
+                };
+                // 點房號列 → 複製「完整房間名稱」（即使顯示被 … 截斷，複製的仍是完整值，不必展開、無歧義）。
+                // 🔗 例外（有自己的複製連結動作）；大廳（房名 input 可編輯）不觸發，讓使用者正常輸入。
+                this.roomField = wrapper.querySelector('#vtRoomField');
+                if (this.roomField) this.roomField.onclick = async (e) => {
+                    if (e.target.closest('#vtInviteBtn')) return;
+                    if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                    try {
+                        await navigator.clipboard.writeText(this.inputRoomName.value);
+                        popupError("{$room_name_copied$}");
+                    } catch {
+                        popupError("{$easy_share_link_copy_failed$}");
+                    }
+                };
                 this.callErrorBtn.onclick = () => {
                     Voice.join("", window.videoTogetherExtension.roomName);
                 }
@@ -1459,9 +1672,9 @@
                     dsply(select('#mainPannel'), hideMain);
                     dsply(select('#voicePannel'), !hideMain);
                     if (!hideMain) {
-                        this.audioBtn.style.color = '#1890ff';
+                        this.audioBtn.style.color = 'var(--vt-accent)';
                     } else {
-                        this.audioBtn.style.color = '#6c6c6c';
+                        this.audioBtn.style.color = '';
                     }
                     if (await isAudioVolumeRO()) {
                         show(select('#iosVolumeErr'));
@@ -1489,17 +1702,40 @@
 
                 this.createRoomButton.onclick = this.CreateRoomButtonOnClick.bind(this);
                 this.joinRoomButton.onclick = this.JoinRoomButtonOnClick.bind(this);
-                this.helpButton.onclick = this.HelpButtonOnClick.bind(this);
                 this.exitButton.onclick = (() => {
                     window.videoTogetherExtension.exitRoom();
                 });
                 this.videoTogetherRoleText = wrapper.querySelector("#videoTogetherRoleText")
                 this.videoTogetherSetting = wrapper.querySelector("#videoTogetherSetting");
-                hide(this.videoTogetherSetting);
                 this.inputRoomName = wrapper.querySelector('#videoTogetherRoomNameInput');
                 this.inputRoomPassword = wrapper.querySelector("#videoTogetherRoomPdIpt");
+                const keepRoomNameCollapsed = () => {
+                    if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                    this.inputRoomName.blur();
+                    this.inputRoomName.scrollLeft = 0;
+                    requestAnimationFrame(() => {
+                        if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                        this.inputRoomName.blur();
+                        this.inputRoomName.scrollLeft = 0;
+                    });
+                };
+                if (this.roomField) this.roomField.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('#vtInviteBtn')) return;
+                    if (!this.inputRoomName || !this.inputRoomName.disabled) return;
+                    e.preventDefault();
+                    keepRoomNameCollapsed();
+                }, true);
+                this.inputRoomName.addEventListener('focus', keepRoomNameCollapsed);
                 this.inputRoomNameLabel = wrapper.querySelector('#videoTogetherRoomNameLabel');
                 this.inputRoomPasswordLabel = wrapper.querySelector("#videoTogetherRoomPasswordLabel");
+                // 大廳「房間/密碼」標籤等寬，讓兩個輸入框對齊（中文兩字本來就齊；英日標籤長度不同需補齊）
+                try {
+                    const lobbyLabelW = { 'en-us': '70px', 'ja-jp': '82px' }[language];
+                    if (lobbyLabelW) {
+                        this.inputRoomNameLabel.style.flex = '0 0 ' + lobbyLabelW;
+                        this.inputRoomPasswordLabel.style.flex = '0 0 ' + lobbyLabelW;
+                    }
+                } catch { }
                 this.videoTogetherHeader = wrapper.querySelector("#videoTogetherHeader");
                 this.videoTogetherFlyPannel = wrapper.getElementById("videoTogetherFlyPannel");
                 this.videoTogetherSamllIcon = wrapper.getElementById("videoTogetherSamllIcon");
@@ -1651,7 +1887,6 @@
             if (!isDefault) {
                 this.SaveIsMinimized(true);
             }
-            this.disableDefaultSize = true;
             hide(this.videoTogetherFlyPannel);
             show(this.videoTogetherSamllIcon);
         }
@@ -1661,30 +1896,96 @@
             if (!isDefault) {
                 this.SaveIsMinimized(false);
             }
-            this.disableDefaultSize = true;
             show(this.videoTogetherFlyPannel);
             hide(this.videoTogetherSamllIcon);
         }
 
         SaveIsMinimized(minimized) {
-            localStorage.setItem("VideoTogetherMinimizedHere", minimized ? 1 : 0)
+            // 收/展只在「房間會話」中記憶（跟著房間跨頁繼承）；不在房間則不記憶（沒在房間 → 純看設定）。
+            // 立即寫入 TabStorage + sessionStorage，避免手動操作後馬上換頁、來不及被同步迴圈持久化。
+            // 註：this.minimized 已由 Minimize/Maximize 先行設定，GetRoomState 讀的就是它。
+            try {
+                let ext = window.videoTogetherExtension;
+                if (ext && ext.role != ext.RoleEnum.Null) {
+                    let state = ext.GetRoomState("");
+                    sendMessageToTop(MessageType.SetTabStorage, state);
+                    ext.SaveStateToSessionStorageWhenSameOrigin("");
+                }
+            } catch (e) { }
+        }
+
+        InitTheme() {
+            let saved = null;
+            try { saved = localStorage.getItem("VideoTogetherTheme"); } catch (e) { }
+            if (saved === "light" || saved === "dark") {
+                this.shadowWrapper.setAttribute("data-vt-theme", saved);
+            } else {
+                this.shadowWrapper.removeAttribute("data-vt-theme");
+            }
+        }
+
+        ToggleTheme() {
+            let cur = this.shadowWrapper.getAttribute("data-vt-theme");
+            if (!cur) {
+                // 目前跟隨系統：先算出實際呈現的色系再翻轉
+                cur = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+            }
+            const next = cur === "dark" ? "light" : "dark";
+            this.shadowWrapper.setAttribute("data-vt-theme", next);
+            try { localStorage.setItem("VideoTogetherTheme", next); } catch (e) { }
         }
 
         Init() {
-            let VideoTogetherMinimizedHere = localStorage.getItem("VideoTogetherMinimizedHere");
-            if (VideoTogetherMinimizedHere == 0) {
-                this.Maximize(true);
-            } else if (VideoTogetherMinimizedHere == 1) {
-                this.Minimize(true);
-            }
+            // 載入時一律先呈現「收合」（HTML 預設即收合）。是否展開完全交給「權威」的 firstSync / RecoveryState 決定，
+            // 不在這裡依（可能過時的）localStorage 鏡像或 sessionStorage 樂觀展開——那正是「Init 先展開 → 非同步又收回」
+            // 展→收閃爍的根因（剛切換設定那次鏡像會過時；在房間時 sessionStorage 與 TabStorage 可能短暫不一致）。
+            // 代價：本來該展開的情況（設定關、或在房間且上次展開）會有一次溫和的「收→展」，符合先前確認的取捨。
+            this.Minimize(true);
         }
 
         InRoom() {
             try {
                 speechSynthesis.getVoices();
             } catch { };
-            this.Maximize();
+            // 收/展不再由 InRoom 決定：避免房主狀態傳染觀眾、避免每次還原都強制展開。
+            // 改由 Init / RecoveryState / firstSync 依「是否在房間 + carried/設定」決定。
             this.inputRoomName.disabled = true;
+            this.inputRoomName.blur();
+            this.inputRoomName.scrollLeft = 0;
+            let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.add('vt-field--inroom');
+            let rc = this.wrapper.querySelector('#vtRoomCard'); if (rc) rc.classList.add('vt-roomcard--active');
+            let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) show(ib);
+            // 進房先畫出人數：若是「剛跳轉過來」(sessionStorage 有 10 秒內的人數)，帶上次人數＋啟動最多 10 秒凍結，
+            // 擋住換頁延遲時掉到 1 人；沒有近期紀錄就只畫 icon、讓伺服器正常回報（不會卡空白）。
+            let mcEl = this.wrapper.querySelector('#memberCount');
+            if (mcEl) {
+                let lastMc = null, lastTime = 0;
+                try {
+                    lastMc = window.sessionStorage.getItem("VideoTogetherLastMemberCount");
+                    lastTime = parseFloat(window.sessionStorage.getItem("VideoTogetherLastMemberCountTime")) || 0;
+                } catch (e) { }
+                // 同網域 sessionStorage 沒有(多半是跨網域換頁遺失)→ 退而讀 TabStorage（跟著房間跨網域帶過來的）
+                if (lastMc == null || lastMc === "") {
+                    try {
+                        let ts = window.VideoTogetherStorage && window.VideoTogetherStorage.VideoTogetherTabStorage;
+                        if (ts && ts.VideoTogetherLastMemberCount != null && ts.VideoTogetherLastMemberCount !== "") {
+                            lastMc = ts.VideoTogetherLastMemberCount;
+                            lastTime = parseFloat(ts.VideoTogetherLastMemberCountTime) || 0;
+                        }
+                    } catch (e) { }
+                }
+                let recent = (lastMc != null && lastMc !== "" && (Date.now() - lastTime < VT_MC_CARRY_MAX_AGE_MS));
+                if (recent) {
+                    // guard：InRoom 可能在 panel 建構期(經 Init→RecoveryState)被呼叫，那時 extension 還沒指派
+                    if (typeof extension !== 'undefined' && extension) {
+                        extension.ctxMemberCount = lastMc;
+                        extension._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS; // 從還原當下起算 6 秒，不錨舊時間（舊時間可能已過期）
+                    }
+                    updateInnnerHTML(mcEl, memberCountInner(lastMc));
+                } else {
+                    updateInnnerHTML(mcEl, memberCountInner(null));
+                }
+            }
             hide(this.lobbyBtnGroup)
             show(this.roomButtonGroup);
             this.exitButton.style = "";
@@ -1709,6 +2010,27 @@
             this.setTxtMsgInterface(0);
             dsply(this.downloadBtn, downloadEnabled())
             this.isInRoom = false;
+            // 用 this.wrapper（建構期 window.videoTogetherFlyPannel 尚未指派，不能用 select()）清空人數 + 收起房內元素
+            let mc = this.wrapper.querySelector('#memberCount');
+            if (mc) updateInnnerHTML(mc, '');
+            // 只有「真正退房」(init=false)才清掉記住的人數，避免下次進別的房先閃舊值。
+            // ⚠️ 不可在建構期的 InLobby(true) 清：那會在「換頁還原房間」之前就把要跨頁帶過去的人數刪掉，
+            //    導致新頁人數從頭重載、凍結失效（使用者回報換頁後人數沒紀錄）。
+            if (!init) {
+                try {
+                    window.sessionStorage.removeItem("VideoTogetherLastMemberCount");
+                    window.sessionStorage.removeItem("VideoTogetherLastMemberCountTime");
+                } catch (e) { }
+            }
+            // ⚠️ extension（VideoTogetherExtension 實例）在 panel 建構之後才指派；InLobby(true) 會在
+            //   panel 建構期就被呼叫，那時 extension 還是 undefined。必須 guard，否則建構丟例外 → panel=null → 全部按鈕失效。
+            if (typeof extension !== 'undefined' && extension) {
+                extension._mcHoldUntil = 0;
+                extension._lastHostUrl = undefined;
+            }
+            let rf = this.wrapper.querySelector('#vtRoomField'); if (rf) rf.classList.remove('vt-field--inroom');
+            let rc = this.wrapper.querySelector('#vtRoomCard'); if (rc) rc.classList.remove('vt-roomcard--active');
+            let ib = this.wrapper.querySelector('#vtInviteBtn'); if (ib) hide(ib);
         }
 
         CreateRoomButtonOnClick() {
@@ -1737,9 +2059,44 @@
             window.open(url, '_blank');
         }
 
-        UpdateStatusText(text, color) {
-            updateInnnerHTML(this.statusText, text);
-            this.statusText.style.color = color;
+        UpdateStatusText(text, color, holdMs) {
+            // 「需停留」訊息（如「已交接給新房主」）在 holdMs 毫秒內不被例行影片狀態（同步成功/尚未偵測到影片…）覆蓋；
+            // 只有下一個同樣帶 holdMs 的訊息能在停留期內覆蓋它。
+            const _now = Date.now();
+            if (!holdMs && this._statusHoldUntil && _now < this._statusHoldUntil) return;
+            this._statusHoldUntil = holdMs ? (_now + holdMs) : 0;
+            // 取訊息字串並去掉 "Error:" 前綴，避免把整個 Error 物件秀出來
+            let msg = (text && text.message) ? text.message : ("" + text);
+            msg = msg.replace(/^Error:\s*/i, "");
+            // 上游公用伺服器無 zh-tw 在地化、會回英文錯誤 → 在客戶端翻成繁中
+            const vtErrMap = {
+                "Wrong Password": "{$err_wrong_password$}",
+                "Room exists, wrong password": "{$err_room_exists_wrong_password$}",
+                "Room Not Exists": "{$err_room_not_exists$}",
+                "Other Host Is Syncing": "{$err_other_host_syncing$}",
+            };
+            if (vtErrMap[msg]) { msg = vtErrMap[msg]; }
+            // 用 data-vt-status 交給 CSS 著色（跟隨主題色票：成功=藍、資訊=灰、錯誤=警示）
+            const vtSoftInfo = ["{$no_video_in_this_page$}", "{$video_not_supported$}"];
+            let status = "";
+            if (msg === "") {
+                status = "";
+            } else if (vtSoftInfo.indexOf(msg) !== -1) {
+                status = "info"; // 「還沒偵測到影片」不是錯誤
+            } else if (color === "red") {
+                status = "error";
+            } else if (color === "green") {
+                status = "ok";
+            } else {
+                status = "info";
+            }
+            updateInnnerHTML(this.statusText, msg);
+            this.statusText.style.color = "";
+            this.statusText.setAttribute("data-vt-status", status);
+            // 有錯誤時不該再顯示「正在連線文字聊天伺服器…」等聊天介面
+            if (status === "error") {
+                try { this.setTxtMsgInterface(0); } catch (e) { }
+            }
         }
     }
 
@@ -1934,7 +2291,8 @@
                 const currentCount = messageListenerAliveCount;
                 setTimeout(() => {
                     if (currentCount == messageListenerAliveCount) {
-                        console.error("messageListener is dead");
+                        // 看門狗：閒置頁面常會「沒訊息」而誤報，降級為 debug（不再被 Chrome 當擴充錯誤收集）；仍保留重掛當自我修復
+                        console.debug("messageListener is dead");
                         window.addEventListener('message', messageListener);
                     }
                 }, 6000);
@@ -1975,7 +2333,9 @@
             if (idx > speechSynthesis.getVoices().length) {
                 return;
             }
-            if (!prepare && !extension.speechSynthesisEnabled) {
+            // 使用者可在設定頁關閉「文字訊息語音播報」(EnableMessageVoice)；關閉時仍保留文字通知與輸入清空，僅不播語音、不彈出啟用語音面板
+            const voiceOn = getEnableMessageVoice();
+            if (voiceOn && !prepare && !extension.speechSynthesisEnabled) {
                 windowPannel.ShowTxtMsgTouchPannel();
                 for (let i = 0; i <= 1000 && !extension.speechSynthesisEnabled; i++) {
                     await new Promise(r => setTimeout(r, 100));
@@ -1986,6 +2346,9 @@
                     select("#textMessageInput").value = "";
                 }
             } catch { }
+            if (!voiceOn) {
+                return;
+            }
 
             // iOS cannot play audio in background
             if (!isEmpty(audioUrl) && !this.isIos) {
@@ -2020,21 +2383,88 @@
         }
 
         setRole(role) {
-            let setRoleText = text => {
-                updateInnnerHTML(window.videoTogetherFlyPannel.videoTogetherRoleText, text);
-            }
-            this.role = role
-            switch (role) {
+            this.role = role;
+            this.RefreshRoleText();
+        }
+
+        // 依「角色 + 是否直播」更新常駐角色列。直播時觀眾不再跟隨房主播放，故文字改成「直播各自控制」。
+        // 有 guard：面板尚未建好時略過（避免初始化期 null 崩潰）；之後 SetLiveContext 變化時會再刷新。
+        RefreshRoleText() {
+            let el = window.videoTogetherFlyPannel && window.videoTogetherFlyPannel.videoTogetherRoleText;
+            if (!el) return;
+            let live = !!this._ctxIsLive;
+            switch (this.role) {
                 case this.RoleEnum.Master:
-                    setRoleText("{$host_role$}");
+                    updateInnnerHTML(el, live ? "{$host_role_live$}" : "{$host_role$}");
+                    el.dataset.role = 'host';   // 房主＝藍字藍點藍色條
                     break;
                 case this.RoleEnum.Member:
-                    setRoleText("{$memeber_role$}");
+                    updateInnnerHTML(el, live ? "{$member_role_live$}" : "{$memeber_role$}");
+                    el.dataset.role = 'viewer'; // 觀眾＝灰字灰點，左色條轉灰
                     break;
                 default:
-                    setRoleText("");
+                    updateInnnerHTML(el, "");
+                    delete el.dataset.role;
                     break;
             }
+        }
+
+        // 由 host/member 的同步迴圈每個 tick 呼叫，傳入「自己畫面上的影片是不是直播」。
+        // 第一次進入直播跳一次短暫 toast（離開直播會重置，再進直播可再跳一次）；狀態變化時刷新常駐角色列。
+        SetLiveContext(isLive) {
+            isLive = !!isLive;
+            if (isLive && !this._ctxIsLive && !this._liveToastShown) {
+                this._liveToastShown = true;
+                this.UpdateStatusText("{$live_independent_hint$}", "", 5000);
+            }
+            // _liveToastShown 的重置改在 IsLiveStream（換影片/換頁時）與 exitRoom 處理。
+            // 不在這裡用「!isLive 就重置」，否則直播卡頓造成的偵測閃動會讓 toast 反覆跳。
+            if (isLive !== this._ctxIsLive) {
+                this._ctxIsLive = isLive;
+                this.RefreshRoleText();
+            }
+        }
+
+        // 房主被別人用「同房名 + 密碼」按『創建房間』接手時，伺服器會對原房主的更新回 "Other Host Is Syncing"。
+        // 朋友間換房主的情境：自動把原房主降為觀眾並開始跟隨新房主（之後的 tick 走 Member 分支會自動跟播/跳轉）。
+        // 回傳 true 代表「已處理（已降級）」，呼叫端就不要再把它當紅字錯誤顯示。
+        // 房主切到「新影片(URL 改變)」且頁面有影片時，於狀態列提醒等觀眾載入（顯示約 5.5 秒、不被例行狀態洗掉）。
+        // 判定窗 = 凍結時長 VT_MC_FREEZE_MS(6s)：切片後在該窗內、且穩定 1.5s 後人數仍 >1 才提；逾窗或只剩自己 → 安靜放棄（避免瀏覽/預覽亂跳）。
+        MaybeRemindViewersLoading() {
+            try {
+                const now = Date.now();
+                // 「有影片」由呼叫端保證(只在偵測到影片的分支呼叫)。用 URL 變化判定「切到新影片/新集」——
+                // 比 video.id(綁 DOM 元素、SPA 換 src 時不變) 可靠；換片 → 重置判定窗。
+                const url = this.linkWithoutState(window.location);
+                if (url !== this._vtRemindUrl) {
+                    this._vtRemindUrl = url;
+                    this._vtSyncedSince = now;
+                    this._vtViewersReminded = false;
+                    return;
+                }
+                if (this._vtViewersReminded) return;
+                const age = now - (this._vtSyncedSince || 0);
+                if (age < 1500) return;                  // 防抖：穩定 1.5s（避免瀏覽/預覽/搜尋亂跳）
+                if (age > VT_MC_FREEZE_MS) {             // 判定窗 6 秒到 → 獨看，安靜放棄
+                    this._vtViewersReminded = true;
+                    return;
+                }
+                if (!(this.ctxMemberCount > 1)) return;  // 只有自己 → 不提
+                this._vtViewersReminded = true;
+                this.UpdateStatusText("{$viewers_loading_hint$}", "", 5500);
+            } catch (_) { }
+        }
+
+        MaybeDemoteOnTakeover(e) {
+            try {
+                let msg = (e && e.message) ? e.message : ("" + e);
+                if (msg === "Other Host Is Syncing" && this.role === this.RoleEnum.Master) {
+                    this.setRole(this.RoleEnum.Member);
+                    this.UpdateStatusText("{$host_handed_over$}", "", 7000);
+                    return true;
+                }
+            } catch (_) { }
+            return false;
         }
 
         async generateEasyShareLink(china = false) {
@@ -2452,11 +2882,11 @@
 
         // end of download
 
-        UpdateStatusText(text, color) {
+        UpdateStatusText(text, color, holdMs) {
             if (window.self != window.top) {
-                sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color });
+                sendMessageToTop(MessageType.UpdateStatusText, { text: text + "", color: color, holdMs: holdMs });
             } else {
-                window.videoTogetherFlyPannel.UpdateStatusText(text + "", color);
+                window.videoTogetherFlyPannel.UpdateStatusText(text + "", color, holdMs);
             }
         }
 
@@ -2554,13 +2984,17 @@
                     } catch { };
                     try {
                         await this.UpdateRoom(data.name, data.password, data.url, data.playbackRate, data.currentTime, data.paused, data.duration, data.localTimestamp, data.m3u8Url);
+                        if (this.role === this.RoleEnum.Null) break; // 已退出房間，忽略飛行中 tick 殘留的同步狀態
                         if (this.waitForLoadding) {
                             this.UpdateStatusText("{$wait_for_memeber_loadding$}", "red");
+                        } else if (this._ctxIsLive) {
+                            _this.UpdateStatusText("{$live_connected$}", "green"); // 直播：只報「已連線」，不謊稱播放同步
                         } else {
-                            _this.UpdateStatusText("{$sync_success$} " + _this.GetDisplayTimeText(), "green");
+                            _this.UpdateStatusText("{$sync_success$}", "green");
                         }
                     } catch (e) {
-                        this.UpdateStatusText(e, "red");
+                        if (this.MaybeDemoteOnTakeover(e)) break; // 被接手 → 自動降為觀眾並跟隨新房主
+                        if (this.role !== this.RoleEnum.Null) this.UpdateStatusText(e, "red");
                     }
                     break;
                 case MessageType.SyncMemberVideo:
@@ -2569,7 +3003,7 @@
                             try {
                                 await this.SyncMemberVideo(data, video);
                             } catch (e) {
-                                _this.UpdateStatusText(e, "red");
+                                if (_this.role !== _this.RoleEnum.Null) _this.UpdateStatusText(e, "red");
                             }
                         }
                     })
@@ -2579,7 +3013,7 @@
                     this.duration = data["duration"];
                     break;
                 case MessageType.UpdateStatusText:
-                    window.videoTogetherFlyPannel.UpdateStatusText(data.text, data.color);
+                    window.videoTogetherFlyPannel.UpdateStatusText(data.text, data.color, data.holdMs);
                     break;
                 case MessageType.JumpToNewPage:
                     window.location = data.url;
@@ -2633,11 +3067,17 @@
                             windowPannel.voiceSelect.value = data.PublicMessageVoice;
                         }
                     } catch { };
-                    if (!window.videoTogetherFlyPannel.disableDefaultSize && firstSync) {
-                        if (data.MinimiseDefault) {
-                            window.videoTogetherFlyPannel.Minimize(true);
-                        } else {
-                            window.videoTogetherFlyPannel.Maximize(true);
+                    if (firstSync) {
+                        // 權威決策（載入後第一次、也是唯一一次依真正的 MinimiseDefault 決定收/展）：
+                        // 不在房間 → 純看設定；在房間 → 已由上方 RecoveryState 依 carried 套好，這裡不覆寫。
+                        // （this.role 在 RecoveryState 後即反映是否在房間。）Init 一律先收合，故這裡只會「維持收合」或「收→展」，不會「展→收」。
+                        if (this.role == this.RoleEnum.Null) {
+                            // 用同一個決策函式（不在房間分支），讓 VideoTogetherResolveMinimized 成為收/展的單一來源
+                            if (VideoTogetherResolveMinimized({ inRoom: false, minimiseDefault: !!data.MinimiseDefault })) {
+                                window.videoTogetherFlyPannel.Minimize(true);
+                            } else {
+                                window.videoTogetherFlyPannel.Maximize(true);
+                            }
                         }
                     }
                     if (typeof (data.PublicUserId) != 'string' || data.PublicUserId.length < 5) {
@@ -2646,14 +3086,13 @@
                     try {
                         if (firstSync) {
                             if (!isWeb()) {
-                                window.videoTogetherFlyPannel.videoTogetherSetting.href = "https://videotogether.github.io/setting/v2.html";
+                                // 設定頁網址統一用 VT_SETTING_PAGE_URL（在檔案最上方，一行可改）
+                                window.videoTogetherFlyPannel.videoTogetherSetting.href = VT_SETTING_PAGE_URL;
                                 show(select('#videoTogetherSetting'));
                             } else {
-                                // website
-                                if (window.videoTogetherWebsiteSettingUrl != undefined) {
-                                    window.videoTogetherFlyPannel.videoTogetherSetting.href = window.videoTogetherWebsiteSettingUrl;
-                                    show(select('#videoTogetherSetting'));
-                                }
+                                // website：優先用主站傳入的網址，沒有就退回 VT_SETTING_PAGE_URL
+                                window.videoTogetherFlyPannel.videoTogetherSetting.href = window.videoTogetherWebsiteSettingUrl || VT_SETTING_PAGE_URL;
+                                show(select('#videoTogetherSetting'));
                             }
                         }
                     } catch (e) { }
@@ -2939,6 +3378,12 @@
                         window.videoTogetherFlyPannel.inputRoomName.value = vtRoomName;
                         window.videoTogetherFlyPannel.inputRoomPassword.value = password;
                         window.videoTogetherFlyPannel.InRoom();
+                        // 還原房間時套用 carried 收/展（缺失 → 展開）。getFunc 對應 TabStorage / sessionStorage / URL。
+                        if (VideoTogetherResolveMinimized({ inRoom: true, carried: getFunc("VideoTogetherMinimized") })) {
+                            window.videoTogetherFlyPannel.Minimize(true);
+                        } else {
+                            window.videoTogetherFlyPannel.Maximize(true);
+                        }
                         switch (voice) {
                             case VoiceStatus.MUTED:
                                 Voice.join("", vtRoomName, true);
@@ -3004,11 +3449,35 @@
             window.videoTogetherFlyPannel.inputRoomName.value = "";
             window.videoTogetherFlyPannel.inputRoomPassword.value = "";
             this.roomName = "";
+            this._ctxIsLive = false;        // 重置直播狀態：下個房間重新判斷、toast 可再提示一次
+            this._liveToastShown = false;
+            this._liveProbe = undefined;
+            this._liveGrowHits = 0;
+            this._liveKey = undefined;      // 解除遲滯狀態（IsLiveStream 會重新判斷）
+            this._liveState = false;
+            this._liveOffStreak = 0;
+            // 重置人數凍結與「等待觀眾載入」提醒狀態：避免快速退房再進(尤其同頁重進同房)時，
+            // 殘留的凍結擋掉新房第一筆人數、或提醒窗因 _vtRemindUrl 仍等於現 URL 而不再觸發。
+            this._mcHoldUntil = 0;
+            this.ctxMemberCount = undefined;
+            this._vtRemindUrl = undefined;
+            this._vtSyncedSince = 0;
+            this._vtViewersReminded = false;
             this.setRole(this.RoleEnum.Null);
+            // 同步把 ctxRole 也歸 Null：否則它要等下次 sendMessageToSonWithContext 才更新，
+            // 期間全螢幕小窗的顯示條件(讀 ctxRole)仍成立 → 退房後小窗不會被移除（使用者回報的殘留）。
+            this.ctxRole = this.RoleEnum.Null;
+            // 先解除狀態文字的 hold 再清：直播提示「偵測到直播，改為各自控制」是帶 5 秒 hold 的 toast，
+            // 不先歸零 _statusHoldUntil，下面的空字串清除會被 UpdateStatusText 的 hold 擋掉 → 提示殘留在大廳。
+            try { window.videoTogetherFlyPannel._statusHoldUntil = 0; } catch (e) { }
+            window.videoTogetherFlyPannel.UpdateStatusText("", "");
             window.videoTogetherFlyPannel.InLobby();
             let state = this.GetRoomState("");
             sendMessageToTop(MessageType.SetTabStorage, state);
             this.SaveStateToSessionStorageWhenSameOrigin("");
+            // 退房清掉房間會話的收/展記憶；之後回到「不在房間 → 純看設定」。
+            // TabStorage 因 role=Null 時 GetRoomState 回傳 {} 已被清空。
+            try { window.sessionStorage.removeItem("VideoTogetherMinimized"); } catch (e) { }
         }
 
         getVoiceVolume() {
@@ -3123,6 +3592,13 @@
                     case this.RoleEnum.Null:
                         return;
                     case this.RoleEnum.Master: {
+                        // 偵測房主換頁(含站內 SPA 換網址)：URL 一變就啟動最多 10 秒的人數凍結，
+                        // 用換頁前的人數擋住「換頁延遲 + 伺服器同URL才算」造成的暫時掉到 1 人。
+                        let _curUrl = this.linkWithoutState(window.location);
+                        if (this._lastHostUrl !== undefined && this._lastHostUrl !== _curUrl) {
+                            this._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS;
+                        }
+                        this._lastHostUrl = _curUrl;
                         if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                             let state = this.GetRoomState("");
                             sendMessageToTop(MessageType.SetTabStorage, state);
@@ -3140,6 +3616,7 @@
                                 this.getLocalTimestamp());
                             throw new Error("{$no_video_in_this_page$}");
                         } else {
+                            this.MaybeRemindViewersLoading();
                             sendMessageToTop(MessageType.SyncMasterVideo, {
                                 waitForLoadding: this.waitForLoadding,
                                 video: video,
@@ -3167,11 +3644,15 @@
                             }
                         }
                         if (newUrl != this.url && (window.VideoTogetherStorage == undefined || !window.VideoTogetherStorage.DisableRedirectJoin)) {
+                            // 觀眾即將跟隨房主跳到新頁：先啟動人數凍結，擋住「跳轉前一刻」伺服器因房主已換 URL 而回報的
+                            // 假性掉人數（changeMemberCount 在凍結期內會擋掉比目前低的值），讓好的人數撐到新頁（與房主 _lastHostUrl 那段同款）。
+                            this._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS;
                             if (window.VideoTogetherStorage != undefined && window.VideoTogetherStorage.VideoTogetherTabStorageEnabled) {
                                 let state = this.GetRoomState(newUrl);
                                 sendMessageToTop(MessageType.SetTabStorage, state);
                                 setInterval(() => {
-                                    if (window.VideoTogetherStorage.VideoTogetherTabStorage.VideoTogetherUrl == newUrl) {
+                                    // 加防呆：擴充重載/尚未同步時 storage 可能為 undefined，避免噴 TypeError(reading 'VideoTogetherUrl')
+                                    if (window.VideoTogetherStorage?.VideoTogetherTabStorage?.VideoTogetherUrl == newUrl) {
                                         try {
                                             if (isWeb()) {
                                                 if (!this._jumping && window.location.origin != (new URL(newUrl).origin)) {
@@ -3196,12 +3677,17 @@
                         } else {
                             let state = this.GetRoomState("");
                             sendMessageToTop(MessageType.SetTabStorage, state);
+                            // 成員也每輪更新 session（時間戳保持新鮮），刷新才不會因「>60 秒過期」被踢出房間
+                            this.SaveStateToSessionStorageWhenSameOrigin("");
                         }
                         if (this.PlayAdNow()) {
                             throw new Error("{$ad_playing$}");
                         }
                         let video = this.GetVideoDom();
                         if (video == undefined) {
+                            // 無影片頁(選單/搜尋/首頁)也要送成員心跳登記在房——否則伺服器只算到房主、人數掉到 1。
+                            // 每個 sync tick(約 2 秒)都會經過這裡，與有影片時同頻率持續回報，不會被伺服器當過期踢除。
+                            sendMessageToTop(MessageType.UpdateMemberStatus, { isLoadding: false });
                             throw new Error("{$no_video_in_this_page$}");
                         } else {
                             sendMessageToTop(MessageType.SyncMemberVideo, { video: this.GetVideoDom(), roomName: this.roomName, password: this.password, room: room })
@@ -3210,7 +3696,8 @@
                     }
                 }
             } catch (e) {
-                this.UpdateStatusText(e, "red");
+                if (this.MaybeDemoteOnTakeover(e)) return; // 房主被接手 → 自動降為觀眾並跟隨新房主
+                if (this.role !== this.RoleEnum.Null) this.UpdateStatusText(e, "red"); // 已退出則忽略飛行中 tick 殘留狀態
             }
         }
 
@@ -3295,6 +3782,9 @@
                     useMobileStyle(videoDom);
                 }
             } catch { }
+
+            // 房主也偵測自己畫面上的影片是否直播，讓房主的常駐角色列同步顯示「直播各自控制」。
+            try { this.SetLiveContext(this.IsLiveStream(videoDom)); } catch (_) { }
 
             if (skipIntroLen() > 0 && videoDom.currentTime < skipIntroLen()) {
                 videoDom.currentTime = skipIntroLen();
@@ -3399,7 +3889,12 @@
                 VideoTogetherTimestamp: Date.now() / 1000,
                 VideoTogetherVoice: voice,
                 VideoVolume: this.getVideoVolume(),
-                VoiceVolume: this.getVoiceVolume()
+                VoiceVolume: this.getVoiceVolume(),
+                // 收/展跟著房間會話跨頁繼承（每個用戶端各自的；刻意不放 URL，避免傳染給觀眾）
+                VideoTogetherMinimized: (window.videoTogetherFlyPannel && window.videoTogetherFlyPannel.minimized) ? 1 : 0,
+                // 人數跨網域帶過去（TabStorage 通道）：換到別網站時 sessionStorage 會遺失，靠這個讓新頁也能還原並啟動凍結
+                VideoTogetherLastMemberCount: this.ctxMemberCount,
+                VideoTogetherLastMemberCountTime: Date.now()
             }
         }
 
@@ -3421,6 +3916,8 @@
                     window.sessionStorage.setItem("VideoTogetherPassword", this.password);
                     window.sessionStorage.setItem("VideoTogetherRole", this.role);
                     window.sessionStorage.setItem("VideoTogetherTimestamp", Date.now() / 1000);
+                    window.sessionStorage.setItem("VideoTogetherMinimized",
+                        (window.videoTogetherFlyPannel && window.videoTogetherFlyPannel.minimized) ? 1 : 0);
                     return sameOrigin;
                 } else {
                     return false;
@@ -3447,6 +3944,73 @@
         CalculateRealCurrent(data) {
             let playbackRate = parseFloat(data["playbackRate"]);
             return data["currentTime"] + (this.getLocalTimestamp() - data["lastUpdateClientTime"]) * (isNaN(playbackRate) ? 1 : playbackRate);
+        }
+
+        // 直播(live)偵測。直播沒有跨裝置一致的 currentTime 原點：每個瀏覽器各自錨定自己的
+        // DVR/直播時間軸，所以房主的 currentTime 與觀眾的 currentTime 對應的「同一直播時刻」是
+        // 不同數字。用絕對時間同步會讓觀眾每個 tick 都被 seek（一直往回跳到房主的數字，又被
+        // YouTube 推回直播邊緣，來回震盪）。偵測到直播時，改為只同步播放/暫停、不碰 currentTime。
+        IsLiveStream(videoDom) {
+            try {
+                // 換影片/換頁就整個重置：避免「直播↔VOD」沿用舊狀態誤判（codex 指出的換台殘留）。
+                // key=頁面URL+影片來源；YouTube 等 SPA 換片時 location.href（?v=）會變 → 自動重置。
+                const key = (typeof location !== "undefined" ? location.href : "")
+                    + "|" + ((videoDom && (videoDom.currentSrc || videoDom.src)) || "");
+                if (key !== this._liveKey) {
+                    this._liveKey = key;
+                    this._liveProbe = undefined;
+                    this._liveGrowHits = 0;
+                    this._liveState = false;
+                    this._liveOffStreak = 0;
+                    this._liveToastShown = false; // 換到新影片 → 可再提示一次
+                }
+
+                // ── 這個 tick 的原始訊號：看起來像不像直播 ──
+                let raw = false;
+                const d = videoDom ? videoDom.duration : NaN;
+                if (d === Infinity) {
+                    // 1) 真·無限長度（無 DVR 直播）。只認 Infinity，不認 NaN：VOD 載入中 duration 會短暫是 NaN，
+                    //    若把 NaN 也當直播，一般影片載入瞬間就會被誤判（這正是「一般 YT 影片卡在直播」的主因）。
+                    raw = true;
+                } else if (typeof document !== "undefined") {
+                    // 2) 大平台快速路徑
+                    const host = (typeof location !== "undefined" && location.hostname) || "";
+                    if (host === "live.bilibili.com" || host.endsWith(".live.bilibili.com")) {
+                        raw = true;
+                    } else {
+                        const badge = document.querySelector('.ytp-live-badge');
+                        // 必須「可見」才算：YouTube 的播放器常留著 display:none 的徽章，VOD 也查得到 →
+                        //  用 offsetWidth>0 排除隱藏徽章（自動隱藏控制列只改透明度、仍有寬度，不會誤判成非直播）。
+                        if (badge && badge.offsetWidth > 0) raw = true;
+                    }
+                }
+                // 3) 通用啟發式（不需 per-site）：duration 持續成長 ⇒ 直播（NaN 不算，仍在載入）。
+                if (!raw && isFinite(d)) {
+                    const now = Date.now();
+                    const s = this._liveProbe;
+                    if (!s) {
+                        this._liveProbe = { d, t: now };
+                    } else if (now - s.t > 500) {
+                        const grew = d - s.d, elapsed = (now - s.t) / 1000;
+                        if (grew > 0.5 * elapsed && grew > 0.2) this._liveGrowHits = (this._liveGrowHits || 0) + 1;
+                        else if (grew < 0.05) this._liveGrowHits = 0;
+                        this._liveProbe = { d, t: now };
+                        if (this._liveGrowHits >= 2) raw = true;
+                    }
+                }
+
+                // ── 雙向遲滯：raw=true 立刻判直播；raw=false 要「連續 4 次（~4s）」才退出。
+                //    好處：直播卡頓那一兩 tick 不會閃回非直播；萬一誤判，也會在數秒內自癒，不會像硬鎖永久卡住。
+                if (raw) {
+                    this._liveOffStreak = 0;
+                    this._liveState = true;
+                } else if (this._liveState) {
+                    this._liveOffStreak = (this._liveOffStreak || 0) + 1;
+                    if (this._liveOffStreak >= 4) this._liveState = false;
+                }
+                return !!this._liveState;
+            } catch (_) { }
+            return false;
         }
 
         GetDisplayTimeText() {
@@ -3477,57 +4041,75 @@
 
             const waitForLoadding = room['waitForLoadding'];
             let paused = room['paused'];
-            if (waitForLoadding && !paused && !Var.isThisMemberLoading) {
-                paused = true;
-            }
             let isLoading = (Math.abs(this.memberLastSeek - videoDom.currentTime) < 0.01);
             this.memberLastSeek = -1;
-            if (paused == false) {
-                videoDom.videoTogetherPaused = false;
-                if (Math.abs(videoDom.currentTime - this.CalculateRealCurrent(room)) > 1) {
-                    videoDom.currentTime = this.CalculateRealCurrent(room);
-                }
-                // play fail will return so here is safe
+            // 直播：觀眾完全不被房主控制——不 seek、不同步播放/暫停、不同步倍速，各自看自己的直播邊緣
+            //（直播 currentTime 原點跨裝置不一致，硬同步會來回震盪；且房主卡頓不該拖累觀眾）。
+            // 仍會跟著房主「換台(URL)」，那段在外層 Member tick 處理、不受這裡影響。一般影片走原本同步。
+            let isLive = this.IsLiveStream(videoDom);
+            this.SetLiveContext(isLive);
+            if (isLive) {
+                videoDom.videoTogetherPaused = false; // 直播不由 VT 控制播放
                 this.memberLastSeek = videoDom.currentTime;
             } else {
-                videoDom.videoTogetherPaused = true;
-                if (Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
-                    videoDom.currentTime = room["currentTime"];
+                if (waitForLoadding && !paused && !Var.isThisMemberLoading) {
+                    paused = true;
                 }
-            }
-            if (videoDom.paused != paused) {
-                if (paused) {
-                    console.info("pause");
-                    videoDom.pause();
+                // 防呆：同步目標明顯超過本影片長度時不要硬 seek。多半是「從直播/別支影片殘留的大 currentTime」
+                //（直播 DVR 位置可達數千秒）。硬 seek 會被瀏覽器夾到結尾、且每個 tick 反覆把觀眾與房主的調整都拉回結尾
+                //（使用者回報：從直播被帶到一般影片後卡在結尾）。等房主回報落在片長內的合理值再同步。
+                let _vtDur = videoDom.duration;
+                let _vtBeyond = (t) => (isFinite(_vtDur) && _vtDur > 0 && Number(t) > _vtDur + 1.5);
+                if (paused == false) {
+                    videoDom.videoTogetherPaused = false;
+                    let _target = this.CalculateRealCurrent(room);
+                    if (!_vtBeyond(_target) && Math.abs(videoDom.currentTime - _target) > 1) {
+                        videoDom.currentTime = _target;
+                    }
+                    // play fail will return so here is safe
+                    this.memberLastSeek = videoDom.currentTime;
                 } else {
-                    try {
-                        console.info("play");
-                        {
-                            // check if the video is ready
-                            if (window.location.hostname.endsWith('aliyundrive.com')) {
-                                if (videoDom.readyState == 0) {
-                                    throw new Error("{$need_to_play_manually$}");
-                                }
-                            }
-                        }
-                        await videoDom.play();
-                        if (videoDom.paused) {
-                            throw new Error("{$need_to_play_manually$}");
-                        }
-                    } catch (e) {
-                        throw new Error("{$need_to_play_manually$}");
+                    videoDom.videoTogetherPaused = true;
+                    if (!_vtBeyond(room["currentTime"]) && Math.abs(videoDom.currentTime - room["currentTime"]) > 0.1) {
+                        videoDom.currentTime = room["currentTime"];
                     }
                 }
+                if (videoDom.paused != paused) {
+                    if (paused) {
+                        console.info("pause");
+                        videoDom.pause();
+                    } else {
+                        try {
+                            console.info("play");
+                            {
+                                // check if the video is ready
+                                if (window.location.hostname.endsWith('aliyundrive.com')) {
+                                    if (videoDom.readyState == 0) {
+                                        throw new Error("{$need_to_play_manually$}");
+                                    }
+                                }
+                            }
+                            await videoDom.play();
+                            if (videoDom.paused) {
+                                throw new Error("{$need_to_play_manually$}");
+                            }
+                        } catch (e) {
+                            throw new Error("{$need_to_play_manually$}");
+                        }
+                    }
+                }
+                if (videoDom.playbackRate != room["playbackRate"]) {
+                    try {
+                        videoDom.playbackRate = parseFloat(room["playbackRate"]);
+                    } catch (e) { }
+                }
+                if (isNaN(videoDom.duration)) {
+                    throw new Error("{$need_to_play_manually$}");
+                }
             }
-            if (videoDom.playbackRate != room["playbackRate"]) {
-                try {
-                    videoDom.playbackRate = parseFloat(room["playbackRate"]);
-                } catch (e) { }
-            }
-            if (isNaN(videoDom.duration)) {
-                throw new Error("{$need_to_play_manually$}");
-            }
-            sendMessageToTop(MessageType.UpdateStatusText, { text: "{$sync_success$} " + this.GetDisplayTimeText(), color: "green" });
+            sendMessageToTop(MessageType.UpdateStatusText, isLive
+                ? { text: "{$live_connected$}", color: "green" }   // 直播：只報「已連線」，不謊稱播放同步
+                : { text: "{$sync_success$}", color: "green" });
 
             setTimeout(() => {
                 try {
@@ -3654,45 +4236,43 @@
 
                 target.videoTogetherMoving = true;
 
-                if (e.clientX) {
-                    target.oldX = e.clientX;
-                    target.oldY = e.clientY;
-                } else {
-                    target.oldX = e.touches[0].clientX;
-                    target.oldY = e.touches[0].clientY;
-                }
+                // 以「距右下角」定位（right/bottom），清掉 top/left：
+                // 1) 視窗縮放時面板仍貼著右下角、不會飄到畫面中間
+                // 2) 只設 bottom、不設 top → height:auto 不會被上下撐開變形（不需鎖高度）
+                let r = target.getBoundingClientRect();
+                let vw = document.documentElement.clientWidth;
+                let vh = document.documentElement.clientHeight;
+                target.style.top = "auto";
+                target.style.left = "auto";
+                target.startRight = Math.max(0, vw - r.right);
+                target.startBottom = Math.max(0, vh - r.bottom);
+                target.style.right = target.startRight + "px";
+                target.style.bottom = target.startBottom + "px";
 
-                target.oldLeft = window.getComputedStyle(target).getPropertyValue('left').split('px')[0] * 1;
-                target.oldTop = window.getComputedStyle(target).getPropertyValue('top').split('px')[0] * 1;
+                let p = (e.clientX != undefined) ? e : e.touches[0];
+                target.oldX = p.clientX;
+                target.oldY = p.clientY;
 
                 document.onmousemove = dr;
                 document.ontouchmove = dr;
                 document.onpointermove = dr;
 
                 function dr(event) {
-
                     if (!target.videoTogetherMoving) {
                         return;
                     }
                     event.preventDefault();
                     event.stopPropagation();
-                    if (event.clientX) {
-                        target.distX = event.clientX - target.oldX;
-                        target.distY = event.clientY - target.oldY;
-                    } else {
-                        target.distX = event.touches[0].clientX - target.oldX;
-                        target.distY = event.touches[0].clientY - target.oldY;
-                    }
-
-                    target.style.left = Math.min(document.documentElement.clientWidth - target.clientWidth, Math.max(0, target.oldLeft + target.distX)) + "px";
-                    target.style.top = Math.min(document.documentElement.clientHeight - target.clientHeight, Math.max(0, target.oldTop + target.distY)) + "px";
-
-                    window.addEventListener('resize', function (event) {
-                        target.oldLeft = window.getComputedStyle(target).getPropertyValue('left').split('px')[0] * 1;
-                        target.oldTop = window.getComputedStyle(target).getPropertyValue('top').split('px')[0] * 1;
-                        target.style.left = Math.min(document.documentElement.clientWidth - target.clientWidth, Math.max(0, target.oldLeft)) + "px";
-                        target.style.top = Math.min(document.documentElement.clientHeight - target.clientHeight, Math.max(0, target.oldTop)) + "px";
-                    });
+                    let q = (event.clientX != undefined) ? event : event.touches[0];
+                    let vw2 = document.documentElement.clientWidth;
+                    let vh2 = document.documentElement.clientHeight;
+                    let newRight = target.startRight - (q.clientX - target.oldX);
+                    let newBottom = target.startBottom - (q.clientY - target.oldY);
+                    let EDGE = 16; // 與視窗邊緣保留間隔，拖到角落也不貼死
+                    newRight = Math.max(EDGE, Math.min(vw2 - target.offsetWidth - EDGE, newRight));
+                    newBottom = Math.max(EDGE, Math.min(vh2 - target.offsetHeight - EDGE, newBottom));
+                    target.style.right = newRight + "px";
+                    target.style.bottom = newBottom + "px";
                 }
 
                 function endDrag() {
@@ -3727,6 +4307,21 @@
         window.videoTogetherExtension = null;
         var extension = new VideoTogetherExtension();
         window.videoTogetherExtension = extension;
+        // 補設「換頁還原的人數凍結」：建構式內部(2273)的 RecoveryState→InRoom 會在這行 extension 指派『之前』
+        // 就還原房間並嘗試還原人數，那時 extension 還是 undefined → 守衛失敗、設不了 ctxMemberCount/_mcHoldUntil（只畫了 DOM）。
+        // 此處 extension 已就緒，若確實在房間且 sessionStorage 有近 10 秒的人數，補上凍結與基準值，
+        // 否則第一筆伺服器人數(常是 1)會因為沒有 hold 而把還原的數字洗掉（使用者回報的換頁後「2→1」）。
+        try {
+            if (extension.role != extension.RoleEnum.Null) {
+                let sMc = window.sessionStorage.getItem("VideoTogetherLastMemberCount");
+                let sT = parseFloat(window.sessionStorage.getItem("VideoTogetherLastMemberCountTime")) || 0;
+                if (sMc != null && sMc !== "" && Date.now() - sT < VT_MC_CARRY_MAX_AGE_MS) {
+                    extension.ctxMemberCount = sMc;
+                    extension._mcHoldUntil = Date.now() + VT_MC_FREEZE_MS; // 從還原當下起算 6 秒
+                } else {
+                }
+            }
+        } catch (e) { }
         sendMessageToSelf(MessageType.ExtensionInitSuccess, {})
     }
     try {

@@ -88,38 +88,59 @@
 
     strings = {
         'zh-cn': {
-            'enabled': "启用",
-            'disabled': "停用",
-            'refreshAfterChange': "启用或禁用后请刷新网页生效"
+            'toggle_label': "在此浏览器启用",
+            'state_on': "已开启",
+            'state_off': "已关闭",
+            'desc': "开启插件后，浏览器会出现 VideoTogether 面板，可和朋友同步观赏影片。关闭则完全不启用。",
+            'refreshAfterChange': "切换后请重新整理网页才会生效"
+        },
+        'zh-tw': {
+            'toggle_label': "在此瀏覽器啟用",
+            'state_on': "已開啟",
+            'state_off': "已關閉",
+            'desc': "開啟插件後，瀏覽器會出現 VideoTogether 面板，可和朋友同步觀賞影片。關閉則完全不啟用。",
+            'refreshAfterChange': "切換後請重新整理網頁才會生效"
+        },
+        'ja-jp': {
+            'toggle_label': "このブラウザで有効化",
+            'state_on': "オン",
+            'state_off': "オフ",
+            'desc': "有効にすると、ブラウザに VideoTogether パネルが表示され、友だちと動画を同期して視聴できます。オフのときは動作しません。",
+            'refreshAfterChange': "変更後はページを再読み込みしてください"
         },
         'en-us': {
-            'enabled': "Enabled",
-            'disabled': "Disabled",
-            'refreshAfterChange': "Please refresh the page after change"
+            'toggle_label': "Enable in this browser",
+            'state_on': "On",
+            'state_off': "Off",
+            'desc': "When enabled, the VideoTogether panel appears in your browser so you can watch videos in sync with friends. When off, it stays inactive.",
+            'refreshAfterChange': "Please refresh the page after changing this"
         }
     }
 
-    let languages = ['en-us', 'zh-cn'];
+    const languages = ['en-us', 'zh-cn', 'zh-tw', 'ja-jp'];
     let language = 'en-us';
-    let prefixLen = 0;
     let settingLanguage = undefined;
     try {
         settingLanguage = await getGM().getValue("DisplayLanguage");
     } catch (e) { };
 
-    if (typeof settingLanguage != 'string') {
-        settingLanguage = navigator.language;
+    if (typeof settingLanguage != 'string' || settingLanguage.trim() === '' || settingLanguage.toLowerCase() === 'auto') {
+        settingLanguage = navigator.language; // 空值／auto＝自動偵測瀏覽器語言（與 extension.js 一致；修正 popup 在 auto/空值時固定變英文）
     }
     if (typeof settingLanguage == 'string') {
         settingLanguage = settingLanguage.toLowerCase();
-        for (let i = 0; i < languages.length; i++) {
-            for (let j = 0; j < languages[i].length && j < settingLanguage.length; j++) {
-                if (languages[i][j] != settingLanguage[j]) {
-                    break;
-                }
-                if (j > prefixLen) {
-                    prefixLen = j;
+        if (languages.includes(settingLanguage)) {
+            language = settingLanguage;
+        } else if (settingLanguage.split('-')[0] === 'zh') {
+            // 中文再細分:繁體（tw/hk/mo/hant）對到 zh-tw,其餘（cn/sg/hans…）對到 zh-cn
+            language = /(^|-)(tw|hk|mo|hant)(-|$)/.test(settingLanguage) ? 'zh-tw' : 'zh-cn';
+        } else {
+            const settingLanguagePrefix = settingLanguage.split('-')[0];
+            for (let i = 0; i < languages.length; i++) {
+                const languagePrefix = languages[i].split('-')[0];
+                if (settingLanguagePrefix === languagePrefix) {
                     language = languages[i];
+                    break;
                 }
             }
         }
@@ -128,8 +149,13 @@
 
     let updateText = () => {
         let checked = document.querySelector("#extensionSwitch").checked;
-        document.querySelector("#status").textContent = strings[language][checked ? 'enabled' : 'disabled'];
-        document.querySelector("#refreshAfterChange").textContent = strings[language]['refreshAfterChange'];
+        let s = strings[language];
+        document.querySelector("#toggleLabel").textContent = s['toggle_label'];
+        let st = document.querySelector("#stateText");
+        st.textContent = checked ? s['state_on'] : s['state_off'];
+        st.className = "vt-state " + (checked ? "on" : "off");
+        document.querySelector("#desc").textContent = s['desc'];
+        document.querySelector("#refreshAfterChange").textContent = s['refreshAfterChange'];
     }
     document.querySelector("#extensionSwitch").oninput = async (e) => {
         await getGM().setValue('vtEnabled', e.target.checked);

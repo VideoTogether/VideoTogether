@@ -3,7 +3,7 @@
     "default_locale": "en",
     "name": "__MSG_extension_name__",
     "description": "__MSG_extension_description__",
-    "version": "3.0.23",
+    "version": "3.1.0",
     "icons": {
         "192": "images/android-icon-192x192.png"
     },
@@ -38,9 +38,11 @@
         "load.en-us.js",
         "load.zh-cn.js",
         "load.ja-jp.js",
+        "load.zh-tw.js",
         "vt.en-us.user.js",
         "vt.zh-cn.user.js",
         "vt.ja-jp.user.js",
+        "vt.zh-tw.user.js",
         "preInjected.js"
     ],
     "permissions": [

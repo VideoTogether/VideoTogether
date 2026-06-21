@@ -25,6 +25,7 @@ languages = {
     'zh-cn': './source/extension/localization/zh-cn.json',
     'en-us': './source/extension/localization/en-us.json',
     'ja-jp': './source/extension/localization/ja-jp.json',
+    'zh-tw': './source/extension/localization/zh-tw.json',
 }
 
 usedLocalizationKeys = {
@@ -170,8 +171,9 @@ if __name__ == '__main__':
             "git clone https://github.com/VideoTogether/website_next {}/source/website".format(rootPath))
         os.system("cd {}/source/website && git pull".format(rootPath))
 
+        # 設定頁改用我們的 fork（與前端連動開發、分開 git）；upstream 仍可同步原版
         os.system(
-            "git clone https://github.com/VideoTogether/setting {}/source/setting".format(rootPath))
+            "git clone https://github.com/LCY000/VideoTogether-setting {}/source/setting".format(rootPath))
         os.system("cd {}/source/setting && git pull".format(rootPath))
 
     build()

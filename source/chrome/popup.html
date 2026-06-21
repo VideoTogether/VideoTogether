@@ -3,88 +3,106 @@
 
 <head>
     <meta charset="utf-8">
+    <style>
+        :root {
+            --bg: #f4f7fd;
+            --text: #14203c;
+            --muted: #5b6a8c;
+            --accent: #2f6bdb;
+            --grad: linear-gradient(135deg, #3a78ec, #2f6bdb);
+            --border: rgba(20, 45, 90, 0.12);
+            --field: rgba(30, 70, 140, 0.05);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #141821;
+                --text: #eef1f8;
+                --muted: #a6b1ca;
+                --accent: #5b8def;
+                --grad: linear-gradient(135deg, #5b8def, #4a78e0);
+                --border: rgba(150, 175, 255, 0.18);
+                --field: rgba(120, 150, 255, 0.10);
+            }
+        }
+
+        html, body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: ui-rounded, "Hiragino Maru Gothic ProN", "PingFang TC", "Microsoft JhengHei", "Segoe UI", system-ui, sans-serif;
+        }
+
+        body { width: 252px; }
+
+        .vt-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px 12px;
+        }
+
+        .vt-logo { width: 26px; height: 26px; border-radius: 7px; display: block; }
+        .vt-brand { font-weight: 700; font-size: 15px; letter-spacing: 0.2px; }
+
+        .vt-hr { height: 1px; background: var(--border); margin: 0 14px; }
+
+        .vt-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px 6px;
+        }
+
+        .vt-rl { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .vt-rt { font-weight: 700; font-size: 14px; }
+        .vt-state { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .vt-state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .vt-state.on { color: var(--accent); }
+        .vt-state.off { color: var(--muted); }
+
+        .vt-desc { padding: 2px 16px 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+        .vt-note { padding: 10px 16px 14px; color: var(--muted); font-size: 11px; opacity: 0.85; }
+
+        /* switch */
+        .switch { position: relative; width: 46px; height: 26px; flex: 0 0 auto; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; inset: 0; cursor: pointer;
+            background: var(--field); border: 1px solid var(--border);
+            border-radius: 26px; transition: .3s;
+        }
+        .slider::before {
+            content: ""; position: absolute; height: 20px; width: 20px; left: 3px; top: 2px;
+            background: #fff; border-radius: 50%; transition: .3s; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        }
+        input:checked + .slider { background: var(--grad); border-color: transparent; }
+        input:focus-visible + .slider { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+        input:checked + .slider::before { transform: translateX(20px); }
+    </style>
 </head>
 
-<body style="width: 200px;">
-
-    <p id="refreshAfterChange" style="font-size: 15px;text-align:center;" class="switch_label"></p>
-    <div style="display: flex; justify-content: center;align-items: center; ">
-        <p id="status" style="font-size: 15px;text-align:center;display:inline;margin-right: 30px;"
-            class="switch_label"></p>
-
+<body>
+    <div class="vt-head">
+        <img class="vt-logo" src="./icon/icon-48.png" alt="">
+        <div class="vt-brand">VideoTogether</div>
+    </div>
+    <div class="vt-hr"></div>
+    <div class="vt-row">
+        <div class="vt-rl">
+            <div class="vt-rt" id="toggleLabel"></div>
+            <div class="vt-state on" id="stateText"></div>
+        </div>
         <label class="switch">
             <input id="extensionSwitch" type="checkbox">
-            <span class="slider round"></span>
+            <span class="slider"></span>
         </label>
-
     </div>
+    <div class="vt-desc" id="desc"></div>
+    <div class="vt-note" id="refreshAfterChange"></div>
 
-    <script src="./popup.js">
-    </script>
-    <style>
-        /* The switch - the box around the slider */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-
-        /* Hide default HTML checkbox */
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        /* The slider */
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            -webkit-transition: .4s;
-            transition: .4s;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
-        }
-
-        input:checked+.slider {
-            background-color: #2196F3;
-        }
-
-        input:focus+.slider {
-            box-shadow: 0 0 1px #2196F3;
-        }
-
-        input:checked+.slider:before {
-            -webkit-transform: translateX(26px);
-            -ms-transform: translateX(26px);
-            transform: translateX(26px);
-        }
-
-        /* Rounded sliders */
-        .slider.round {
-            border-radius: 34px;
-        }
-
-        .slider.round:before {
-            border-radius: 50%;
-        }
-    </style>
+    <script src="./popup.js"></script>
 </body>
 
 </html>

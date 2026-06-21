@@ -1,7 +1,7 @@
 {
     "name": "VideoTogether",
     "description": "Watch video together",
-    "version": "3.0.23",
+    "version": "3.1.0",
     "manifest_version": 3,
     "content_scripts": [
         {
@@ -41,6 +41,7 @@
                 "vt.en-us.user.js",
                 "vt.zh-cn.user.js",
                 "vt.ja-jp.user.js",
+                "vt.zh-tw.user.js",
                 "preInjected.js"
             ],
             "matches": [
@@ -53,13 +54,22 @@
         "mode": "module"
     },
     "icons": {
-        "192": "./icon/android-icon-192x192.png"
+        "16": "./icon/icon-16.png",
+        "32": "./icon/icon-32.png",
+        "48": "./icon/icon-48.png",
+        "128": "./icon/icon-128.png",
+        "192": "./icon/icon-192.png"
     },
     "permissions": [
         "storage",
         "unlimitedStorage"
     ],
     "action": {
-        "default_popup": "popup.html"
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "./icon/icon-16.png",
+            "32": "./icon/icon-32.png",
+            "48": "./icon/icon-48.png"
+        }
     }
 }
