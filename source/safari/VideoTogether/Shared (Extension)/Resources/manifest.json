@@ -16,7 +16,7 @@
     "content_scripts": [
         {
             "js": [
-                "extension.safari.user.js"
+                "extension_loader.js"
             ],
             "matches": [
                 "<all_urls>"
@@ -28,6 +28,7 @@
                 "<all_urls>"
             ],
             "js": [
+                "url_policy.js",
                 "pre.js"
             ],
             "run_at": "document_start",
@@ -44,8 +45,13 @@
         "preInjected.js"
     ],
     "permissions": [
+        "<all_urls>",
+        "activeTab",
         "storage",
         "unlimitedStorage",
         "nativeMessaging"
-    ]
+    ],
+    "browser_action": {
+        "default_popup": "popup.html"
+    }
 }

@@ -1,90 +1,570 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-</head>
-
-<body style="width: 200px;">
-
-    <p id="refreshAfterChange" style="font-size: 15px;text-align:center;" class="switch_label"></p>
-    <div style="display: flex; justify-content: center;align-items: center; ">
-        <p id="status" style="font-size: 15px;text-align:center;display:inline;margin-right: 30px;"
-            class="switch_label"></p>
-
-        <label class="switch">
-            <input id="extensionSwitch" type="checkbox">
-            <span class="slider round"></span>
-        </label>
-
-    </div>
-
-    <script src="./popup.js">
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        /* The switch - the box around the slider */
+        :root {
+            color-scheme: light dark;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --background: #f4f6f9;
+            --surface: #ffffff;
+            --surface-subtle: #f8fafc;
+            --text: #162033;
+            --text-secondary: #657188;
+            --border: #dfe4ec;
+            --primary: #2457d6;
+            --primary-hover: #1b47b5;
+            --primary-soft: #edf2ff;
+            --success: #15803d;
+            --success-soft: #edf9f1;
+            --danger: #c2413a;
+            --danger-soft: #fff1f0;
+            --shadow: 0 14px 36px rgba(20, 32, 58, .12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 360px;
+        }
+
+        html.settings-open,
+        html.settings-open body {
+            width: 680px;
+        }
+
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            background: var(--background);
+            color: var(--text);
+        }
+
+        button,
+        textarea,
+        input {
+            font: inherit;
+        }
+
+        button {
+            color: inherit;
+        }
+
+        .view[hidden] {
+            display: none;
+        }
+
+        .view {
+            padding: 18px;
+        }
+
+        .brand-header,
+        .settings-header,
+        .row,
+        .action-footer {
+            display: flex;
+            align-items: center;
+        }
+
+        .brand-header {
+            gap: 11px;
+            margin-bottom: 16px;
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 auto;
+            place-items: center;
+            border-radius: 10px;
+            background: linear-gradient(145deg, #3267e8, #183eaa);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 750;
+            letter-spacing: .04em;
+            box-shadow: 0 7px 18px rgba(36, 87, 214, .24);
+        }
+
+        .brand-header h1,
+        .settings-header h1 {
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.3;
+        }
+
+        .brand-header p,
+        .settings-header p {
+            margin: 3px 0 0;
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+
+        .status-card {
+            padding: 14px;
+        }
+
+        .row {
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .eyebrow {
+            margin: 0 0 4px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 650;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        #globalStatus {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 680;
+        }
+
+        #siteStatus {
+            position: relative;
+            margin: 13px 0 0;
+            padding: 12px 12px 12px 32px;
+            border-radius: 9px;
+            background: var(--surface-subtle);
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        #siteStatus::before {
+            position: absolute;
+            top: 16px;
+            left: 14px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+            content: "";
+        }
+
+        #siteStatus[data-state="active"]::before {
+            background: #22a45a;
+            box-shadow: 0 0 0 3px rgba(34, 164, 90, .13);
+        }
+
+        #siteStatus[data-state="inactive"]::before {
+            background: #d4544c;
+            box-shadow: 0 0 0 3px rgba(212, 84, 76, .12);
+        }
+
         .switch {
             position: relative;
             display: inline-block;
-            width: 60px;
-            height: 34px;
+            width: 46px;
+            height: 26px;
+            flex: 0 0 auto;
         }
 
-        /* Hide default HTML checkbox */
         .switch input {
-            opacity: 0;
             width: 0;
             height: 0;
+            opacity: 0;
         }
 
-        /* The slider */
         .slider {
             position: absolute;
+            inset: 0;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            -webkit-transition: .4s;
-            transition: .4s;
+            border-radius: 999px;
+            background: #aeb6c5;
+            transition: .18s ease;
         }
 
-        .slider:before {
+        .slider::before {
             position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
-        }
-
-        input:checked+.slider {
-            background-color: #2196F3;
-        }
-
-        input:focus+.slider {
-            box-shadow: 0 0 1px #2196F3;
-        }
-
-        input:checked+.slider:before {
-            -webkit-transform: translateX(26px);
-            -ms-transform: translateX(26px);
-            transform: translateX(26px);
-        }
-
-        /* Rounded sliders */
-        .slider.round {
-            border-radius: 34px;
-        }
-
-        .slider.round:before {
+            bottom: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(16, 24, 40, .25);
+            content: "";
+            transition: .18s ease;
+        }
+
+        input:checked + .slider {
+            background: var(--primary);
+        }
+
+        input:checked + .slider::before {
+            transform: translateX(20px);
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            margin-top: 12px;
+        }
+
+        .quick-actions[hidden] {
+            display: none;
+        }
+
+        .button {
+            min-height: 40px;
+            padding: 9px 12px;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 620;
+            transition: background .15s ease, border-color .15s ease, transform .15s ease;
+        }
+
+        .button:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .button:disabled {
+            cursor: not-allowed;
+            opacity: .5;
+        }
+
+        .button-allow {
+            border-color: #bfe5cc;
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .button-block {
+            border-color: #f0c9c6;
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .nav-button {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 9px;
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--surface);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 620;
+            text-align: left;
+        }
+
+        .nav-button:hover {
+            border-color: #b9c6e3;
+            background: var(--primary-soft);
+        }
+
+        .chevron {
+            color: var(--text-secondary);
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .message {
+            min-height: 18px;
+            margin: 10px 2px 0;
+            color: var(--success);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .message.error {
+            color: var(--danger);
+        }
+
+        .refresh-note {
+            margin: 8px 2px 0;
+            color: var(--text-secondary);
+            font-size: 11px;
+            line-height: 1.45;
+        }
+
+        .settings-header {
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .back-button {
+            display: grid;
+            width: 34px;
+            height: 34px;
+            flex: 0 0 auto;
+            place-items: center;
+            padding: 0;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--surface);
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .back-button:hover {
+            border-color: #b9c6e3;
+            background: var(--primary-soft);
+        }
+
+        .mode-card {
+            padding: 12px;
+        }
+
+        .section-label {
+            margin: 0 0 9px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .mode-option {
+            position: relative;
+            display: block;
+            min-height: 64px;
+            padding: 10px 10px 10px 34px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--surface-subtle);
+            cursor: pointer;
+        }
+
+        .mode-option:has(input:checked) {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+            box-shadow: inset 0 0 0 1px var(--primary);
+        }
+
+        .mode-option input {
+            position: absolute;
+            top: 12px;
+            left: 11px;
+            accent-color: var(--primary);
+        }
+
+        .mode-option strong {
+            display: block;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .mode-option span {
+            display: block;
+            margin-top: 3px;
+            color: var(--text-secondary);
+            font-size: 10px;
+            line-height: 1.35;
+        }
+
+        .list-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .list-card {
+            padding: 12px;
+        }
+
+        .list-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .list-heading h2 {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .list-heading span {
+            color: var(--text-secondary);
+            font-size: 10px;
+        }
+
+        textarea {
+            display: block;
+            width: 100%;
+            min-height: 238px;
+            resize: none;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            background: var(--surface-subtle);
+            color: var(--text);
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+            font-size: 10.5px;
+            line-height: 1.48;
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(36, 87, 214, .12);
+        }
+
+        .action-footer {
+            justify-content: space-between;
+            gap: 14px;
+            margin-top: 10px;
+        }
+
+        #settingsMessage {
+            flex: 1;
+            margin: 0;
+        }
+
+        .save-button {
+            min-width: 112px;
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .save-button:hover:not(:disabled) {
+            border-color: var(--primary-hover);
+            background: var(--primary-hover);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background: #111827;
+                --surface: #1b2433;
+                --surface-subtle: #151e2c;
+                --text: #eef2f8;
+                --text-secondary: #9ba7ba;
+                --border: #334055;
+                --primary: #78a0ff;
+                --primary-hover: #91b2ff;
+                --primary-soft: #1d315d;
+                --success: #6fd493;
+                --success-soft: #153324;
+                --danger: #ff918a;
+                --danger-soft: #3c211f;
+                --shadow: 0 14px 36px rgba(0, 0, 0, .25);
+            }
         }
     </style>
-</body>
+</head>
+<body>
+    <section id="mainView" class="view">
+        <header class="brand-header">
+            <div class="brand-mark" aria-hidden="true">VT</div>
+            <div>
+                <h1>VideoTogether</h1>
+                <p id="brandTagline">一起看视频</p>
+            </div>
+        </header>
 
+        <div class="card status-card">
+            <div class="row">
+                <div>
+                    <p id="globalLabel" class="eyebrow">全局状态</p>
+                    <p id="globalStatus">插件已启用</p>
+                </div>
+                <label class="switch" aria-label="切换插件状态">
+                    <input id="extensionSwitch" type="checkbox">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <p id="siteStatus"></p>
+        </div>
+
+        <div id="quickActions" class="quick-actions" hidden>
+            <button id="allowCurrentSite" class="button button-allow" type="button"></button>
+            <button id="blockCurrentSite" class="button button-block" type="button"></button>
+        </div>
+
+        <button id="openSettings" class="nav-button" type="button">
+            <span id="settingsEntry"></span>
+            <span class="chevron" aria-hidden="true">›</span>
+        </button>
+
+        <p id="mainMessage" class="message" role="status"></p>
+        <p id="refreshNote" class="refresh-note"></p>
+    </section>
+
+    <section id="settingsView" class="view" hidden>
+        <header class="settings-header">
+            <button id="backToMain" class="back-button" type="button" aria-label="返回">‹</button>
+            <div>
+                <h1 id="settingsTitle">网站匹配设置</h1>
+                <p id="settingsDescription">使用完整 URL 的 JavaScript 正则表达式控制插件加载范围。</p>
+            </div>
+        </header>
+
+        <div class="card mode-card">
+            <p id="modeTitle" class="section-label">启用策略</p>
+            <div class="mode-grid">
+                <label class="mode-option">
+                    <input type="radio" name="mode" value="all">
+                    <strong id="modeAll">所有网站</strong>
+                    <span id="modeAllDescription">不使用列表限制</span>
+                </label>
+                <label class="mode-option">
+                    <input type="radio" name="mode" value="allowlist">
+                    <strong id="modeAllowlist">仅开启列表</strong>
+                    <span id="modeAllowlistDescription">只在匹配网站启用</span>
+                </label>
+                <label class="mode-option">
+                    <input type="radio" name="mode" value="blocklist">
+                    <strong id="modeBlocklist">排除屏蔽列表</strong>
+                    <span id="modeBlocklistDescription">其他网站保持启用</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="list-grid">
+            <section class="card list-card">
+                <div class="list-heading">
+                    <h2 id="allowlistTitle">开启列表</h2>
+                    <span id="allowlistHint">每行一个正则</span>
+                </div>
+                <textarea id="allowlist" wrap="off" spellcheck="false" aria-label="开启列表"></textarea>
+            </section>
+            <section class="card list-card">
+                <div class="list-heading">
+                    <h2 id="blocklistTitle">屏蔽列表</h2>
+                    <span id="blocklistHint">每行一个正则</span>
+                </div>
+                <textarea id="blocklist" wrap="off" spellcheck="false" aria-label="屏蔽列表"></textarea>
+            </section>
+        </div>
+
+        <div class="action-footer">
+            <p id="settingsMessage" class="message" role="status"></p>
+            <button id="saveSettings" class="button save-button" type="button">保存设置</button>
+        </div>
+    </section>
+
+    <script src="url_policy.js"></script>
+    <script src="popup.js"></script>
+</body>
 </html>

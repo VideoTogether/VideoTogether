@@ -62,6 +62,14 @@
 		46D922F92A2C3E61006F8194 /* pre.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F62A2C3E61006F8194 /* pre.js */; };
 		46D922FA2A2C3E61006F8194 /* preInjected.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F72A2C3E61006F8194 /* preInjected.js */; };
 		46D922FB2A2C3E61006F8194 /* preInjected.js in Resources */ = {isa = PBXBuildFile; fileRef = 46D922F72A2C3E61006F8194 /* preInjected.js */; };
+		4A1001012F00000000000001 /* url_policy.js in Resources */ = {isa = PBXBuildFile; fileRef = 4A1000012F00000000000001 /* url_policy.js */; };
+		4A1001022F00000000000001 /* url_policy.js in Resources */ = {isa = PBXBuildFile; fileRef = 4A1000012F00000000000001 /* url_policy.js */; };
+		4A1001072F00000000000001 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 4A1000042F00000000000001 /* popup.html */; };
+		4A1001082F00000000000001 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 4A1000042F00000000000001 /* popup.html */; };
+		4A1001092F00000000000001 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 4A1000052F00000000000001 /* popup.js */; };
+		4A10010A2F00000000000001 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 4A1000052F00000000000001 /* popup.js */; };
+		4A10010B2F00000000000001 /* extension_loader.js in Resources */ = {isa = PBXBuildFile; fileRef = 4A1000062F00000000000001 /* extension_loader.js */; };
+		4A10010C2F00000000000001 /* extension_loader.js in Resources */ = {isa = PBXBuildFile; fileRef = 4A1000062F00000000000001 /* extension_loader.js */; };
 		8CABB0D82774B88B42CE706F /* Pods_VideoTogether__macOS_.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3EFDE359130A90A8AB9DE900 /* Pods_VideoTogether__macOS_.framework */; };
 /* End PBXBuildFile section */
 
@@ -159,6 +167,10 @@
 		46ACA8EA28F25E8F00F37C93 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = "Shared (Extension)/Resources/images/Icon.png"; sourceTree = SOURCE_ROOT; };
 		46D922F62A2C3E61006F8194 /* pre.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = pre.js; sourceTree = "<group>"; };
 		46D922F72A2C3E61006F8194 /* preInjected.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = preInjected.js; sourceTree = "<group>"; };
+		4A1000012F00000000000001 /* url_policy.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = url_policy.js; sourceTree = "<group>"; };
+		4A1000042F00000000000001 /* popup.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = popup.html; sourceTree = "<group>"; };
+		4A1000052F00000000000001 /* popup.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = popup.js; sourceTree = "<group>"; };
+		4A1000062F00000000000001 /* extension_loader.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = extension_loader.js; sourceTree = "<group>"; };
 		59FA1E44AC392B7F59CBE004 /* Pods_VideoTogether_Extension__macOS_.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VideoTogether_Extension__macOS_.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A2E9484F6C7AB87AD991F3F /* Pods_VideoTogether__iOS_.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_VideoTogether__iOS_.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D0FFC6FDC0F3E0F110406D9 /* Pods-VideoTogether Extension (macOS).debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoTogether Extension (macOS).debug.xcconfig"; path = "Target Support Files/Pods-VideoTogether Extension (macOS)/Pods-VideoTogether Extension (macOS).debug.xcconfig"; sourceTree = "<group>"; };
@@ -268,6 +280,10 @@
 		4682878128F1CF25008CFC46 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				4A1000012F00000000000001 /* url_policy.js */,
+				4A1000042F00000000000001 /* popup.html */,
+				4A1000052F00000000000001 /* popup.js */,
+				4A1000062F00000000000001 /* extension_loader.js */,
 				390959CE2E606B91006A93F6 /* load.ja-jp.js */,
 				390959CF2E606B91006A93F6 /* vt.ja-jp.user.js */,
 				46D922F62A2C3E61006F8194 /* pre.js */,
@@ -513,6 +529,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4A1001012F00000000000001 /* url_policy.js in Resources */,
+				4A1001072F00000000000001 /* popup.html in Resources */,
+				4A1001092F00000000000001 /* popup.js in Resources */,
+				4A10010B2F00000000000001 /* extension_loader.js in Resources */,
 				46D922F82A2C3E61006F8194 /* pre.js in Resources */,
 				463C5AF828F2BBB8007A2310 /* background.safari.js in Resources */,
 				390959D02E606B91006A93F6 /* load.ja-jp.js in Resources */,
@@ -533,6 +553,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4A1001022F00000000000001 /* url_policy.js in Resources */,
+				4A1001082F00000000000001 /* popup.html in Resources */,
+				4A10010A2F00000000000001 /* popup.js in Resources */,
+				4A10010C2F00000000000001 /* extension_loader.js in Resources */,
 				46D922F92A2C3E61006F8194 /* pre.js in Resources */,
 				463C5AF928F2BBB8007A2310 /* background.safari.js in Resources */,
 				390959D22E606B91006A93F6 /* load.ja-jp.js in Resources */,

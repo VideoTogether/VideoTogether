@@ -442,6 +442,57 @@ getBrowser().runtime.onMessage.addListener(function (msgText, sender, sendRespon
             }
             sendResponse();
             break;
+        case 5:
+            sendResponse(sender.tab == undefined ? "" : sender.tab.url);
+            break;
+        case 6:
+            if (sender.tab == undefined || getBrowser().scripting == undefined) {
+                sendResponse();
+                break;
+            }
+            getBrowser().scripting.executeScript({
+                target: {
+                    tabId: sender.tab.id,
+                    frameIds: [sender.frameId]
+                },
+                files: ["preInjected.js"],
+                world: "MAIN",
+                injectImmediately: true
+            }).then(() => sendResponse()).catch(error => sendResponse({ error: error.message }));
+            return true;
+        case 7: {
+            if (sender.tab == undefined) {
+                sendResponse();
+                break;
+            }
+            const file = `extension.${type.toLowerCase()}.user.js`;
+            if (type == "Chrome") {
+                getBrowser().scripting.executeScript({
+                    target: {
+                        tabId: sender.tab.id,
+                        frameIds: [sender.frameId]
+                    },
+                    files: [file],
+                    world: "ISOLATED"
+                }).then(() => sendResponse()).catch(error => sendResponse({ error: error.message }));
+                return true;
+            }
+            if (type == "Firefox") {
+                getBrowser().tabs.executeScript(sender.tab.id, {
+                    file: `/${file}`,
+                    frameId: sender.frameId
+                }, () => {
+                    const error = getBrowser().runtime.lastError;
+                    sendResponse(error == undefined ? undefined : { error: error.message });
+                });
+                return true;
+            }
+            getBrowser().tabs.executeScript(sender.tab.id, {
+                file: file,
+                frameId: sender.frameId
+            }).then(() => sendResponse()).catch(error => sendResponse({ error: error.message }));
+            return true;
+        }
         case 2001:
             saveToIndexedDB(msg.data.table, msg.data.key, msg.data.data).then(() => {
                 sendResponse({ error: 0 })

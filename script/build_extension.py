@@ -185,6 +185,10 @@ if __name__ == '__main__':
                     rootPath.joinpath(dst))
     def remove(src):
         os.remove(rootPath.joinpath(src))
+    def copy_extension_resource(filename):
+        cp("source/extension/" + filename, "source/chrome/" + filename)
+        cp("source/extension/" + filename, "source/firefox/" + filename)
+        cp("source/extension/" + filename, "source/safari/VideoTogether/Shared (Extension)/Resources/" + filename)
     remove("release/local_video_player.html")
     remove("release/local_videos.html")
     remove("release/local_page.js")
@@ -218,5 +222,11 @@ if __name__ == '__main__':
                     rootPath.joinpath("source/firefox/background.firefox.js"))
     shutil.copyfile(rootPath.joinpath("release/background.safari.js"),
                     rootPath.joinpath("source/safari/VideoTogether/Shared (Extension)/Resources/background.safari.js"))
+
+    for extensionResource in ["url_policy.js", "extension_loader.js"]:
+        copy_extension_resource(extensionResource)
+    for popupResource in ["popup.html", "popup.js"]:
+        cp("source/chrome/" + popupResource, "source/firefox/" + popupResource)
+        cp("source/chrome/" + popupResource, "source/safari/VideoTogether/Shared (Extension)/Resources/" + popupResource)
 
     outputUnusedLocalizationKeys()

@@ -9,7 +9,7 @@
                 "<all_urls>"
             ],
             "js": [
-                "extension.chrome.user.js"
+                "extension_loader.js"
             ],
             "all_frames": true
         },
@@ -18,21 +18,11 @@
                 "<all_urls>"
             ],
             "js": [
+                "url_policy.js",
                 "pre.js"
             ],
             "run_at": "document_start",
             "all_frames": true
-        },
-        {
-            "matches": [
-                "<all_urls>"
-            ],
-            "js": [
-                "preInjected.js"
-            ],
-            "run_at": "document_start",
-            "all_frames": true,
-            "world": "MAIN"
         }
     ],
     "web_accessible_resources": [
@@ -56,8 +46,13 @@
         "192": "./icon/android-icon-192x192.png"
     },
     "permissions": [
+        "activeTab",
+        "scripting",
         "storage",
         "unlimitedStorage"
+    ],
+    "host_permissions": [
+        "<all_urls>"
     ],
     "action": {
         "default_popup": "popup.html"

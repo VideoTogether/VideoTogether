@@ -160,17 +160,6 @@
         }
     }
 
-    if (isExtension) {
-        let vtEnabled = await getGM().getValue('vtEnabled');
-        if (vtEnabled === false) {
-            getBrowser().runtime.sendMessage(JSON.stringify({ type: 4, enabled: false }));
-            return;
-        } else {
-            getBrowser().runtime.sendMessage(JSON.stringify({ type: 4, enabled: true }));
-        }
-    }
-
-
     const languages = ['en-us', 'zh-cn', 'ja-jp'];
     let language = 'en-us';
     let settingLanguage = undefined;
